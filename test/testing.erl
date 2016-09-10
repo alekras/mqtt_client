@@ -29,7 +29,13 @@
 %%
 %% API functions
 %%
--export([do_setup/1, do_cleanup/2, do_start/0, do_stop/1, wait_all/1]).
+-export([
+	do_setup/1, 
+	do_cleanup/2, 
+	do_start/0, 
+	do_stop/1,
+	get_connect_rec/0, 
+	wait_all/1]).
 
 do_start() ->
   R = application:start(mqtt_client),
@@ -40,12 +46,12 @@ do_stop(_R) ->
   R = application:stop(mqtt_client),
   ?debug_Fmt("::test:: stop app return: ~p",[R]).
 
-do_setup(X) ->
+do_setup({_, publish} = X) ->
   ?debug_Fmt("::test:: setup before: ~p~n",[X]),
-	mqtt_client:connect(
-		test_client, 
+	P = mqtt_client:connect(
+		publisher, 
 		#connect{
-			client_id = "test_client",
+			client_id = "publisher",
 			user_name = "guest",
 			password = <<"guest">>,
 			will = 0,
@@ -55,13 +61,64 @@ do_setup(X) ->
 			keep_alive = 1000
 		}, 
 		"localhost", 
-		2883, 
+		?TEST_SERVER_PORT, 
+		[]
+	),
+		S = mqtt_client:connect(
+		subscriber, 
+		#connect{
+			client_id = "subscriber",
+			user_name = "guest",
+			password = <<"guest">>,
+			will = 0,
+			will_message = <<>>,
+			will_topic = [],
+			clean_session = 1,
+			keep_alive = 1000
+		}, 
+		"localhost", 
+		?TEST_SERVER_PORT, 
+		[]
+	),
+	[P,S];
+do_setup(X) ->
+  ?debug_Fmt("::test:: setup before: ~p~n",[X]),
+	mqtt_client:connect(
+		test_cli, 
+		#connect{
+			client_id = "test_cli",
+			user_name = "guest",
+			password = <<"guest">>,
+			will = 0,
+			will_message = <<>>,
+			will_topic = [],
+			clean_session = 1,
+			keep_alive = 1000
+		}, 
+		"localhost", 
+		?TEST_SERVER_PORT, 
 		[]
 	).
 
+do_cleanup({_, publish} = X, [P, S] = Pid) ->
+	R1 = mqtt_client:disconnect(P),
+	R2 = mqtt_client:disconnect(S),
+  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~p~n",[X, Pid, {R1, R2}]);
 do_cleanup(X, Pid) ->
-	R = mqtt_client:disconnect(test_client),
+	R = mqtt_client:disconnect(test_cli),
   ?debug_Fmt("::test:: teardown after: ~p  pid=~p  disconnect returns=~p~n",[X, Pid, R]).
+
+get_connect_rec() ->
+	#connect{
+		client_id = "test_client",
+		user_name = "guest",
+		password = <<"guest">>,
+		will = 0,
+		will_message = <<>>,
+		will_topic = [],
+		clean_session = 1,
+		keep_alive = 1000
+	}.
 
 wait_all(0) -> ok;
 wait_all(N) ->

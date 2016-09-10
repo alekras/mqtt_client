@@ -7,7 +7,7 @@
 
 ```
 Run Rebar3: 
-$ rebur do version,compile
+$ rebar do version,compile
 ```
 
 ### Run some MQTT server like RabbitMQ or Mosquitto

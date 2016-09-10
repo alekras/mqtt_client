@@ -137,7 +137,7 @@ handle_call({publish, #publish{qos = QoS} = Params, Payload}, {_, Ref} = From, S
 	case gen_tcp:send(State#connection_state.socket, Packet) of
 		ok -> 
 			New_processes = (State#connection_state.processes)#{Packet_Id => {From, Params}},
-		{reply, {ok, Ref}, State#connection_state{packet_id = next(Packet_Id), processes = New_processes}};
+			{reply, {ok, Ref}, State#connection_state{packet_id = next(Packet_Id), processes = New_processes}};
 		{error, Reason} -> {reply, {error, Reason}, State}
 	end;
 
@@ -161,10 +161,10 @@ handle_call({unsubscribe, Topics}, {_, Ref} = From, State) ->
 		{error, Reason} -> {reply, {error, Reason}, State}
 	end;
 
-handle_call({disconnect}, _From, State) ->
-%	io:format(user, " >>> disconnect request ~p~n", [State]),
+handle_call(disconnect, _From, State) ->
+	io:format(user, " >>> disconnect request ~p~n", [State]),
 	case gen_tcp:send(State#connection_state.socket, packet(disconnect, false)) of
-    ok -> {reply, ok, State};
+    ok -> {stop, normal, State};
 		{error, Reason} -> {reply, {error, Reason}, State}
 	end;
 
@@ -214,7 +214,8 @@ handle_info(Info, State) ->
 			{noreply, New_State};
 		{tcp_closed, Socket} ->
 			io:format(user, " >>> handle_info tcp_closed for socket: ~p and PID: ~p.~nState:~p~n", [Socket, self(), State]),
-			{stop, tcp_closed, State};
+			gen_tcp:close(Socket),
+			{stop, normal, State};
 %			{noreply, State};
 		_ ->
 			io:format(user, " >>> handle_info unknown message: ~p state:~p~n", [Info, State]),
@@ -232,7 +233,8 @@ handle_info(Info, State) ->
 			| term().
 %% ====================================================================
 terminate(_Reason, _State) ->
-		ok.
+	io:format(user, " >>> terminate ~p~n~p~n", [_Reason, _State]),
+	ok.
 
 %% code_change/3
 %% ====================================================================
@@ -255,10 +257,10 @@ socket_stream_process(State, <<>>) ->
 socket_stream_process(State, Binary) ->
 %	io:format(user, " ->-- socket_stream_process message: state:~p Bin: ~p~n", [State, Binary]),
 	case input_parser(Binary) of
-		{connectack, SP, Msg, Tail} ->
+		{connectack, SP, CRC, Msg, Tail} ->
 			case maps:get(connect, State#connection_state.processes, undefined) of
 				{{Pid, Ref}, _Conn_Config} ->
-					Pid ! {connectack, Ref, Msg},
+					Pid ! {connectack, Ref, CRC, Msg},
 					socket_stream_process(
 						State#connection_state{processes = maps:remove(connect, State#connection_state.processes), 
 																		session_present = SP},
@@ -328,10 +330,10 @@ socket_stream_process(State, Binary) ->
           true;
 				List ->
 					[case Callback of
-						 {M, F} -> spawn(M, F, [{Topic, Payload}]);
-						 {F} -> spawn(fun() -> apply(F, [{Topic, Payload}]) end)
+						 {M, F} -> spawn(M, F, [{{Topic, TopicQoS}, QoS, Payload}]);
+						 {F} -> spawn(fun() -> apply(F, [{{Topic, TopicQoS}, QoS, Payload}]) end)
 						end
-							 || {_QoS, Callback} <- List]
+							 || {TopicQoS, Callback} <- List]
 			end,
 			case QoS of
 				1 ->
@@ -409,7 +411,7 @@ socket_stream_process(State, Binary) ->
 	end.
 
 next(Packet_Id) ->
-	if Packet_Id == 16#FFFF -> 0; 
+	if Packet_Id == 16#FFFF -> 0; %% @todo check id in storage
 		 true -> Packet_Id + 1 
 	end.
 

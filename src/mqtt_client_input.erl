@@ -47,7 +47,7 @@
 
 input_parser(Binary) ->
 	case Binary of
-		<<?CONNACK_PACK_TYPE, 2:8, 0:7, SP:1, Connect_Return_Code:8, Tail/binary>> -> {connectack, SP, return_code_response(Connect_Return_Code), Tail};
+		<<?CONNACK_PACK_TYPE, 2:8, 0:7, SP:1, Connect_Return_Code:8, Tail/binary>> -> {connectack, SP, Connect_Return_Code, return_code_response(Connect_Return_Code), Tail};
 		<<?PUBLISH_PACK_TYPE, _DUP:1, QoS:2, _RETAIN:1, Bin/binary>> ->
 			{RestBin, Length} = decode_remaining_length(Bin),
 			<<L:16, TopicBin:L/binary, RestBin1/binary>> = RestBin,

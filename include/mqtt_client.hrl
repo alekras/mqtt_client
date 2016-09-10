@@ -19,17 +19,33 @@
 		dup = 0 :: 0 | 1,
 		qos = 0 :: 0 | 1 | 2,
 		retain = 0 :: 0 | 1,
-		acknowleged = none :: none | pubrec | pubrel
+		acknowleged = none :: none | pubrec | pubrel,
+		payload = <<>> :: binary()
+	}
+).
+
+-record(primary_key,
+	{
+		client_id :: string(),
+		packet_id :: integer()
+	}
+).
+
+-record(storage_publish,
+	{
+    key :: #primary_key{},
+		document :: #publish{} 
 	}
 ).
 
 -record(connection_state, 
   { socket :: port(),
+		storage = dets_dao :: atom(),
 		session_present :: 0 | 1,
 		connected = 0 :: 0 | 1,
 		packet_id = 100 :: integer(),
-		subscriptions = #{} :: map(),
-		processes = #{} :: map(),
+		subscriptions = #{} :: map(), %% @todo keep in persistance storage
+		processes = #{} :: map(), %% @todo keep in persistance storage
 		tail = <<>> :: binary(),
 		ping_count = 0 :: integer()
   }

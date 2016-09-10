@@ -39,10 +39,6 @@
 %% Exported Functions
 %%
 -export([
-  decode_remaining_length/0,
-	input_parser/0,
-	encode_remaining_length/0,
-	is_match/0
 ]).
 
 %%
@@ -51,10 +47,10 @@
 
 unit_test_() ->
 	[ 
-		{"decode length", ?MODULE, decode_remaining_length},
-		{"input parser", ?MODULE, input_parser},
-		{"decode length", ?MODULE, encode_remaining_length},
-		{"regex match", ?MODULE, is_match}
+		fun decode_remaining_length/0,
+		fun input_parser/0,
+		fun encode_remaining_length/0,
+		fun is_match/0
 	].
 
 decode_remaining_length() ->
@@ -67,7 +63,7 @@ decode_remaining_length() ->
 
 input_parser() ->
 	?debug_Msg(">>> input_parser   "),	
-	?assertEqual({connectack, 1, "0x00 Connection Accepted", <<1:8, 1:8>>}, 
+	?assertEqual({connectack, 1, 0, "0x00 Connection Accepted", <<1:8, 1:8>>}, 
 							 mqtt_client_input:input_parser(<<16#20:8, 2:8, 1:8, 0:8, 1:8, 1:8>>)),
 	?assertEqual({publish, 0, 0, "Topic", <<1:8, 2:8, 3:8, 4:8, 5:8, 6:8>>, <<1:8, 1:8>>}, 
 							 mqtt_client_input:input_parser(<<16#30:8, 13:8, 5:16, "Topic", 1:8, 2:8, 3:8, 4:8, 5:8, 6:8, 1:8, 1:8>>)),

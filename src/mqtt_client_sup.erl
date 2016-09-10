@@ -34,8 +34,8 @@
 %% API functions
 %% ====================================================================
 -export([
-	new_connection/4,
-	close_connection/1
+	new_connection/4
+%	close_connection/1
 ]).
 
 
@@ -76,12 +76,19 @@ new_connection(Connection_id, Host, Port, Options) ->
     {gen_server, start_link,
       [{local, Connection_id}, mqtt_client_connection, {Host, Port, Options}, [{timeout, ?GEN_SERVER_TIMEOUT}]]
     },
-    transient,
+    temporary,
     brutal_kill,
     worker,
     [mqtt_client_connection]
   },
-  R = supervisor:start_child(?MODULE, Child_spec),
+
+  R = try 
+				supervisor:start_child(?MODULE, Child_spec) 
+			catch
+				exit:{noproc,_R1} -> 
+%%					io:format(user, "     catched: exit:{noproc, ~p}~n", [_R1]), 
+					{error, {#mqtt_client_error{type=connection, message="unexpected server connection drop"}, undef}}
+			end,
 %% >>> debug
 %%  io:format(user, "     returns: ~p~n", [R]),
 %%  io:format(user, "     from name to pid: ~p~n", [whereis(DS_name)]),
@@ -95,19 +102,19 @@ new_connection(Connection_id, Host, Port, Options) ->
                                     message = Reason}
   end.
 
-close_connection(Connection_id) when is_atom(Connection_id) -> 
-  io:format(user, " >>> close_connection (id:~p)~n", [Connection_id]),
-  case supervisor:terminate_child(?MODULE, Connection_id) of
-    ok -> supervisor:delete_child(?MODULE, Connection_id);
-    {error, R} -> #mqtt_client_error{type = connection, message = atom_to_list(R)}
-  end;
-
-close_connection(Connection_pid) when is_pid(Connection_pid) -> 
-  io:format(user, " >>> close_connection (pid:~p)~n", [Connection_pid]),
-  case [ Id || {Id, Pid, _, _} <- supervisor:which_children(?MODULE), Pid == Connection_pid] of
-    [Connection_id] -> close_connection(Connection_id);
-    [] -> ok
-  end.
+%% close_connection(Connection_id) when is_atom(Connection_id) -> 
+%%   io:format(user, " >>> close_connection (id:~p)~n", [Connection_id]),
+%%   case supervisor:terminate_child(?MODULE, Connection_id) of
+%%     ok -> supervisor:delete_child(?MODULE, Connection_id);
+%%     {error, R} -> #mqtt_client_error{type = connection, message = atom_to_list(R)}
+%%   end;
+%% 
+%% close_connection(Connection_pid) when is_pid(Connection_pid) -> 
+%%   io:format(user, " >>> close_connection (pid:~p)~n", [Connection_pid]),
+%%   case [ Id || {Id, Pid, _, _} <- supervisor:which_children(?MODULE), Pid == Connection_pid] of
+%%     [Connection_id] -> close_connection(Connection_id);
+%%     [] -> ok
+%%   end.
 %% ====================================================================
 %% Internal functions
 %% ====================================================================

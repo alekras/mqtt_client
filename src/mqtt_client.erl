@@ -50,16 +50,21 @@ connect(Connection_id, Conn_config, Host, Port, Socket_options) ->
 	case mqtt_client_sup:new_connection(Connection_id, Host, Port, Socket_options) of
 		{ok, Pid} ->
 			{ok, Ref} = gen_server:call(Pid, {connect, Conn_config}, ?GEN_SERVER_TIMEOUT),
-			Response =
 			receive
-				{connectack, Ref, Msg} -> 
+				{connectack, Ref, 0, Msg} -> 
 %					io:format(user, " >>> received connectack ~p~n", [Msg]), %% @todo check sesion present flag
-					Msg
-			after ?GEN_SERVER_TIMEOUT -> "timeout" 
-			end,
-			io:format(user, " >>> client ~p connected with response: ~p, ~n", [Pid, Response]),
-			Pid;
-		#mqtt_client_error{} = Error -> Error
+					io:format(user, " >>> client ~p/~p connected with response: ~p, ~n", [Pid, Conn_config, Msg]),
+					Pid;
+				{connectack, Ref, ErrNo, Msg} -> 
+%					io:format(user, " >>> received connectack ~p~n", [Msg]), %% @todo check sesion present flag
+					io:format(user, " >>> client ~p connected with response: ~p, ~n", [Pid, Msg]),
+					#mqtt_client_error{type = connection, errno = ErrNo, source = "mqtt_client:conect/5", message = Msg}
+			after ?GEN_SERVER_TIMEOUT ->
+					#mqtt_client_error{type = connection, source = "mqtt_client:conect/5", message = "timeout"}
+			end;
+		#mqtt_client_error{} = Error -> Error;
+		Exit ->
+			io:format(user, " >>> client catched: ~p, ~n", [Exit])
 	end.
 
 status(Pid) ->
@@ -123,8 +128,12 @@ pingreq(Pid, Callback) ->
 	gen_server:call(Pid, {ping, Callback}, ?GEN_SERVER_TIMEOUT).
 
 disconnect(Client_id) -> %% @todo arg = Pid
-	gen_server:call(Client_id, {disconnect}, ?GEN_SERVER_TIMEOUT),
- 	mqtt_client_sup:close_connection(Client_id).
+	try 
+  	gen_server:call(Client_id, disconnect, ?GEN_SERVER_TIMEOUT)
+	catch
+    exit:R -> io:format(user, " >>> disconnect ~p~n", [R])
+	end.
+% 	ok = mqtt_client_sup:close_connection(Client_id).
 
 %% ====================================================================
 %% Behavioural functions

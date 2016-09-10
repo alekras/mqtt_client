@@ -46,85 +46,240 @@ mqtt_client_test_() ->
     { setup, 
       fun testing:do_start/0, 
       fun testing:do_stop/1, 
-      [
-        {test, ?MODULE, connect}
-%%         { foreachx, 
-%%           fun testing:do_setup/1, 
-%%           fun testing:do_cleanup/2, 
-%%           [
-%% %            {{1, open},    fun open/2},
-%%             {{2, connect}, fun connect/2},
+      {inorder, [
+        {test, ?MODULE, connect},
+        { foreachx, 
+          fun testing:do_setup/1, 
+          fun testing:do_cleanup/2, 
+          [
+            {{1, publish}, fun publish_0/2},
+            {{2, publish}, fun publish_1/2},
+            {{3, publish}, fun publish_2/2}%,
 %%             {{3, subs_list}, fun subs_list/2},
 %%             {{4, subs_filter}, fun subs_filter/2}
-%%           ]
-%%         }
-      ]
+          ]
+        }
+      ]}
     }
   ].
 
 connect() ->
-  ?debug_Fmt("::test:: connect/0:", []),
+	ConnRec = testing:get_connect_rec(),	
 	Conn = mqtt_client:connect(
 		test_client, 
-		#connect{
-			client_id = "test_client",
-			user_name = "guest",
-			password = <<"guest">>,
-			will = 0,
-			will_message = <<>>,
-			will_topic = [],
-			clean_session = 1,
-			keep_alive = 1000
-		}, 
+		ConnRec, 
 		"localhost", 
-		2883, 
+		?TEST_SERVER_PORT, 
 		[]
 	),
-  ?debug_Fmt("::test:: connect/0: ~p", [Conn]),
+  ?debug_Fmt("::test:: 1. successfully connected : ~p", [Conn]),
 	?assert(erlang:is_pid(Conn)),
 	
 	Conn1 = mqtt_client:connect(
 		test_client_1, 
-		#connect{
-			client_id = "test_client_1",
-			user_name = "guest",
-			password = <<"guest">>,
-			will = 0,
-			will_message = <<>>,
-			will_topic = [],
-			clean_session = 1,
-			keep_alive = 1000
+		ConnRec#connect{
+			client_id = "test_client_1"
 		}, 
 		"localhost", 
 		3883, 
 		[]
 	),
-  ?debug_Fmt("::test:: connect/0: ~p", [Conn1]),
+  ?debug_Fmt("::test:: 2. wrong port number : ~120p", [Conn1]),
 	?assertMatch(#mqtt_client_error{}, Conn1),
 	
 	Conn2 = mqtt_client:connect(
-		test_client_1, 
-		#connect{
-			client_id = "test_client",
-			user_name = "guest",
-			password = <<"guest">>,
-			will = 0,
-			will_message = <<>>,
-			will_topic = [],
-			clean_session = 1,
-			keep_alive = 1000
+		test_client_2, 
+		ConnRec#connect{
+			client_id = "test_client_2",
+			user_name = "quest",
+			password = <<"guest">>
 		}, 
 		"localhost", 
-		2883, 
+		?TEST_SERVER_PORT, 
 		[]
 	),
-  ?debug_Fmt("::test:: connect/0: ~p", [Conn2]),
-	?assert(erlang:is_pid(Conn2)),
+  ?debug_Fmt("::test:: 3. wrong user name : ~120p", [Conn2]),
+	?assertMatch(#mqtt_client_error{}, Conn2),
+	
+	Conn3 = mqtt_client:connect(
+		test_client_3, 
+		ConnRec#connect{
+			client_id = "test_client_3",
+			user_name = "guest",
+			password = <<"gueest">>
+		}, 
+		"localhost", 
+		?TEST_SERVER_PORT, 
+		[]
+	),
+  ?debug_Fmt("::test:: 4. wrong user password : ~120p", [Conn3]),
+	?assertMatch(#mqtt_client_error{}, Conn3),
+	
+	Conn4 = mqtt_client:connect(
+		test_client_4, 
+		ConnRec, 
+		"localhost", 
+		?TEST_SERVER_PORT, 
+		[]
+	),
+  ?debug_Fmt("::test:: 5. duplicate client id: ~p", [Conn4]),
+	?assert(erlang:is_pid(Conn4)),
 	?assertEqual(disconnected, mqtt_client:status(Conn)),
+	
+	Conn5 = mqtt_client:connect(
+		test_client_5, 
+		ConnRec#connect{
+			client_id = binary_to_list(<<"test_",255,0,255,"client_5">>),
+			user_name = "guest",
+			password = <<"guest">>
+		}, 
+		"localhost", 
+		?TEST_SERVER_PORT, 
+		[]
+	),
+  ?debug_Fmt("::test:: 6. wrong utf-8 : ~p", [Conn5]),
+%	?assertMatch(#mqtt_client_error{}, Conn5),
+	
+	Conn6 = mqtt_client:connect(
+		test_client_6, 
+		ConnRec#connect{
+			client_id = "test_client_6",
+			user_name = binary_to_list(<<"gu", 0, "est">>),
+			password = <<"guest">>
+		}, 
+		"localhost", 
+		?TEST_SERVER_PORT, 
+		[]
+	),
+  ?debug_Fmt("::test:: 7. wrong utf-8 : ~p", [Conn6]),
+	?assertMatch(#mqtt_client_error{}, Conn6),
+	
+	Conn7 = mqtt_client:connect(
+		test_client_7, 
+		ConnRec#connect{
+			client_id = "test_client_7",
+			user_name = "guest",
+			password = <<"gu", 0, "est">>
+		}, 
+		"localhost", 
+		?TEST_SERVER_PORT, 
+		[]
+	),
+  ?debug_Fmt("::test:: 8. wrong utf-8 : ~p", [Conn7]),
+	?assertMatch(#mqtt_client_error{}, Conn7),
 	
 	?PASSED.
 
+publish_0(_, [Publisher, Subscriber] = Conns) -> {timeout, 100, fun() ->
+  ?debug_Fmt("::test:: publish_0 : ~p", [Conns]),
+	register(test_result, self()),
+
+	R2_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 0, {fun(Arg) -> ?debug_Fmt("::test:: fun callback: ~p",[Arg]), test_result ! done end}}]), 
+	?debug_Fmt("::test:: subscribe returns: ~p",[R2_0]),
+	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 0}, <<"Test Payload QoS = 0. annon. function callback. ">>), 
+	?debug_Fmt("::test:: publish (QoS = 0) returns: ~p",[R3_0]),
+	R4_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"Test Payload QoS = 0. annon. function callback. ">>), 
+	?debug_Fmt("::test:: publish (QoS = 1) returns: ~p",[R4_0]),
+	R5_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"Test Payload QoS = 0. annon. function callback. ">>), 
+	?debug_Fmt("::test:: publish (QoS = 2) returns: ~p",[R5_0]),
+
+	R2 = mqtt_client:subscribe(Subscriber, [{"AKtest", 0, {?MODULE, callback}}]), 
+	?debug_Fmt("::test:: subscribe returns: ~p",[R2]),
+	R3 = mqtt_client:publish(Publisher, #publish{topic = "AKtest"}, <<"Test Payload QoS = 0.">>), 
+	?debug_Fmt("::test:: publish (QoS = 0) returns: ~p",[R3]),
+%% errors:
+	R4 = mqtt_client:publish(Publisher, #publish{topic = binary_to_list(<<"AK",0,0,0,"test">>), qos = 2}, <<"Test Payload QoS = 0.">>), 
+	?debug_Fmt("::test:: publish (QoS = 0) returns: ~p",[R4]),
+
+	case wait_all(4) of
+		ok -> ?debug_Fmt("::test:: all done received.",[]);
+		fail -> ?assert(false)
+	end,
+	
+	case wait_all(1) of
+		fail -> ?debug_Fmt("::test:: no done received.",[]);
+		ok -> ?assert(false)
+	end,
+	
+	unregister(test_result),
+
+	?PASSED
+end}.
+
+publish_1(_, [Publisher, Subscriber] = Conns) -> {timeout, 100, fun() ->
+  ?debug_Fmt("::test:: publish_1 : ~p", [Conns]),
+	register(test_result, self()),
+
+	R2_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 1, {fun(Arg) -> ?debug_Fmt("::test:: fun callback: ~p",[Arg]), test_result ! done end}}]), 
+	?debug_Fmt("::test:: subscribe returns: ~p",[R2_0]),
+	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 0}, <<"Test Payload QoS = 0. annon. function callback. ">>), 
+	?debug_Fmt("::test:: publish (QoS = 0) returns: ~p",[R3_0]),
+	R4_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"Test Payload QoS = 0. annon. function callback. ">>), 
+	?debug_Fmt("::test:: publish (QoS = 1) returns: ~p",[R4_0]),
+	R5_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"Test Payload QoS = 0. annon. function callback. ">>), 
+	?debug_Fmt("::test:: publish (QoS = 2) returns: ~p",[R5_0]),
+
+	R2 = mqtt_client:subscribe(Subscriber, [{"AKtest", 1, {?MODULE, callback}}]), 
+	?debug_Fmt("::test:: subscribe returns: ~p",[R2]),
+	R3 = mqtt_client:publish(Publisher, #publish{topic = "AKtest"}, <<"Test Payload QoS = 0.">>), 
+	?debug_Fmt("::test:: publish (QoS = 0) returns: ~p",[R3]),
+
+	case wait_all(4) of
+		ok -> ?debug_Fmt("::test:: all done received.",[]);
+		fail -> ?assert(false)
+	end,
+	
+	case wait_all(1) of
+		fail -> ?debug_Fmt("::test:: no done received.",[]);
+		ok -> ?assert(false)
+	end,
+	
+	unregister(test_result),
+
+	?PASSED
+end}.
+
+publish_2(_, [Publisher, Subscriber] = Conns) -> {timeout, 100, fun() ->
+  ?debug_Fmt("::test:: publish_2 : ~p", [Conns]),
+	register(test_result, self()),
+  
+	F = fun({{Topic, Q}, QoS, _Msg} = Arg) -> 
+					 ?debug_Fmt("::test:: fun callback: ~100p",[Arg]),
+					 ?assertEqual(2, Q),
+					 ?assertEqual("AKtest", Topic),
+					 test_result ! done 
+			end,
+	R2_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 2, {F}}]), 
+	?debug_Fmt("::test:: subscribe returns: ~p",[R2_0]),
+	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 0}, <<"Test Payload QoS = 0. annon. function callback. ">>), 
+	?debug_Fmt("::test:: publish (QoS = 0) returns: ~p",[R3_0]),
+	R4_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"Test Payload QoS = 0. annon. function callback. ">>), 
+	?debug_Fmt("::test:: publish (QoS = 1) returns: ~p",[R4_0]),
+	R5_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"Test Payload QoS = 0. annon. function callback. ">>), 
+	?debug_Fmt("::test:: publish (QoS = 2) returns: ~p",[R5_0]),
+
+	R2 = mqtt_client:subscribe(Subscriber, [{"AKtest", 2, {?MODULE, callback}}]), 
+	?debug_Fmt("::test:: subscribe returns: ~p",[R2]),
+	R3 = mqtt_client:publish(Publisher, #publish{topic = "AKtest"}, <<"Test Payload QoS = 0.">>), 
+	?debug_Fmt("::test:: publish (QoS = 0) returns: ~p",[R3]),
+
+	case wait_all(4) of
+		ok -> ?debug_Fmt("::test:: all done received.",[]);
+		fail -> ?assert(false)
+	end,
+	
+	case wait_all(1) of
+		fail -> ?debug_Fmt("::test:: no done received.",[]);
+		ok -> ?assert(false)
+	end,
+	
+	unregister(test_result),
+
+	?PASSED
+end}.
+
 connect(_, Conn) -> {timeout, 100, fun() ->
+  ?debug_Fmt("::test:: connect : ~p", [Conn]),
 	register(test_result, self()),
 	timer:sleep(1000),
 	R1 = mqtt_client:pingreq(Conn, {?MODULE, ping_callback}), 
@@ -238,7 +393,7 @@ subs_filter(_, Conn) -> fun() ->
 end.
 
 callback(Arg) ->
-  ?debug_Fmt("::test:: callback: ~p",[Arg]),
+  ?debug_Fmt("::test:: ~p:callback: ~p",[?MODULE, Arg]),
 	test_result ! done.
 
 ping_callback(Arg) ->
