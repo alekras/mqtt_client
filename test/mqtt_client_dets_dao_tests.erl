@@ -64,6 +64,7 @@ do_start() ->
 	mqtt_client_dets_dao:start().
 
 do_stop(X) ->
+	dets:delete_all_objects(session_db),
 	mqtt_client_dets_dao:close(),
 	?debug_Fmt("::test:: clean up ~p", [X]).	
 
@@ -73,9 +74,11 @@ create() ->
 	mqtt_client_dets_dao:save(#storage_publish{key = #primary_key{client_id = orange, packet_id = 101}, document = #publish{topic = "AK", payload = <<"Payload orange 1">>}}),
 	mqtt_client_dets_dao:save(#storage_publish{key = #primary_key{client_id = lemon, packet_id = 10101}, document = #publish{topic = "AK", payload = <<"Payload 2">>}}),
 	mqtt_client_dets_dao:save(#storage_publish{key = #primary_key{client_id = lemon, packet_id = 201}, document = #publish{topic = "AK", payload = <<"Payload 3">>}}),
+	mqtt_client_dets_dao:save(#storage_publish{key = #primary_key{client_id = orange, topic = "AKtest"}, document = {0, {erlang, timestamp}}}),
+	mqtt_client_dets_dao:save(#storage_publish{key = #primary_key{client_id = lemon, topic = "Winter/December"}, document = {1, {length}}}),
 	R = dets:match_object(session_db, #storage_publish{_ = '_'}),
 	?debug_Fmt("::test:: after create ~p", [R]),	
-	?assertEqual(4, length(R)),
+	?assertEqual(6, length(R)),
 	?PASSED.
 	
 read() ->
@@ -89,7 +92,7 @@ read_all() ->
 	?debug_Msg("::test:: read ALL."),
 	R = mqtt_client_dets_dao:get_all(lemon),
 	?debug_Fmt("::test:: read returns ~120p", [R]),	
-	?assertEqual(3, length(R)),
+	?assertEqual(4, length(R)),
   ?PASSED.
 	
 update() ->
@@ -109,6 +112,6 @@ delete() ->
 	mqtt_client_dets_dao:remove(#primary_key{client_id = lemon, packet_id = 101}),
 	R = dets:match_object(session_db, #storage_publish{_ = '_'}),
 	?debug_Fmt("::test:: after delete ~p", [R]),	
-	?assertEqual(3, length(R)),
+	?assertEqual(5, length(R)),
   ?PASSED.
 

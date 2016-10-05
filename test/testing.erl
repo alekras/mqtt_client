@@ -47,7 +47,7 @@ do_stop(_R) ->
   ?debug_Fmt("::test:: stop app return: ~p",[R]).
 
 do_setup({_, publish} = X) ->
-  ?debug_Fmt("::test:: setup before: ~p~n",[X]),
+  ?debug_Fmt("~n::test:: setup before: ~p",[X]),
 	P = mqtt_client:connect(
 		publisher, 
 		#connect{
@@ -81,8 +81,43 @@ do_setup({_, publish} = X) ->
 		[]
 	),
 	[P,S];
+do_setup({_, session} = X) ->
+  ?debug_Fmt("~n::test:: setup before: ~p",[X]),
+	P = mqtt_client:connect(
+		publisher, 
+		#connect{
+			client_id = "publisher",
+			user_name = "guest",
+			password = <<"guest">>,
+			will = 0,
+			will_message = <<>>,
+			will_topic = [],
+			clean_session = 0,
+			keep_alive = 60000
+		}, 
+		"localhost", 
+		?TEST_SERVER_PORT, 
+		[]
+	),
+		S = mqtt_client:connect(
+		subscriber, 
+		#connect{
+			client_id = "subscriber",
+			user_name = "guest",
+			password = <<"guest">>,
+			will = 0,
+			will_message = <<>>,
+			will_topic = [],
+			clean_session = 0,
+			keep_alive = 60000
+		}, 
+		"localhost", 
+		?TEST_SERVER_PORT, 
+		[]
+	),
+	[P,S];
 do_setup(X) ->
-  ?debug_Fmt("::test:: setup before: ~p~n",[X]),
+  ?debug_Fmt("~n::test:: setup before: ~p",[X]),
 	mqtt_client:connect(
 		test_cli, 
 		#connect{
@@ -103,10 +138,14 @@ do_setup(X) ->
 do_cleanup({_, publish} = X, [P, S] = Pid) ->
 	R1 = mqtt_client:disconnect(P),
 	R2 = mqtt_client:disconnect(S),
-  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~p~n",[X, Pid, {R1, R2}]);
+  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[X, Pid, {R1, R2}]);
+do_cleanup({_, session} = X, [P, S] = Pid) ->
+	R1 = mqtt_client:disconnect(P),
+	R2 = mqtt_client:disconnect(S),
+  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[X, Pid, {R1, R2}]);
 do_cleanup(X, Pid) ->
 	R = mqtt_client:disconnect(test_cli),
-  ?debug_Fmt("::test:: teardown after: ~p  pid=~p  disconnect returns=~p~n",[X, Pid, R]).
+  ?debug_Fmt("::test:: teardown after: ~p  pid=~p  disconnect returns=~150p",[X, Pid, R]).
 
 get_connect_rec() ->
 	#connect{
@@ -120,9 +159,20 @@ get_connect_rec() ->
 		keep_alive = 1000
 	}.
 
-wait_all(0) -> ok;
 wait_all(N) ->
+	case wait_all(N, 0) of
+		{ok, M} -> ?debug_Fmt("::test:: all ~p done received.", [M]);
+		{fail, T} -> ?debug_Fmt("::test:: ~p done have not received.", [N - T]), ?assert(false)
+	end,
+	
+	case wait_all(N, 0) of
+		{fail, Z} -> ?debug_Fmt("::test:: ~p additional done received.", [Z]);
+		{ok, R} -> ?debug_Fmt("::test:: ~p unexpected done received.", [R]), ?assert(false)
+	end.
+
+wait_all(0, M) -> {ok, M};
+wait_all(N, M) ->
 	receive
-		done -> wait_all(N - 1)
-	after 1000 -> fail
+		done -> wait_all(N - 1, M + 1)
+	after 1000 -> {fail, M}
 	end.

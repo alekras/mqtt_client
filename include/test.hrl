@@ -15,7 +15,6 @@
 %%
 
 -define(TEST_SERVER_HOST_NAME, "localhost").
--define(TEST_DB_NAME, "eunitdb").
 -define(TEST_USER, "guest").
 -define(TEST_PASSWORD, <<"guest">>).
 %-define(TEST_SERVER_PORT, 1883). %% RabbitMQ

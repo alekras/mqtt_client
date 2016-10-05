@@ -20,7 +20,6 @@
 %% @version {@version}
 %% @doc @todo Add description to mqtt_client.
 
-
 -module(mqtt_client).
 -behaviour(application).
 
@@ -36,9 +35,11 @@
 %% ====================================================================
 -export([
 	connect/5,
+	connect/6,
 	status/1,
 %%	close/1,
 %%  connect/2,
+	publish/2,
 	publish/3,
 	subscribe/2,
 	unsubscribe/2,
@@ -47,17 +48,18 @@
 ]).
 
 connect(Connection_id, Conn_config, Host, Port, Socket_options) ->
+  connect(Connection_id, Conn_config, Host, Port, undefined, Socket_options).
+
+connect(Connection_id, Conn_config, Host, Port, Default_Callback, Socket_options) ->
 	case mqtt_client_sup:new_connection(Connection_id, Host, Port, Socket_options) of
 		{ok, Pid} ->
-			{ok, Ref} = gen_server:call(Pid, {connect, Conn_config}, ?GEN_SERVER_TIMEOUT),
+			{ok, Ref} = gen_server:call(Pid, {connect, Conn_config, Default_Callback}, ?GEN_SERVER_TIMEOUT),
 			receive
-				{connectack, Ref, 0, Msg} -> 
-%					io:format(user, " >>> received connectack ~p~n", [Msg]), %% @todo check sesion present flag
-					io:format(user, " >>> client ~p/~p connected with response: ~p, ~n", [Pid, Conn_config, Msg]),
+				{connectack, Ref, SP, 0, Msg} -> 
+%					io:format(user, " >>> client ~p/~p session present: ~p connected with response: ~p, ~n", [Pid, Conn_config, SP, Msg]),
 					Pid;
-				{connectack, Ref, ErrNo, Msg} -> 
-%					io:format(user, " >>> received connectack ~p~n", [Msg]), %% @todo check sesion present flag
-					io:format(user, " >>> client ~p connected with response: ~p, ~n", [Pid, Msg]),
+				{connectack, Ref, _, ErrNo, Msg} -> 
+%					io:format(user, " >>> client ~p connected with response: ~p, ~n", [Pid, Msg]),
 					#mqtt_client_error{type = connection, errno = ErrNo, source = "mqtt_client:conect/5", message = Msg}
 			after ?GEN_SERVER_TIMEOUT ->
 					#mqtt_client_error{type = connection, source = "mqtt_client:conect/5", message = "timeout"}
@@ -77,61 +79,62 @@ status(Pid) ->
 			end;
 		false -> disconnected
 	end.
-%% close(Client_id) -> %% Is it really need ?
-%% 	mqtt_client_sup:close_connection(Client_id).
 
-%% connect(Pid, Conn_config) -> 
-%% 	{ok, Ref} = gen_server:call(Pid, {connect, Conn_config}, ?GEN_SERVER_TIMEOUT),
-%% 	receive
-%% 		{connectack, Ref, Msg} -> 
-%% %			io:format(user, " >>> received connectack ~p~n", [Msg]), 
-%% 		{ok, Msg}
-%% 	end.
-
-publish(Pid, Params, Payload) -> 
+publish(Pid, Params, Payload) ->
+  publish(Pid, Params#publish{payload = Payload}).	
+	
+publish(Pid, Params) -> 
 	case Params#publish.qos of
 		0 ->
-			gen_server:call(Pid, {publish, Params, Payload}, ?GEN_SERVER_TIMEOUT);
+			ok = gen_server:call(Pid, {publish, Params}, ?GEN_SERVER_TIMEOUT);
 		1 ->
-			{ok, Ref} = gen_server:call(Pid, {publish, Params, Payload}, ?GEN_SERVER_TIMEOUT),
+			{ok, Ref} = gen_server:call(Pid, {publish, Params}, ?GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
 			receive
 				{puback, Ref} -> 
 %					io:format(user, " >>> received puback ~p~n", [Ref]), 
 					{puback}
+			after ?GEN_SERVER_TIMEOUT ->
+				#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = "puback timeout"}
 			end;
 		2 ->
-			{ok, Ref} = gen_server:call(Pid, {publish, Params, Payload}, ?GEN_SERVER_TIMEOUT),
+			{ok, Ref} = gen_server:call(Pid, {publish, Params}, ?GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
 			receive
 				{pubcomp, Ref} -> 
 %					io:format(user, " >>> received pubcomp ~p~n", [Ref]),
 					{pubcomp}
+			after ?GEN_SERVER_TIMEOUT ->
+				#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = "pubcomp timeout"}
 			end
 	end.
 
 subscribe(Pid, Subscriptions) ->
-	{ok, Ref} = gen_server:call(Pid, {subscribe, Subscriptions}, ?GEN_SERVER_TIMEOUT),
+	{ok, Ref} = gen_server:call(Pid, {subscribe, Subscriptions}, ?GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
 	receive
 		{suback, Ref, RC} -> 
 %			io:format(user, " >>> received suback ~p~n", [RC]), 
 			{suback, RC}
+%			after ?GEN_SERVER_TIMEOUT -> @todo
 	end.
 
 unsubscribe(Pid, Topics) ->
-	{ok, Ref} = gen_server:call(Pid, {unsubscribe, Topics}, ?GEN_SERVER_TIMEOUT),
+	{ok, Ref} = gen_server:call(Pid, {unsubscribe, Topics}, ?GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
 	receive
 		{unsuback, Ref} -> 
 %			io:format(user, " >>> received unsuback ~p~n", [Ref]), 
 			{unsuback}
+%			after ?GEN_SERVER_TIMEOUT -> @todo
 	end.
 
 pingreq(Pid, Callback) -> 
 	gen_server:call(Pid, {ping, Callback}, ?GEN_SERVER_TIMEOUT).
 
-disconnect(Client_id) -> %% @todo arg = Pid
+disconnect(Pid) ->
 	try 
-  	gen_server:call(Client_id, disconnect, ?GEN_SERVER_TIMEOUT)
+  	gen_server:call(Pid, disconnect, ?GEN_SERVER_TIMEOUT)
 	catch
-    exit:R -> io:format(user, " >>> disconnect ~p~n", [R])
+    exit:_R -> 
+%			io:format(user, " >>> disconnect: exit reason ~p~n", [_R]),
+			ok
 	end.
 % 	ok = mqtt_client_sup:close_connection(Client_id).
 

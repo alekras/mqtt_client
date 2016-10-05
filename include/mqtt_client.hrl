@@ -8,7 +8,7 @@
     will :: binary(),
     will_topic :: string(),
     will_message :: binary(),
-    clean_session = true :: boolean(),
+    clean_session = 1 :: 0 | 1,
     keep_alive :: integer()
   }
 ).
@@ -27,27 +27,31 @@
 -record(primary_key,
 	{
 		client_id :: string(),
-		packet_id :: integer()
+		packet_id = 0 :: integer(),
+		topic = [] :: string()
 	}
 ).
 
 -record(storage_publish,
 	{
     key :: #primary_key{},
-		document :: #publish{} 
+		document :: #publish{} | tuple()
 	}
 ).
 
 -record(connection_state, 
   { socket :: port(),
-		storage = dets_dao :: atom(),
+		config :: #connect{},
+		storage = mqtt_client_dets_dao :: atom(),
+		default_callback :: tuple(),
 		session_present :: 0 | 1,
 		connected = 0 :: 0 | 1,
 		packet_id = 100 :: integer(),
 		subscriptions = #{} :: map(), %% @todo keep in persistance storage
 		processes = #{} :: map(), %% @todo keep in persistance storage
 		tail = <<>> :: binary(),
-		ping_count = 0 :: integer()
+		ping_count = 0 :: integer(),
+		test_flag :: atom() %% for testing only
   }
 ).
 
@@ -73,7 +77,7 @@
 -define(RECV_TIMEOUT, 60000).
 -define(SEND_TIMEOUT, 60000).
 -define(CONN_TIMEOUT, 60000).
--define(GEN_SERVER_TIMEOUT, 300000).
+-define(GEN_SERVER_TIMEOUT, 1000).
 
 -define(CONNECT_PACK_TYPE, 16#10:8).
 -define(CONNACK_PACK_TYPE, 16#20:8).
@@ -90,3 +94,4 @@
 -define(PINGRESP_PACK_TYPE, 16#D0:8).
 -define(DISCONNECT_PACK_TYPE, 16#E0:8).
 
+-define(ELSE, true).

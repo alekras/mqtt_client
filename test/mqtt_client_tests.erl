@@ -42,7 +42,7 @@
 %%
 mqtt_client_test_() ->
   [ 
-%       {module, mqtt_client_unit_testing},
+    {module, mqtt_client_unit_testing},
     { setup, 
       fun testing:do_start/0, 
       fun testing:do_stop/1, 
@@ -52,11 +52,16 @@ mqtt_client_test_() ->
           fun testing:do_setup/1, 
           fun testing:do_cleanup/2, 
           [
+            {{1, combined}, fun combined/2},
+            {{1, subs_list}, fun subs_list/2},
+            {{1, subs_filter}, fun subs_filter/2},
             {{1, publish}, fun publish_0/2},
             {{2, publish}, fun publish_1/2},
-            {{3, publish}, fun publish_2/2}%,
-%%             {{3, subs_list}, fun subs_list/2},
-%%             {{4, subs_filter}, fun subs_filter/2}
+            {{3, publish}, fun publish_2/2},
+            {{1, session}, fun session:session_1/2},
+            {{2, session}, fun session:session_1/2},
+            {{3, session}, fun session:session_1/2},
+            {{4, session}, fun session:session_1/2}
           ]
         }
       ]}
@@ -191,15 +196,7 @@ publish_0(_, [Publisher, Subscriber] = Conns) -> {timeout, 100, fun() ->
 	R4 = mqtt_client:publish(Publisher, #publish{topic = binary_to_list(<<"AK",0,0,0,"test">>), qos = 2}, <<"Test Payload QoS = 0.">>), 
 	?debug_Fmt("::test:: publish (QoS = 0) returns: ~p",[R4]),
 
-	case wait_all(4) of
-		ok -> ?debug_Fmt("::test:: all done received.",[]);
-		fail -> ?assert(false)
-	end,
-	
-	case wait_all(1) of
-		fail -> ?debug_Fmt("::test:: no done received.",[]);
-		ok -> ?assert(false)
-	end,
+	wait_all(4),
 	
 	unregister(test_result),
 
@@ -224,15 +221,7 @@ publish_1(_, [Publisher, Subscriber] = Conns) -> {timeout, 100, fun() ->
 	R3 = mqtt_client:publish(Publisher, #publish{topic = "AKtest"}, <<"Test Payload QoS = 0.">>), 
 	?debug_Fmt("::test:: publish (QoS = 0) returns: ~p",[R3]),
 
-	case wait_all(4) of
-		ok -> ?debug_Fmt("::test:: all done received.",[]);
-		fail -> ?assert(false)
-	end,
-	
-	case wait_all(1) of
-		fail -> ?debug_Fmt("::test:: no done received.",[]);
-		ok -> ?assert(false)
-	end,
+	wait_all(4),
 	
 	unregister(test_result),
 
@@ -263,22 +252,14 @@ publish_2(_, [Publisher, Subscriber] = Conns) -> {timeout, 100, fun() ->
 	R3 = mqtt_client:publish(Publisher, #publish{topic = "AKtest"}, <<"Test Payload QoS = 0.">>), 
 	?debug_Fmt("::test:: publish (QoS = 0) returns: ~p",[R3]),
 
-	case wait_all(4) of
-		ok -> ?debug_Fmt("::test:: all done received.",[]);
-		fail -> ?assert(false)
-	end,
-	
-	case wait_all(1) of
-		fail -> ?debug_Fmt("::test:: no done received.",[]);
-		ok -> ?assert(false)
-	end,
+	wait_all(4),
 	
 	unregister(test_result),
 
 	?PASSED
 end}.
 
-connect(_, Conn) -> {timeout, 100, fun() ->
+combined(_, Conn) -> {timeout, 100, fun() ->
   ?debug_Fmt("::test:: connect : ~p", [Conn]),
 	register(test_result, self()),
 	timer:sleep(1000),
@@ -313,15 +294,7 @@ connect(_, Conn) -> {timeout, 100, fun() ->
 %	R12 = mqtt_client:disconnect(Conn), 
 %	?debug_Fmt("::test:: disconnect returns: ~p",[R12]),
 
-	case wait_all(9) of
-		ok -> ?debug_Fmt("::test:: all done received.",[]);
-		fail -> ?assert(false)
-	end,
-	
-	case wait_all(1) of
-		fail -> ?debug_Fmt("::test:: no done received.",[]);
-		ok -> ?assert(false)
-	end,
+	wait_all(9),
 	
 	unregister(test_result),
 
@@ -345,15 +318,7 @@ subs_list(_, Conn) -> {timeout, 100, fun() ->
 %	R12 = mqtt_client:disconnect(Conn), 
 %	?debug_Fmt("::test:: disconnect returns: ~p",[R12]),
 
-	case wait_all(3) of
-		ok -> ?debug_Fmt("::test:: all done received.",[]);
-		fail -> ?assert(false)
-	end,
-	
-	case wait_all(1) of
-		fail -> ?debug_Fmt("::test:: no done received.",[]);
-		ok -> ?assert(false)
-	end,
+	wait_all(3),
 	
 	unregister(test_result),
 	?PASSED
@@ -378,15 +343,7 @@ subs_filter(_, Conn) -> fun() ->
 %	R12 = mqtt_client:disconnect(Conn), 
 %	?debug_Fmt("::test:: disconnect returns: ~p",[R12]),
 
-	case wait_all(3) of
-		ok -> ?debug_Fmt("::test:: all done received.",[]);
-		fail -> ?assert(false)
-	end,
-	
-	case wait_all(1) of
-		fail -> ?debug_Fmt("::test:: no done received.",[]);
-		ok -> ?assert(false)
-	end,
+	wait_all(3),
 	
 	unregister(test_result),
 	?PASSED

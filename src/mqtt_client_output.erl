@@ -48,14 +48,14 @@
 packet(connect, Conn_config) ->
 	Remaining_packet = <<(variable_header(connect, Conn_config))/binary, (payload(connect, Conn_config))/binary>>,
 	<<(fixed_header(connect, 0, byte_size(Remaining_packet)))/binary, Remaining_packet/binary>>;
-packet(publish, {Params, Payload}) ->
+packet(publish, #publish{payload = Payload} = Params) ->
 	Remaining_packet = <<(variable_header(publish, {Params#publish.topic}))/binary, 
 											 (payload(publish, Payload))/binary>>,
 	<<(fixed_header(publish, 
 								 {Params#publish.dup, Params#publish.qos, Params#publish.retain}, 
 								 byte_size(Remaining_packet)))/binary, 
 								 Remaining_packet/binary>>;
-packet(publish, {Params, Payload, Packet_Id}) ->
+packet(publish, {#publish{payload = Payload} = Params, Packet_Id}) ->
 	Remaining_packet = <<(variable_header(publish, {Params#publish.topic, Packet_Id}))/binary, 
 												(payload(publish, Payload))/binary>>,
 	<<(fixed_header(publish, 

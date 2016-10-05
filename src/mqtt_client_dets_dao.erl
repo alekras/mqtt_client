@@ -36,7 +36,9 @@
 	save/1,
 	remove/1,
 	get/1,
-	get_all/1
+	get_all/1,
+  cleanup/1,
+  exist/1
 ]).
 
 start() ->
@@ -54,7 +56,7 @@ save(#storage_publish{key = Key} = Document) ->
 			io:format(user, "Insert failed: ~p; reason ~p~n", [Key, Reason]),
 			false;
 		ok ->
-			io:format(user, "Insert: ~p~n", [Key]),
+%			io:format(user, "Insert: ~p~n", [Key]),
 			true
 	end.
 
@@ -82,6 +84,22 @@ get_all(ClientId) ->
 		{error, Reason} -> 
 			io:format(user, "match_object failed: ~p~n", [Reason]),
 			[];
+		R -> R
+	end.
+
+cleanup(ClientId) ->
+	case dets:match_delete(session_db, #storage_publish{key = #primary_key{client_id = ClientId, _ = '_'}, _ = '_'}) of 
+		{error, Reason} -> 
+			io:format(user, "match_delete failed: ~p~n", [Reason]),
+			ok;
+		ok -> ok
+	end.
+
+exist(Key) ->
+	case dets:member(session_db, Key) of
+		{error, Reason} ->
+			io:format(user, "Exist failed: key=~p reason=~p~n", [Key, Reason]),
+			false;
 		R -> R
 	end.
 
