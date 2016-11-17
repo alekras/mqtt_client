@@ -61,7 +61,8 @@ dets_dao_test_() ->
 	].
 
 do_start() ->
-	mqtt_client_dets_dao:start().
+	mqtt_client_dets_dao:start(),
+	dets:delete_all_objects(session_db).
 
 do_stop(X) ->
 	dets:delete_all_objects(session_db),

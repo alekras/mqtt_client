@@ -20,7 +20,6 @@
 %% @version {@version}
 %% @doc @todo Add description to mqtt_client_connection.
 
-
 -module(mqtt_client_connection).
 -behaviour(gen_server).
 %%
@@ -46,7 +45,7 @@
 -import(mqtt_client_output, [packet/2]).
 -import(mqtt_client_input, [input_parser/1]).
 
-open_socket(Host, Port, _Options) ->
+open_socket(Host, Port, Options) ->
   case 
     try
       gen_tcp:connect(
@@ -58,7 +57,7 @@ open_socket(Host, Port, _Options) ->
           {packet, 0}, 
           {recbuf, ?BUFFER_SIZE}, 
           {sndbuf, ?BUFFER_SIZE}, 
-          {send_timeout, ?SEND_TIMEOUT}
+          {send_timeout, ?SEND_TIMEOUT} | Options
         ], 
         ?CONN_TIMEOUT
       )
@@ -75,9 +74,9 @@ open_socket(Host, Port, _Options) ->
 %% Behavioural functions
 %% ====================================================================
 
-%% init/1
 %% ====================================================================
 %% @doc <a href="http://www.erlang.org/doc/man/gen_server.html#Module:init-1">gen_server:init/1</a>
+%% @private
 -spec init(Args :: term()) -> Result when
 	Result :: {ok, State}
 			| {ok, State, Timeout}
@@ -89,7 +88,6 @@ open_socket(Host, Port, _Options) ->
 %% ====================================================================
 init({Host, Port, Options}) ->
 %	io:format(user, " >>> init connection ~p:~p ~p~n", [Host, Port, Options]),
-	%% @todo check input parameters
 	case R = open_socket(Host, Port, Options) of
 		#mqtt_client_error{} -> {stop, R};
 		_ -> {ok, #connection_state{socket = R}}
@@ -98,6 +96,7 @@ init({Host, Port, Options}) ->
 %% handle_call/3
 %% ====================================================================
 %% @doc <a href="http://www.erlang.org/doc/man/gen_server.html#Module:handle_call-3">gen_server:handle_call/3</a>
+%% @private
 -spec handle_call(Request :: term(), From :: {pid(), Tag :: term()}, State :: term()) -> Result when
 	Result :: {reply, Reply, NewState}
 			| {reply, Reply, NewState, Timeout}
@@ -140,10 +139,10 @@ handle_call({set_test_flag, Flag}, _From, State) ->
 %	io:format(user, " >>> set_test_flag request ~p~n", [Flag]),
 	{reply, ok, State#connection_state{test_flag = Flag}};
 
-handle_call({publish, #publish{qos = 0} = Params}, _From, State) ->
+handle_call({publish, #publish{qos = 0} = Params}, {_, Ref}, State) ->
 %	io:format(user, " >>> publish request ~p, ~p, ~p~n", [Params, Payload, State]),
 	gen_tcp:send(State#connection_state.socket, packet(publish, Params)),
-	{reply, ok, State};
+	{reply, {ok, Ref}, State};
 
 handle_call({publish, #publish{qos = QoS} = Params}, {_, Ref} = From, State) when (QoS =:= 1) orelse (QoS =:= 2) ->
 %	io:format(user, " >>> publish request ~p, ~p, ~p~n", [Params, Payload, State]),
@@ -215,9 +214,9 @@ handle_call({ping, Callback}, _From, State) ->
     {error, Reason} -> {reply, {error, Reason}, State}
   end.
 
-%% handle_cast/2
 %% ====================================================================
 %% @doc <a href="http://www.erlang.org/doc/man/gen_server.html#Module:handle_cast-2">gen_server:handle_cast/2</a>
+%% @private
 -spec handle_cast(Request :: term(), State :: term()) -> Result when
 	Result :: {noreply, NewState}
 			| {noreply, NewState, Timeout}
@@ -229,9 +228,9 @@ handle_call({ping, Callback}, _From, State) ->
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
-%% handle_info/2
 %% ====================================================================
 %% @doc <a href="http://www.erlang.org/doc/man/gen_server.html#Module:handle_info-2">gen_server:handle_info/2</a>
+%% @private
 -spec handle_info(Info :: timeout | term(), State :: term()) -> Result when
 	Result :: {noreply, NewState}
 			| {noreply, NewState, Timeout}
@@ -257,9 +256,9 @@ handle_info(Info, State) ->
 	end.
 
 	
-%% terminate/2
 %% ====================================================================
 %% @doc <a href="http://www.erlang.org/doc/man/gen_server.html#Module:terminate-2">gen_server:terminate/2</a>
+%% @private
 -spec terminate(Reason, State :: term()) -> Any :: term() when
 	Reason :: normal
 			| shutdown
@@ -270,9 +269,9 @@ terminate(_Reason, _State) ->
 %	io:format(user, " >>> terminate ~p~n~p~n", [_Reason, _State]),
 	ok.
 
-%% code_change/3
 %% ====================================================================
 %% @doc <a href="http://www.erlang.org/doc/man/gen_server.html#Module:code_change-3">gen_server:code_change/3</a>
+%% @private
 -spec code_change(OldVsn, State :: term(), Extra :: term()) -> Result when
 	Result :: {ok, NewState :: term()} | {error, Reason :: term()},
 	OldVsn :: Vsn | {down, Vsn},
@@ -309,6 +308,9 @@ socket_stream_process(State, Binary) ->
 				{Pid, {M, F}} ->
 					Pid ! {pong, State},
 					spawn(M, F, [pong]);
+				{Pid, {F}} ->
+					Pid ! {pong, State},
+					spawn(fun() -> apply(F, [pong]) end);
 				_ -> true
 			end,
 			socket_stream_process(
@@ -553,7 +555,6 @@ do_callback(Callback, Args) ->
 	  {F} -> spawn(fun() -> apply(F, Args) end);
 		_ -> false
   end.
-	
 	
 restore_session(State, Conn_config) ->
  	Records = (State#connection_state.storage):get_all(Conn_config#connect.client_id),

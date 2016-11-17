@@ -1,0 +1,120 @@
+%%
+%% Copyright (C) 2015-2016 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%%
+%% Licensed under the Apache License, Version 2.0 (the "License");
+%% you may not use this file except in compliance with the License.
+%% You may obtain a copy of the License at
+%%
+%%     http://www.apache.org/licenses/LICENSE-2.0
+%%
+%% Unless required by applicable law or agreed to in writing, software
+%% distributed under the License is distributed on an "AS IS" BASIS,
+%% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+%% See the License for the specific language governing permissions and
+%% limitations under the License. 
+%%
+
+@title MQTT client for Erlang.
+@author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org]
+@copyright 2015-2016 Alexei Krasnopolski
+@since 2016-10-05
+@version {@version}
+@doc 
+<h3>Introduction</h3>
+The client allows to connect to MQTT server and send/receive messages according to MQTT messaging protokol version 3.1.1.
+The client is written in Erlang. 
+The client was tested with RabbitMQ and Mosquitto server on Windows/Linux/MacOSX boxes.
+
+<h3>Architecture</h3>
+MQTT client is an OTP application. Top level component is supervisor
+that is monitoring a child connection processes. Session state data are storing in database (DETS in current version)
+
+<h3>Getting started</h3>
+To start with the client you have to complete two steps below:
+<ol>
+<li>Install Mosquitto [https://mosquitto.org/] or RabbitMQ (with MQTT plugin) [https://www.rabbitmq.com/] server.</li>
+<li>Install Erlang [http://www.erlang.org/download.html].</li>
+</ol>
+
+Next step is running the examples. Suppose you install Mosquitto MQTT server as 'localhost' that opened 1883 port for listening a TCP/IP connections from clients.
+You have to setup 'quest' account with 'guest' password.
+<ul>
+<li>Start Erlang shell.</li>
+<li>Set up current directory with eshell command <code>c:cd(".../ebin")</code>.</li>
+</ul>
+<pre>
+1> <span>c:cd("/Users/alexei/eclipse-workspace/erl.mqtt.client/ebin").</span>
+/Users/alexei/eclipse-workspace/erl.mqtt.client/ebin
+ok
+</pre>
+
+First at all we need to start application 'mqtt_client' that represents describing client.
+<pre>
+2> <span>application:start(mqtt_client).</span>
+ok
+</pre> 
+Load records definitions to console environment to make our next steps more clear:
+<pre>
+3> <span>rr("../include/mqtt_client.hrl").</span>
+[connect,connection_state,mqtt_client_error,primary_key,
+ publish,storage_publish]
+</pre> 
+Assign record #connect{} to Conn_def value:
+<pre>
+4> <span>Conn_def = #connect{</span>
+4> <span>client_id = "publisher",</span> 
+4> <span>user_name = "guest",</span>
+4> <span>password = &lt;&lt;"guest"&gt;&gt;,</span>
+4> <span>will = 0,</span>
+4> <span>will_message = &lt;&lt;&gt;&gt;,</span>
+4> <span>will_topic = "",</span>
+4> <span>clean_session = 1,</span>
+4> <span>keep_alive = 1000</span>
+4> <span>}.</span>
+#connect{client_id = "publisher",user_name = "guest",
+         password = &lt;&lt;"guest"&gt;&gt;,will_retain = false,will_qos = 0,
+         will = 0,will_topic = [],will_message = &lt;&lt;&gt;&gt;,
+         clean_session = 1,keep_alive = 1000}
+</pre>
+And finally create new connection to MQTT server:
+<pre>
+5> <span>PubCon = mqtt_client:connect(publisher, Conn_def, "localhost", 1883, []).</span>
+&lt;0.77.0&gt;
+</pre>
+We have connection PubCon to MQTT server now. Let's create one more client's connection with different client Id:
+<pre>
+6> <span>Conn_def_2 = Conn_def#connect{client_id = "subscriber"}.</span>
+#connect{client_id = "subscriber",user_name = "guest",
+         password = &lt;&lt;"guest"&gt;&gt;,will_retain = false,will_qos = 0,
+         will = 0,will_topic = [],will_message = &lt;&lt;&gt;&gt;,
+         clean_session = 1,keep_alive = 1000}
+7> <span>SubCon = mqtt_client:connect(subscriber, Conn_def_2, "localhost", 2883, []).</span>
+&lt;0.116.0&gt;
+</pre>
+To finish set up of the connection we need to suscribe it to some topic for example "Test" topic. Before make subscription we
+need to define callback function. This function will act as 'application' from MQTT protokol terminology. When client recieves message
+from server's topic then callback function will be invoked and the message will be passed to it.
+ 
+<pre>
+8> <span>CBF = fun(Arg) -> io:format(user,"callback function: ~p",[Arg]) end.</span>
+#Fun&lt;erl_eval.6.52032458&gt;
+9> <span>mqtt_client:subscribe(SubCon, [{"Test", 1, {CBF}}]).</span>
+{suback,[1]}
+</pre>
+Now we can publish message to "Test" topic. After short moment subscriber recieves this message and fire callback function:
+<pre>
+10> <span>mqtt_client:publish(PubCon, #publish{topic = "Test"}, &lt;&lt;"Test Message Payload."&gt;&gt;).</span>
+ok
+11> callback function: {{"Test",1},0,&lt;&lt;"Test Message Payload."&gt;&gt;}
+</pre>
+Callback function arqument is a tuple of three elements. First element is topic description from which message is arrived.
+Second element is QoS of the message. Third element is message payload itself.
+<pre>
+Arg = {{Topic, Topic_QoS}, Message_QoS, Payload}
+</pre>
+
+@reference [https://mosquitto.org/] - Mosquitto MQTT server.
+@reference [https://www.rabbitmq.com/]] - RabbitMQ server with MQTT plugin.
+@reference [http://erlangcentral.org/wiki/index.php?title=] - article on Erlang Central.
+@see my 
+

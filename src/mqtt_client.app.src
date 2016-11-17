@@ -1,8 +1,14 @@
 {	application, mqtt_client,
 	[
     {description, "MQTT client"},
-    {vsn, "1.0.0"},
+    {vsn, "1.0.2"},
     {modules, [
+      mqtt_client,
+      mqtt_client_connection,
+      mqtt_client_sup,
+      mqtt_client_input,
+      mqtt_client_output,
+      mqtt_client_dets_dao
       ]
     },
     {registered, []},
