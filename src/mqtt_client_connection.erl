@@ -165,7 +165,7 @@ handle_call({publish, #publish{qos = QoS} = Params}, {_, Ref} = From, State) whe
   end;
 
 handle_call({republish, Params, Packet_Id}, {_, Ref} = From, State) ->
-	io:format(user, " >>> re-publish request ~p, PI: ~p.~n", [Params, Packet_Id]),
+%	io:format(user, " >>> re-publish request ~p, PI: ~p.~n", [Params, Packet_Id]),
 	Packet = packet(publish, {Params, Packet_Id}),
   case gen_tcp:send(State#connection_state.socket, Packet) of
     ok -> 
@@ -246,7 +246,7 @@ handle_info(Info, State) ->
 			New_State = socket_stream_process(State,<<(State#connection_state.tail)/binary, Binary/binary>>),
 			{noreply, New_State};
 		{tcp_closed, Socket} ->
-			io:format(user, " >>> handle_info tcp_closed for socket: ~p and PID: ~p.~nState:~p~n", [Socket, self(), State]),
+%			io:format(user, " >>> handle_info tcp_closed for socket: ~p and PID: ~p.~nState:~p~n", [Socket, self(), State]),
 			gen_tcp:close(Socket),
 			{stop, normal, State};
 %			{noreply, State};

@@ -39,15 +39,14 @@
 
 do_start() ->
   R = application:start(mqtt_client),
-  ?debug_Fmt("::test:: start app return: ~p",[R]).
+	?assertEqual(ok, R).
 
 do_stop(_R) ->
-  ?debug_Fmt("::test:: stop app ~p",[_R]),
   R = application:stop(mqtt_client),
-  ?debug_Fmt("::test:: stop app return: ~p",[R]).
+	?assertEqual(ok, R).
 
 do_setup({_, publish} = X) ->
-  ?debug_Fmt("~n::test:: setup before: ~p",[X]),
+%  ?debug_Fmt("~n::test:: setup before: ~p",[X]),
 	P = mqtt_client:connect(
 		publisher, 
 		#connect{
@@ -64,7 +63,7 @@ do_setup({_, publish} = X) ->
 		?TEST_SERVER_PORT, 
 		[]
 	),
-		S = mqtt_client:connect(
+	S = mqtt_client:connect(
 		subscriber, 
 		#connect{
 			client_id = "subscriber",
@@ -81,8 +80,8 @@ do_setup({_, publish} = X) ->
 		[]
 	),
 	[P,S];
-do_setup({_, session} = X) ->
-  ?debug_Fmt("~n::test:: setup before: ~p",[X]),
+do_setup({_, session} = _X) ->
+%  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	P = mqtt_client:connect(
 		publisher, 
 		#connect{
@@ -117,7 +116,7 @@ do_setup({_, session} = X) ->
 	),
 	[P,S];
 do_setup(X) ->
-  ?debug_Fmt("~n::test:: setup before: ~p",[X]),
+%  ?debug_Fmt("~n::test:: setup before: ~p",[X]),
 	mqtt_client:connect(
 		test_cli, 
 		#connect{
@@ -135,17 +134,21 @@ do_setup(X) ->
 		[]
 	).
 
-do_cleanup({_, publish} = X, [P, S] = Pid) ->
+do_cleanup({_, publish} = X, [P, S] = Pids) ->
 	R1 = mqtt_client:disconnect(P),
+	?assertEqual(ok, R1),
 	R2 = mqtt_client:disconnect(S),
-  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[X, Pid, {R1, R2}]);
-do_cleanup({_, session} = X, [P, S] = Pid) ->
+	?assertEqual(ok, R2);
+%  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[X, Pid, {R1, R2}]);
+do_cleanup({_, session} = X, [P, S] = Pids) ->
 	R1 = mqtt_client:disconnect(P),
+	?assertEqual(ok, R1),
 	R2 = mqtt_client:disconnect(S),
-  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[X, Pid, {R1, R2}]);
+	?assertEqual(ok, R2);
+%  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[X, Pid, {R1, R2}]);
 do_cleanup(X, Pid) ->
 	R = mqtt_client:disconnect(test_cli),
-  ?debug_Fmt("::test:: teardown after: ~p  pid=~p  disconnect returns=~150p",[X, Pid, R]).
+	?assertEqual(ok, R).
 
 get_connect_rec() ->
 	#connect{
@@ -161,13 +164,21 @@ get_connect_rec() ->
 
 wait_all(N) ->
 	case wait_all(N, 0) of
-		{ok, M} -> ?debug_Fmt("::test:: all ~p done received.", [M]);
-		{fail, T} -> ?debug_Fmt("::test:: ~p done have not received.", [N - T]), ?assert(false)
+		{ok, M} -> 
+%			?debug_Fmt("::test:: all ~p done received.", [M]),
+			?assert(true);
+		{fail, T} -> 
+			?debug_Fmt("::test:: ~p done have not received.", [N - T]), 
+			?assert(false)
 	end,
 	
 	case wait_all(N, 0) of
-		{fail, Z} -> ?debug_Fmt("::test:: ~p additional done received.", [Z]);
-		{ok, R} -> ?debug_Fmt("::test:: ~p unexpected done received.", [R]), ?assert(false)
+		{fail, Z} -> 
+%			?debug_Fmt("::test:: ~p additional done received.", [Z]),
+			?assert(true);
+		{ok, R} -> 
+			?debug_Fmt("::test:: ~p unexpected done received.", [R]), 
+			?assert(false)
 	end.
 
 wait_all(0, M) -> {ok, M};

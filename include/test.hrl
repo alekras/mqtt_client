@@ -22,10 +22,10 @@
 
 -define(debug_Msg(S),
 	(begin
-		io:fwrite(user, <<"~s\n">>, [S]),
-%		io:fwrite(<<"~s\n">>, [S]),
-		ok
+		timer:sleep(1),
+		io:fwrite(user, <<"~n~s">>, [S])
+%		io:fwrite(<<"~s\n">>, [S])
 	 end)).
 -define(debug_Fmt(S, As), (?debug_Msg(io_lib:format((S), (As))))).
--define(PASSED, (?debug_Msg("    +++ Passed"))).
-%%-define(PASSED, ok).
+-define(PASSED, (?debug_Msg("    +++ Passed "))).
+-define(passed, (?debug_Msg("    +++ Passed with "))).

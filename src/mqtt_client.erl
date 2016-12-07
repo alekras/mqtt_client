@@ -252,8 +252,8 @@ disconnect(Pid) ->
 	| {ok, Pid :: pid(), State :: term()}
 	| {error, Reason :: term()}.
 %% ====================================================================
-start(Type, StartArgs) ->
-  io:format(user, " >>> start application ~p ~p~n", [Type, StartArgs]),
+start(_Type, StartArgs) ->
+%  io:format(user, " >>> start application ~p ~p~n", [_Type, StartArgs]),
   case supervisor:start_link({local, mqtt_client_sup}, mqtt_client_sup, StartArgs) of
 		{ok, Pid} ->
 			{ok, Pid};
@@ -267,8 +267,8 @@ start(Type, StartArgs) ->
 -spec stop(State :: term()) ->  Any :: term().
 %% ====================================================================
 %% @private
-stop(State) ->
-  io:format(user, " <<< stop application ~p~n", [State]),
+stop(_State) ->
+%  io:format(user, " <<< stop application ~p~n", [_State]),
   ok.
 
 %% ====================================================================

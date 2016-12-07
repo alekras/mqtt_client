@@ -47,22 +47,20 @@
 
 unit_test_() ->
 	[ 
-		fun decode_remaining_length/0,
-		fun input_parser/0,
-		fun encode_remaining_length/0,
-		fun is_match/0
+		{"decode_remaining_length", fun decode_remaining_length/0},
+		{"input_parser", fun input_parser/0},
+		{"encode_remaining_length", fun encode_remaining_length/0},
+		{"is_match", fun is_match/0}
 	].
 
 decode_remaining_length() ->
-	?debug_Msg(">>> decode_remaining_length   "),	
 	?assertEqual({<<1, 1>>, 2}, mqtt_client_input:decode_remaining_length(<<2:8, 1:8, 1:8>>)),
 	?assertEqual({<<1, 1>>, 2049}, mqtt_client_input:decode_remaining_length(<<16#81:8, 16:8, 1:8, 1:8>>)),
 	?assertEqual({<<1, 1>>, 47489}, mqtt_client_input:decode_remaining_length(<<16#81:8, 16#f3:8, 2:8, 1:8, 1:8>>)),
 	?assertEqual({<<1, 1>>, 32110977}, mqtt_client_input:decode_remaining_length(<<16#81:8, 16#f3:8, 16#A7, 15:8, 1:8, 1:8>>)),
-  ?PASSED.
+	?passed.
 
 input_parser() ->
-	?debug_Msg(">>> input_parser   "),	
 	?assertEqual({connectack, 1, 0, "0x00 Connection Accepted", <<1:8, 1:8>>}, 
 							 mqtt_client_input:input_parser(<<16#20:8, 2:8, 1:8, 0:8, 1:8, 1:8>>)),
 	?assertEqual({publish, 0, 0, "Topic", <<1:8, 2:8, 3:8, 4:8, 5:8, 6:8>>, <<1:8, 1:8>>}, 
@@ -85,19 +83,18 @@ input_parser() ->
 							 mqtt_client_input:input_parser(<<16#B0:8, 2:8, 103:16, 1:8, 1:8>>)),
 	?assertEqual({pingresp, <<1:8, 1:8>>}, 
 							 mqtt_client_input:input_parser(<<16#D0:8, 0:8, 1:8, 1:8>>)),
-	
-  ?PASSED.
+	?passed.
 
 encode_remaining_length() ->
-	?debug_Msg(">>> encode_remaining_length   "),	
 	?assertEqual(<<45>>, mqtt_client_output:encode_remaining_length(45)),
 	?assertEqual(<<161,78>>, mqtt_client_output:encode_remaining_length(10017)),
 	?assertEqual(<<142,145,82>>, mqtt_client_output:encode_remaining_length(1345678)),
 	?assertEqual(<<206,173,133,85>>, mqtt_client_output:encode_remaining_length(178345678)),
-  ?PASSED.
+  ?passed.
 
 is_match() ->
 	?assert(mqtt_client_connection:is_match("Winter/Feb/23", "Winter/+/23")),
 	?assert(mqtt_client_connection:is_match("Season/Spring/Month/March/25", "Season/+/Month/+/25")),
 	?assert(mqtt_client_connection:is_match("Winter/Feb/23", "Winter/#")),
-	?assert(mqtt_client_connection:is_match("/Feb/23", "/+/23")).
+	?assert(mqtt_client_connection:is_match("/Feb/23", "/+/23")),
+	?passed.
