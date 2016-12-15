@@ -3,7 +3,7 @@
     client_id :: string(),
     user_name :: string(),
     password :: binary(),
-    will_retain = false :: boolean(),
+    will_retain = 0 :: 0 | 1,
     will_qos = 0 :: 0 | 1 | 2,
     will :: binary(),
     will_topic :: string(),
