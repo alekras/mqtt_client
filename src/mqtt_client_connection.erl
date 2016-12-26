@@ -222,6 +222,7 @@ handle_call(disconnect, _From, State) ->
 %	io:format(user, " >>> disconnect request ~p~n", [State]),
 	case gen_tcp:send(State#connection_state.socket, packet(disconnect, false)) of
     ok -> {stop, normal, State};
+		{error, closed} -> {stop, normal, State};
 		{error, Reason} -> {reply, {error, Reason}, State}
 	end;
 

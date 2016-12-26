@@ -82,40 +82,59 @@ do_setup({_, publish} = _X) ->
 	[P,S];
 do_setup({_, session} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
+	P1 = mqtt_client:connect(
+		publisher, 
+		#connect{
+			client_id = "publisher",
+			user_name = "guest", password = <<"guest">>,
+			clean_session = 0,
+			keep_alive = 60000
+		}, 
+		"localhost", ?TEST_SERVER_PORT, 
+		[]
+	),
+	S1 = mqtt_client:connect(
+		subscriber, 
+		#connect{
+			client_id = "subscriber",
+			user_name = "guest", password = <<"guest">>,
+			clean_session = 0,
+			keep_alive = 60000
+		}, 
+		"localhost", ?TEST_SERVER_PORT, 
+		[]
+	),
+	[P1, S1];
+do_setup({QoS, will} = _X) ->
+%  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	P = mqtt_client:connect(
 		publisher, 
 		#connect{
 			client_id = "publisher",
-			user_name = "guest",
-			password = <<"guest">>,
-			will = 0,
-			will_message = <<>>,
-			will_topic = [],
-			clean_session = 0,
+			user_name = "guest", password = <<"guest">>,
+			will = 1,
+			will_qos = QoS,
+			will_message = <<"Test will message">>,
+			will_topic = "AK_will_test",
+			clean_session = 1,
 			keep_alive = 60000
 		}, 
-		"localhost", 
-		?TEST_SERVER_PORT, 
+		"localhost", ?TEST_SERVER_PORT, 
 		[]
 	),
-		S = mqtt_client:connect(
+	S = mqtt_client:connect(
 		subscriber, 
 		#connect{
 			client_id = "subscriber",
-			user_name = "guest",
-			password = <<"guest">>,
-			will = 0,
-			will_message = <<>>,
-			will_topic = [],
-			clean_session = 0,
+			user_name = "guest", password = <<"guest">>,
+			clean_session = 1,
 			keep_alive = 60000
 		}, 
-		"localhost", 
-		?TEST_SERVER_PORT, 
+		"localhost", ?TEST_SERVER_PORT, 
 		[]
 	),
 	[P,S];
-do_setup({QoS, will} = _X) ->
+do_setup({QoS, will_retain} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	P = mqtt_client:connect(
 		publisher, 
@@ -124,9 +143,10 @@ do_setup({QoS, will} = _X) ->
 			user_name = "guest",
 			password = <<"guest">>,
 			will = 1,
+			will_retain = 1,
 			will_qos = QoS,
-			will_message = <<"Test will message">>,
-			will_topic = "AK_will_test",
+			will_message = <<"Test will retain message">>,
+			will_topic = "AK_will_retain_test",
 			clean_session = 1,
 			keep_alive = 60000
 		}, 
@@ -172,22 +192,76 @@ do_setup(_X) ->
 
 do_cleanup({_, publish} = _X, [P, S] = _Pids) ->
 	R1 = mqtt_client:disconnect(P),
-	?assertEqual(ok, R1),
 	R2 = mqtt_client:disconnect(S),
+	?assertEqual(ok, R1),
 	?assertEqual(ok, R2);
 %  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2}]);
-do_cleanup({_, session} = _X, [P, S] = _Pids) ->
-	R1 = mqtt_client:disconnect(P),
+do_cleanup({_, session} = _X, [P1, S1] = _Pids) ->
+	dets:delete_all_objects(session_db),
+	R1 = mqtt_client:disconnect(P1),
+	R2 = mqtt_client:disconnect(S1),
 	?assertEqual(ok, R1),
+	?assertEqual(ok, R2);
+%  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2}]);
+do_cleanup({QoS, will} = _X, [P, S] = _Pids) ->
+	R1 = mqtt_client:disconnect(P),
+	
+	P1 = mqtt_client:connect(
+		publisher, 
+		#connect{
+			client_id = "publisher",
+			user_name = "guest", password = <<"guest">>,
+			will = 1,
+			will_qos = QoS,
+			will_message = <<"Test will message">>,
+			will_topic = "AK_will_test",
+			clean_session = 1,
+			keep_alive = 60000
+		}, 
+		"localhost", ?TEST_SERVER_PORT, 
+		[]
+	),
+
+	R1_1 = mqtt_client:disconnect(P1),
+
 	R2 = mqtt_client:disconnect(S),
+
+	?assertEqual(ok, R1),
+	?assertEqual(ok, R1_1),
+	?assertEqual(ok, R2);
+%  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2}]);
+do_cleanup({QoS, will_retain} = _X, [P, S] = _Pids) ->
+	R1 = mqtt_client:disconnect(P),
+	R2 = mqtt_client:disconnect(S),
+
+	P1 = mqtt_client:connect(
+		publisher, 
+		#connect{
+			client_id = "publisher",
+			user_name = "guest", password = <<"guest">>,
+			will = 1,
+			will_retain = 1,
+			will_qos = QoS,
+			will_message = <<"Test will retain message">>,
+			will_topic = "AK_will_retain_test",
+			clean_session = 1,
+			keep_alive = 60000
+		}, 
+		"localhost", ?TEST_SERVER_PORT, 
+		[]
+	),
+% 	R1_0 = mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = 0}, <<>>), 
+%% 	mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = 0}, <<>>), 
+%% 	mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = 0}, <<>>), 
+%% 	mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = 0}, <<>>), 
+%	?assertEqual(ok, R1_0),
+%	R1_1 = mqtt_client:publish(P1, #publish{topic = "AK_will_test", retain = 1, qos = 0}, <<>>), 
+%	?assertEqual(ok, R1_1),
+	R3 = mqtt_client:disconnect(P1),
+
+	?assertEqual(ok, R1),
 	?assertEqual(ok, R2),
-	dets:delete_all_objects(session_db);
-%  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2}]);
-do_cleanup({_, will} = _X, [P, S] = _Pids) ->
-	R1 = mqtt_client:disconnect(P),
-	?assertEqual(ok, R1),
-	R2 = mqtt_client:disconnect(S),
-	?assertEqual(ok, R2);
+	?assertEqual(ok, R3);
 %  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2}]);
 do_cleanup(_X, _Pids) ->
 	R = mqtt_client:disconnect(test_cli),
@@ -198,9 +272,6 @@ get_connect_rec() ->
 		client_id = "test_client",
 		user_name = "guest",
 		password = <<"guest">>,
-		will = 0,
-		will_message = <<>>,
-		will_topic = [],
 		clean_session = 1,
 		keep_alive = 1000
 	}.
@@ -209,19 +280,21 @@ wait_all(N) ->
 	case wait_all(N, 0) of
 		{ok, _M} -> 
 %			?debug_Fmt("::test:: all ~p done received.", [_M]),
-			?assert(true);
+			true;
 		{fail, _T} -> 
 			?debug_Fmt("::test:: ~p done have not received.", [N - _T]), 
-			?assert(false)
-	end,
-	
+			false
+%			?assert(true)
+	end
+	and
 	case wait_all(N, 0) of
 		{fail, _Z} -> 
 %			?debug_Fmt("::test:: ~p additional done received.", [_Z]),
-			?assert(true);
+			true;
 		{ok, _R} -> 
 			?debug_Fmt("::test:: ~p unexpected done received.", [_R]), 
-			?assert(false)
+			false
+%			?assert(true)
 	end.
 
 wait_all(0, M) -> {ok, M};

@@ -71,9 +71,10 @@ Assign record #connect{} to Conn_def value:
 4> <span>clean_session = 1,</span>
 4> <span>keep_alive = 1000</span>
 4> <span>}.</span>
+<!--Conn_def = #connect{client_id = "publisher",user_name = "guest",password = <<"guest">>,will = 0,will_message = <<>>,will_topic = "",clean_session = 1,keep_alive = 1000}.-->
 #connect{client_id = "publisher",user_name = "guest",
-         password = &lt;&lt;"guest"&gt;&gt;,will_retain = false,will_qos = 0,
-         will = 0,will_topic = [],will_message = &lt;&lt;&gt;&gt;,
+         password = &lt;&lt;"guest"&gt;&gt;,will = 0,will_qos = 0,
+         will_retain = 0,will_topic = [],will_message = &lt;&lt;&gt;&gt;,
          clean_session = 1,keep_alive = 1000}
 </pre>
 And finally create new connection to MQTT server:
@@ -85,8 +86,8 @@ We have connection PubCon to MQTT server now. Let's create one more client's con
 <pre>
 6> <span>Conn_def_2 = Conn_def#connect{client_id = "subscriber"}.</span>
 #connect{client_id = "subscriber",user_name = "guest",
-         password = &lt;&lt;"guest"&gt;&gt;,will_retain = false,will_qos = 0,
-         will = 0,will_topic = [],will_message = &lt;&lt;&gt;&gt;,
+         password = &lt;&lt;"guest"&gt;&gt;,will = 0,will_qos = 0,
+         will_retain = 0,will_topic = [],will_message = &lt;&lt;&gt;&gt;,
          clean_session = 1,keep_alive = 1000}
 7> <span>SubCon = mqtt_client:connect(subscriber, Conn_def_2, "localhost", 2883, []).</span>
 &lt;0.116.0&gt;
@@ -115,6 +116,6 @@ Arg = {{Topic, Topic_QoS}, Message_QoS, Payload}
 
 @reference [https://mosquitto.org/] - Mosquitto MQTT server.
 @reference [https://www.rabbitmq.com/]] - RabbitMQ server with MQTT plugin.
-@reference [http://erlangcentral.org/wiki/index.php?title=] - article on Erlang Central.
+<!-- @reference [http://erlangcentral.org/wiki/index.php?title=] - article on Erlang Central. -->
 @see my 
 

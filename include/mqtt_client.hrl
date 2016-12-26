@@ -3,11 +3,11 @@
     client_id :: string(),
     user_name :: string(),
     password :: binary(),
-    will_retain = 0 :: 0 | 1,
+    will = 0 :: 0 | 1,
     will_qos = 0 :: 0 | 1 | 2,
-    will :: binary(),
-    will_topic :: string(),
-    will_message :: binary(),
+    will_retain = 0 :: 0 | 1,
+    will_topic = "" :: string(),
+    will_message = <<>> :: binary(),
     clean_session = 1 :: 0 | 1,
     keep_alive :: integer()
   }

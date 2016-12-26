@@ -150,7 +150,7 @@ publish(Pid, Params, Payload) ->
 -spec publish(Pid, Params) -> Result when
  Pid :: pid(),
  Params :: #publish{}, 
- Result :: ok | puback | pubcomp | #mqtt_client_error{}. 
+ Result :: ok | #mqtt_client_error{}. 
 %% 
 %% @doc The function sends a publish packet to MQTT server.
 %% 
@@ -163,7 +163,7 @@ publish(Pid, Params) ->
 					receive
 						{puback, Ref} -> 
 %					io:format(user, " >>> received puback ~p~n", [Ref]), 
-							puback
+							ok %%puback
 					after ?GEN_SERVER_TIMEOUT ->
 						#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = "puback timeout"}
 					end;
@@ -171,7 +171,7 @@ publish(Pid, Params) ->
 					receive
 						{pubcomp, Ref} -> 
 %					io:format(user, " >>> received pubcomp ~p~n", [Ref]),
-							pubcomp
+							ok %%pubcomp
 					after ?GEN_SERVER_TIMEOUT ->
 						#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = "pubcomp timeout"}
 					end
@@ -234,9 +234,12 @@ disconnect(Pid) ->
 	try 
   	gen_server:call(Pid, disconnect, ?GEN_SERVER_TIMEOUT)
 	catch
-    exit:_R -> 
+    exit:{normal, _} = _R -> 
 %			io:format(user, " >>> disconnect: exit reason ~p~n", [_R]),
-			ok
+			ok;
+    exit:{noproc, _} = _R -> 
+%			io:format(user, " >>> disconnect: exit with reason: ~120p~n", [_R]),
+			ok %% @todo return error record if not stop:normal
 	end.
 
 %% ====================================================================
