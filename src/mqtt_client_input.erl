@@ -47,6 +47,11 @@
 
 input_parser(Binary) ->
 	case Binary of
+		<<?CONNECT_PACK_TYPE, Bin/binary>> ->
+			{RestBin, Length} = decode_remaining_length(Bin),
+			PL = Length - 10,
+			<<0:4, 4:8, "MQTT", 4:8, Flag:8, RestBin1:PL/binary, Tail/binary>> = RestBin,
+			{connect, Flag, RestBin1, Tail};
 		<<?CONNACK_PACK_TYPE, 2:8, 0:7, SP:1, Connect_Return_Code:8, Tail/binary>> -> {connectack, SP, Connect_Return_Code, return_code_response(Connect_Return_Code), Tail};
 		<<?PUBLISH_PACK_TYPE, _DUP:1, QoS:2, _RETAIN:1, Bin/binary>> ->
 			{RestBin, Length} = decode_remaining_length(Bin),
@@ -72,7 +77,7 @@ input_parser(Binary) ->
 		<<?SUBACK_PACK_TYPE, Bin/binary>> -> 
 			{RestBin, Length} = decode_remaining_length(Bin),
 			L = Length - 2,
-			<<Packet_Id:16, Return_codes:(L)/binary, Tail/binary>> = RestBin,
+			<<Packet_Id:16, Return_codes:L/binary, Tail/binary>> = RestBin,
 %			io:format(user, " >>> SUBACK received: ~p ~p ~p Len=~p~n", [Packet_Id, binary_to_list(Return_codes), Tail, Length]),
 			{suback, Packet_Id, binary_to_list(Return_codes), Tail};
 		<<?UNSUBACK_PACK_TYPE, Bin/binary>> -> 

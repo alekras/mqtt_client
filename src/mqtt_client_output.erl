@@ -37,7 +37,6 @@
 
 -ifdef(TEST).
 -export([
-	fixed_header/3,
 	encode_remaining_length/1,
 	fixed_header/3,
 	variable_header/2,

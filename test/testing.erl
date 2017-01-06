@@ -171,6 +171,42 @@ do_setup({QoS, will_retain} = _X) ->
 		[]
 	),
 	[P,S];
+do_setup({_QoS, retain} = _X) ->
+%  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
+	P1 = mqtt_client:connect(
+		publisher, 
+		#connect{
+			client_id = "publisher",
+			user_name = "guest", password = <<"guest">>,
+			clean_session = 1,
+			keep_alive = 60000
+		}, 
+		"localhost", ?TEST_SERVER_PORT, 
+		[]
+	),
+	S1 = mqtt_client:connect(
+		subscriber_1, 
+		#connect{
+			client_id = "subscriber_1",
+			user_name = "guest", password = <<"guest">>,
+			clean_session = 1,
+			keep_alive = 60000
+		}, 
+		"localhost", ?TEST_SERVER_PORT, 
+		[]
+	),
+	S2 = mqtt_client:connect(
+		subscriber_2, 
+		#connect{
+			client_id = "subscriber_2",
+			user_name = "guest", password = <<"guest">>,
+			clean_session = 1,
+			keep_alive = 60000
+		}, 
+		"localhost", ?TEST_SERVER_PORT, 
+		[]
+	),
+	[P1, S1, S2];
 do_setup(_X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	mqtt_client:connect(
@@ -262,6 +298,32 @@ do_cleanup({QoS, will_retain} = _X, [P, S] = _Pids) ->
 	?assertEqual(ok, R1),
 	?assertEqual(ok, R2),
 	?assertEqual(ok, R3);
+%  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2}]);
+do_cleanup({QoS, retain} = _X, [P1, S1, S2] = _Pids) ->
+	Rs1 = mqtt_client:disconnect(S1),
+	Rs2 = mqtt_client:disconnect(S2),
+	R1 = case mqtt_client:status(P1) of
+				disconnected ->
+					P2 = mqtt_client:connect(
+						publisher, 
+						#connect{
+							client_id = "publisher",
+							user_name = "guest", password = <<"guest">>,
+							clean_session = 0,
+							keep_alive = 60000
+						}, 
+						"localhost", ?TEST_SERVER_PORT, 
+						[]
+					),
+					mqtt_client:publish(P2, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), 
+					mqtt_client:disconnect(P2);
+				_ ->
+					mqtt_client:publish(P1, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), 
+					mqtt_client:disconnect(P1)
+			 end,
+	?assertEqual(ok, R1),
+	?assertEqual(ok, Rs1),
+	?assertEqual(ok, Rs2);
 %  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2}]);
 do_cleanup(_X, _Pids) ->
 	R = mqtt_client:disconnect(test_cli),

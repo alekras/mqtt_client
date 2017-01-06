@@ -50,7 +50,7 @@ session_1({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 					 ?assertEqual("AKtest", Topic),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 1, {F}}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 1, F}]), 
 %	?debug_Fmt("::test:: subscribe returns: ~p",[R1_0]),
 	?assertEqual({suback,[1]}, R1_0),
 	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"Test Payload QoS = 1. annon. function callback. ">>), 
@@ -91,7 +91,7 @@ session_1({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 					 ?assertEqual("AKtest", Topic),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 1, {F}}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 1, F}]), 
 %	?debug_Fmt("::test:: subscribe returns: ~p",[R1_0]),
 	?assertEqual({suback,[1]}, R1_0),
 	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::1 Test Payload QoS = 1. function callback. ">>), 
@@ -133,7 +133,7 @@ session_1({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 					 ?assertEqual("AKtest", Topic),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 1, {F}}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 1, F}]), 
 %	?debug_Fmt("::test:: subscribe returns: ~p",[R1_0]),
 	?assertEqual({suback,[1]}, R1_0),
 	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::1 Test Payload QoS = 1. function callback. ">>), 
@@ -183,7 +183,7 @@ session_1({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 					 ?assertEqual("AKtest", Topic),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 1, {F}}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 1, F}]), 
 	?assertEqual({suback,[1]}, R1_0),
 	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::1 Test Payload QoS = 1. function callback. ">>), 
 	?assertEqual(ok, R2_0),
@@ -223,7 +223,7 @@ session_2({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 					 ?assertEqual("AKTest", Topic),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKTest", 2, {F}}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKTest", 2, F}]), 
 	?assertEqual({suback,[2]}, R1_0),
 	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"Test Payload QoS = 2. annon. function callback. ">>), 
 	?assertEqual(ok, R2_0),
@@ -260,7 +260,7 @@ session_2({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 					 ?assertEqual("AKTest", Topic),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKTest", 2, {F}}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKTest", 2, F}]), 
 	?assertEqual({suback,[2]}, R1_0),
 	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"Test Payload QoS = 2. annon. function callback. ">>), 
 	?assertEqual(ok, R2_0),
@@ -298,7 +298,7 @@ session_2({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 					 ?assertEqual("AKTest", Topic),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKTest", 2, {F}}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKTest", 2, F}]), 
 	?assertEqual({suback,[2]}, R1_0),
 	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"1) Test Payload QoS = 2. annon. function callback. ">>), 
 	?assertEqual(ok, R2_0),
@@ -336,7 +336,7 @@ session_2({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 					 ?assertEqual("AKTest", Topic),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKTest", 2, {F}}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKTest", 2, F}]), 
 	?assertEqual({suback,[2]}, R1_0),
 	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"1) Test Payload QoS = 2. annon. function callback. ">>), 
 	?assertEqual(ok, R2_0),
@@ -374,7 +374,7 @@ session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 					 ?assertEqual("AKtest", Topic),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 2, {F}}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 2, F}]), 
 	?assertEqual({suback,[2]}, R1_0),
 	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::1 Test Payload QoS = 2. function callback. ">>), 
 	?assertEqual(ok, R2_0),
@@ -415,7 +415,7 @@ session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 					 ?assertEqual("AKtest", Topic),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 2, {F}}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 2, F}]), 
 	?assertEqual({suback,[2]}, R1_0),
 	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::1 Test Payload QoS = 2. function callback. ">>), 
 	?assertEqual(ok, R2_0),
@@ -456,7 +456,7 @@ session_2({7, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 					 ?assertEqual("AKtest", Topic),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 2, {F}}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 2, F}]), 
 	?assertEqual({suback,[2]}, R1_0),
 	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::1 Test Payload QoS = 2. function callback. ">>), 
 	?assertEqual(ok, R2_0),
@@ -497,7 +497,7 @@ session_2({8, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 					 ?assertEqual("AKtest", Topic),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 2, {F}}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 2, F}]), 
 	?assertEqual({suback,[2]}, R1_0),
 	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::1 Test Payload QoS = 2. function callback. ">>), 
 	?assertEqual(ok, R2_0),

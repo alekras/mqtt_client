@@ -106,10 +106,9 @@ connect(Connection_id, Conn_config, Host, Port, Default_Callback, Socket_options
 			{ok, Ref} = gen_server:call(Pid, {connect, Conn_config, Default_Callback}, ?GEN_SERVER_TIMEOUT),
 			receive
 				{connectack, Ref, _SP, 0, _Msg} -> 
-%					io:format(user, " >>> client ~p/~p session present: ~p connected with response: ~p, ~n", [Pid, Conn_config, _SP, _Msg]),
+					lager:info("Client ~p is successfuly connected to ~p:~p", [Conn_config#connect.client_id, Host, Port]),
 					Pid;
 				{connectack, Ref, _, ErrNo, Msg} -> 
-%					io:format(user, " >>> client ~p connected with response: ~p, ~n", [Pid, Msg]),
 					#mqtt_client_error{type = connection, errno = ErrNo, source = "mqtt_client:conect/6", message = Msg}
 			after ?GEN_SERVER_TIMEOUT ->
 					#mqtt_client_error{type = connection, source = "mqtt_client:conect/6", message = "timeout"}
@@ -162,16 +161,14 @@ publish(Pid, Params) ->
 				1 ->
 					receive
 						{puback, Ref} -> 
-%					io:format(user, " >>> received puback ~p~n", [Ref]), 
-							ok %%puback
+							ok
 					after ?GEN_SERVER_TIMEOUT ->
 						#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = "puback timeout"}
 					end;
 				2 ->
 					receive
 						{pubcomp, Ref} -> 
-%					io:format(user, " >>> received pubcomp ~p~n", [Ref]),
-							ok %%pubcomp
+							ok
 					after ?GEN_SERVER_TIMEOUT ->
 						#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = "pubcomp timeout"}
 					end
@@ -182,7 +179,7 @@ publish(Pid, Params) ->
 
 -spec subscribe(Pid, Subscriptions) -> Result when
  Pid :: pid(),
- Subscriptions :: [{Topic::string(), QoS::integer(), Callback::{fun()} | {module(), fun()} }], 
+ Subscriptions :: [{Topic::string(), QoS::integer(), Callback:: fun() | {module(), fun()} }], 
  Result :: {suback, [integer()]} | #mqtt_client_error{}. 
 %% 
 %% @doc The function sends a subscribe packet to MQTT server.
@@ -191,7 +188,6 @@ subscribe(Pid, Subscriptions) ->
 	{ok, Ref} = gen_server:call(Pid, {subscribe, Subscriptions}, ?GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
 	receive
 		{suback, Ref, RC} -> 
-%			io:format(user, " >>> received suback ~p~n", [RC]), 
 			{suback, RC}
 	after ?GEN_SERVER_TIMEOUT ->
 		#mqtt_client_error{type = subscribe, source = "mqtt_client:subscribe/2", message = "subscribe timeout"}
@@ -208,7 +204,6 @@ unsubscribe(Pid, Topics) ->
 	{ok, Ref} = gen_server:call(Pid, {unsubscribe, Topics}, ?GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
 	receive
 		{unsuback, Ref} -> 
-%			io:format(user, " >>> received unsuback ~p~n", [Ref]), 
 			unsuback
 	after ?GEN_SERVER_TIMEOUT ->
 		#mqtt_client_error{type = subscribe, source = "mqtt_client:unsubscribe/2", message = "unsubscribe timeout"}
@@ -216,7 +211,7 @@ unsubscribe(Pid, Topics) ->
 
 -spec pingreq(Pid, Callback) -> Result when
  Pid :: pid(),
- Callback :: {fun()} | {module(), fun()},
+ Callback :: fun() | {module(), fun()},
  Result :: ok. 
 %% 
 %% @doc The function sends a ping request to MQTT server.
@@ -257,12 +252,19 @@ disconnect(Pid) ->
 %% ====================================================================
 start(_Type, StartArgs) ->
 %  io:format(user, " >>> start application ~p ~p~n", [_Type, StartArgs]),
+	lager:start(),
+	A = application:get_all_env(lager),
+	B = application:get_all_env(mqtt_client),
+	C = application:get_env(lager, log_root),
+	D = application:get_env(mqtt_client, host),
+	io:format(user, " >>> start() ~nlog_root: ~p, ~p~nhost: ~p ~p", [C, A, D, B]),
+	
   case supervisor:start_link({local, mqtt_client_sup}, mqtt_client_sup, StartArgs) of
 		{ok, Pid} ->
 			{ok, Pid};
 		Error ->
 			Error
-    end.
+  end.
 
 %% stop/1
 %% ====================================================================

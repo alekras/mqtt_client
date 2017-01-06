@@ -1,4 +1,4 @@
-{	application, mqtt_client,
+{application, mqtt_client,
 	[
     {description, "MQTT client"},
     {vsn, "1.0.2"},

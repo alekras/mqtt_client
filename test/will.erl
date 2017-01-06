@@ -19,7 +19,7 @@
 %% @copyright 2015-2016 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
-%% @doc This module implements a tesing of MQTT session.
+%% @doc This module implements a tesing of MQTT will.
 
 -module(will).
 
@@ -51,7 +51,7 @@ will_0({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", time
 					 ?assertEqual(<<"Test will message">>, Msg),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 0, {F}}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 0, F}]), 
 	?assertEqual({suback,[0]}, R1_0),
 %% generate connection lost:
 	gen_server:call(Publisher, {set_test_flag, break_connection}),
@@ -79,7 +79,7 @@ will_0({1, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=1.", time
 					 ?assertEqual(<<"Test will message">>, Msg),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 1, {F}}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 1, F}]), 
 	?assertEqual({suback,[1]}, R1_0),
 %% generate connection lost:
 	gen_server:call(Publisher, {set_test_flag, break_connection}),
@@ -107,7 +107,7 @@ will_0({2, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=2.", time
 					 ?assertEqual(<<"Test will message">>, Msg),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 2, {F}}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 2, F}]), 
 	?assertEqual({suback,[2]}, R1_0),
 %% generate connection lost:
 	gen_server:call(Publisher, {set_test_flag, break_connection}),
@@ -135,7 +135,7 @@ will_retain({1, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will w
 					 ?assertEqual(<<"Test will retain message">>, Msg),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_retain_test", 1, {F}}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_retain_test", 1, F}]), 
 	?assertEqual({suback,[1]}, R1_0),
 %% generate connection lost:
 	gen_server:call(Publisher, {set_test_flag, break_connection}),
@@ -157,7 +157,7 @@ will_retain({1, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will w
 		[]
 	),
 	?assert(is_pid(Subscriber_2)),
-	R2_0 = mqtt_client:subscribe(Subscriber_2, [{"AK_will_retain_test", 1, {F}}]), 
+	R2_0 = mqtt_client:subscribe(Subscriber_2, [{"AK_will_retain_test", 1, F}]), 
 	?assertEqual({suback,[1]}, R2_0),
 
   W = wait_all(2),

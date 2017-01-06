@@ -93,13 +93,13 @@ We have connection PubCon to MQTT server now. Let's create one more client's con
 &lt;0.116.0&gt;
 </pre>
 To finish set up of the connection we need to suscribe it to some topic for example "Test" topic. Before make subscription we
-need to define callback function. This function will act as 'application' from MQTT protokol terminology. When client recieves message
+need to define callback function. This function will act as 'application' from MQTT protokol terminology. When client receives message
 from server's topic then callback function will be invoked and the message will be passed to it.
  
 <pre>
 8> <span>CBF = fun(Arg) -> io:format(user,"callback function: ~p",[Arg]) end.</span>
 #Fun&lt;erl_eval.6.52032458&gt;
-9> <span>mqtt_client:subscribe(SubCon, [{"Test", 1, {CBF}}]).</span>
+9> <span>mqtt_client:subscribe(SubCon, [{"Test", 1, CBF}]).</span>
 {suback,[1]}
 </pre>
 Now we can publish message to "Test" topic. After short moment subscriber recieves this message and fire callback function:

@@ -32,9 +32,6 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([	
-	wait_pong/0
-]).
 
 -ifdef(TEST).
 -export([	
@@ -44,6 +41,17 @@
 
 -import(mqtt_client_output, [packet/2]).
 -import(mqtt_client_input, [input_parser/1]).
+
+-ifdef(TEST).
+-define(test_fragment, 
+handle_call({publish, _}, _, #connection_state{test_flag = break_connection} = State) ->
+%	io:format(user, " >>> publish request break_connection ~p~n", [State]),
+	gen_tcp:close(State#connection_state.socket),
+	{stop, normal, State};
+).
+-else.
+-define(test_fragment, ).
+-endif.
 
 open_socket(Host, Port, Options) ->
   case 
@@ -139,35 +147,33 @@ handle_call({set_test_flag, Flag}, _From, State) ->
 %	io:format(user, " >>> set_test_flag request ~p~n", [Flag]),
 	{reply, ok, State#connection_state{test_flag = Flag}};
 
-handle_call({publish, _}, _, #connection_state{test_flag = break_connection} = State) ->
-%	io:format(user, " >>> publish request break_connection ~p~n", [State]),
-	gen_tcp:close(State#connection_state.socket),
-	{stop, normal, State};
-%	{reply, {ok, Ref}, State};
+?test_fragment
 
 handle_call({publish, #publish{qos = 0} = Params}, {_, Ref}, State) ->
 %	io:format(user, " >>> publish request ~p, ~p, ~p~n", [Params, Payload, State]),
 	gen_tcp:send(State#connection_state.socket, packet(publish, Params)),
 	{reply, {ok, Ref}, State};
 
+handle_call({publish, #publish{qos = QoS} = Params}, {_, Ref}, State) when ((QoS =:= 1) orelse (QoS =:= 2)) and (State#connection_state.test_flag =:= skip_send_publish) ->
+%	io:format(user, " >>> publish request ~p, ~p, ~p~n", [Params, Payload, State]),
+	Packet_Id = State#connection_state.packet_id,
+%% store message before sending
+  Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
+	(State#connection_state.storage):save(#storage_publish{key = Prim_key, document = Params}),
+  {reply, {ok, Ref}, State};
+
 handle_call({publish, #publish{qos = QoS} = Params}, {_, Ref} = From, State) when (QoS =:= 1) orelse (QoS =:= 2) ->
 %	io:format(user, " >>> publish request ~p, ~p, ~p~n", [Params, Payload, State]),
 	Packet_Id = State#connection_state.packet_id,
 	Packet = packet(publish, {Params, Packet_Id}),
-%	io:format(user, " >>> [~p] publish packet ~p~n", [Params#publish.qos, Packet]),
 %% store message before sending
   Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
 	(State#connection_state.storage):save(#storage_publish{key = Prim_key, document = Params}),
-	if 
-		State#connection_state.test_flag =:= skip_send_publish ->
-		  {reply, {ok, Ref}, State};
-		true -> 
-	    case gen_tcp:send(State#connection_state.socket, Packet) of
-		    ok -> 
-			    New_processes = (State#connection_state.processes)#{Packet_Id => {From, Params}},
-			    {reply, {ok, Ref}, State#connection_state{packet_id = next(Packet_Id, State), processes = New_processes}};
-		    {error, Reason} -> {reply, {error, Reason}, State}
-	    end
+	case gen_tcp:send(State#connection_state.socket, Packet) of
+		ok -> 
+			New_processes = (State#connection_state.processes)#{Packet_Id => {From, Params}},
+		{reply, {ok, Ref}, State#connection_state{packet_id = next(Packet_Id, State), processes = New_processes}};
+		{error, Reason} -> {reply, {error, Reason}, State}
   end;
 
 handle_call({republish, undefined, Packet_Id}, {_, Ref} = From, State) ->
@@ -218,10 +224,11 @@ handle_call({unsubscribe, Topics}, {_, Ref} = From, State) ->
 		{error, Reason} -> {reply, {error, Reason}, State}
 	end;
 
-handle_call(disconnect, _From, State) ->
-%	io:format(user, " >>> disconnect request ~p~n", [State]),
+handle_call(disconnect, _From, #connection_state{config = Config} = State) ->
 	case gen_tcp:send(State#connection_state.socket, packet(disconnect, false)) of
-    ok -> {stop, normal, State};
+    ok -> 
+			lager:info("Client ~p is disconnected.", [Config#connect.client_id]),
+			{stop, normal, State};
 		{error, closed} -> {stop, normal, State};
 		{error, Reason} -> {reply, {error, Reason}, State}
 	end;
@@ -230,8 +237,8 @@ handle_call({ping, Callback}, _From, State) ->
 %	io:format(user, " >>> ping request ~p~n", [State]),
   case gen_tcp:send(State#connection_state.socket, packet(pingreq, false)) of
     ok ->
-			Pid = spawn_link(?MODULE, wait_pong, []),
-			New_processes = (State#connection_state.processes)#{ping => {Pid, Callback}},
+%			Pid = spawn_link(?MODULE, wait_pong, []),
+			New_processes = (State#connection_state.processes)#{ping => Callback},
 			{reply, ok, State#connection_state{
 																				processes = New_processes, 
 																				ping_count = State#connection_state.ping_count + 1}
@@ -330,11 +337,11 @@ socket_stream_process(State, Binary) ->
 			end;
 		{pingresp, Tail} -> 
 			case maps:get(ping, Processes, undefined) of
-				{Pid, {M, F}} ->
-					Pid ! {pong, State},
+				{M, F} ->
+%					Pid ! {pong, State},
 					spawn(M, F, [pong]);
-				{Pid, {F}} ->
-					Pid ! {pong, State},
+				F ->
+%					Pid ! {pong, State},
 					spawn(fun() -> apply(F, [pong]) end);
 				_ -> true
 			end,
@@ -409,37 +416,34 @@ socket_stream_process(State, Binary) ->
 				0 -> 	
 					delivery_to_application(State, Topic, QoS, Payload),
 					socket_stream_process(State, Tail);
+				1 when State#connection_state.test_flag =:= skip_send_puback ->
+					delivery_to_application(State, Topic, QoS, Payload),
+					socket_stream_process(State, Tail);
 				1 ->
 					delivery_to_application(State, Topic, QoS, Payload),
-					if 
-						State#connection_state.test_flag =:= skip_send_puback -> ok;
-		        ?ELSE ->
-						  case gen_tcp:send(State#connection_state.socket, packet(puback, Packet_Id)) of
-						    ok -> ok;
-						    {error, _Reason} -> ok
-					    end
+					case gen_tcp:send(State#connection_state.socket, packet(puback, Packet_Id)) of
+						ok -> ok;
+						{error, _Reason} -> ok
 					end,
+					socket_stream_process(State, Tail);
+				2 when State#connection_state.test_flag =:= skip_send_pubrec ->
 					socket_stream_process(State, Tail);
 				2 ->
 					New_State = 
-					if 
-		        State#connection_state.test_flag =:= skip_send_pubrec -> State;
-		        ?ELSE ->
-							case	maps:is_key(Packet_Id, Processes) of
-								true -> State;
-								false -> 
-					        delivery_to_application(State, Topic, QoS, Payload),
+						case	maps:is_key(Packet_Id, Processes) of
+							true -> State;
+							false -> 
+					      delivery_to_application(State, Topic, QoS, Payload),
 %% store PI after receiving message
-                  Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
-                  (State#connection_state.storage):save(#storage_publish{key = Prim_key, document = #publish{acknowleged = pubrec}}),
-					        case gen_tcp:send(State#connection_state.socket, packet(pubrec, Packet_Id)) of
-						        ok -> 
-        					    New_processes = Processes#{Packet_Id => {undefined, #publish{topic = Topic, qos = QoS, acknowleged = pubrec}}},
-				        	    State#connection_state{processes = New_processes};
-						        {error, _Reason} -> State
-					        end
-							end
-					end,
+                Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
+                (State#connection_state.storage):save(#storage_publish{key = Prim_key, document = #publish{acknowleged = pubrec}}),
+					      case gen_tcp:send(State#connection_state.socket, packet(pubrec, Packet_Id)) of
+					        ok -> 
+        				    New_processes = Processes#{Packet_Id => {undefined, #publish{topic = Topic, qos = QoS, acknowleged = pubrec}}},
+				        	  State#connection_state{processes = New_processes};
+						      {error, _Reason} -> State
+					      end
+					  end,
 					socket_stream_process(New_State, Tail);
 				_ -> socket_stream_process(State, Tail)
 			end;
@@ -461,46 +465,55 @@ socket_stream_process(State, Binary) ->
 			end;
 		{pubrec, _Packet_Id, Tail} when State#connection_state.test_flag =:= skip_rcv_pubrec ->
 			socket_stream_process(State, Tail);
-		{pubrec, Packet_Id, Tail} ->
-%			io:format(user, " >>> handle_info pubrec: Pk Id=~p state=~p~n", [Packet_Id, State]),
+		{pubrec, Packet_Id, Tail} when State#connection_state.test_flag =:= skip_send_pubrel ->
 			case maps:get(Packet_Id, Processes, undefined) of
 				{From, Params} ->
 %% store message before pubrel
           Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
           (State#connection_state.storage):save(#storage_publish{key = Prim_key, document = undefined}),
 					New_processes = Processes#{Packet_Id => {From, Params#publish{acknowleged = pubrec}}},
-					if 
-		        State#connection_state.test_flag =:= skip_send_pubrel -> ok;
-		        ?ELSE ->
-							case gen_tcp:send(State#connection_state.socket, packet(pubrel, Packet_Id)) of
-								ok -> ok; 
-								{error, _Reason} -> ok
-							end
+					socket_stream_process(State#connection_state{processes = New_processes}, Tail);
+				undefined ->
+					socket_stream_process(State, Tail)
+			end;
+		{pubrec, Packet_Id, Tail} ->
+			case maps:get(Packet_Id, Processes, undefined) of
+				{From, Params} ->
+%% store message before pubrel
+          Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
+          (State#connection_state.storage):save(#storage_publish{key = Prim_key, document = undefined}),
+					New_processes = Processes#{Packet_Id => {From, Params#publish{acknowleged = pubrec}}},
+					case gen_tcp:send(State#connection_state.socket, packet(pubrel, Packet_Id)) of
+						ok -> ok; 
+						{error, _Reason} -> ok
 					end,
-					socket_stream_process(
-						State#connection_state{
-																	processes = New_processes},
-						Tail);
+					socket_stream_process(State#connection_state{processes = New_processes}, Tail);
 				undefined ->
 					socket_stream_process(State, Tail)
 			end;
 		{pubrel, _Packet_Id, Tail} when State#connection_state.test_flag =:= skip_rcv_pubrel ->
 			socket_stream_process(State, Tail);
-		{pubrel, Packet_Id, Tail} ->
-%%			io:format(user, " >>> handle_info pubrel: Pk Id=~p state=~p~n", [Packet_Id, State]),
+		{pubrel, Packet_Id, Tail} when State#connection_state.test_flag =:= skip_send_pubcomp ->
 			case maps:get(Packet_Id, Processes, undefined) of
 				{_From, _Params} ->
 %% discard PI before pubcomp send
           Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
           (State#connection_state.storage):remove(Prim_key),
 					New_processes = maps:remove(Packet_Id, Processes),
-					if 
-		        State#connection_state.test_flag =:= skip_send_pubcomp -> ok;
-		        ?ELSE ->
-							case gen_tcp:send(State#connection_state.socket, packet(pubcomp, Packet_Id)) of
-								ok -> ok;
-								{error, _Reason} -> ok
-							end
+					socket_stream_process(State#connection_state{processes = New_processes}, Tail);
+				undefined ->
+					socket_stream_process(State, Tail)
+			end;
+		{pubrel, Packet_Id, Tail} ->
+			case maps:get(Packet_Id, Processes, undefined) of
+				{_From, _Params} ->
+%% discard PI before pubcomp send
+          Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
+          (State#connection_state.storage):remove(Prim_key),
+					New_processes = maps:remove(Packet_Id, Processes),
+					case gen_tcp:send(State#connection_state.socket, packet(pubcomp, Packet_Id)) of
+						ok -> ok;
+						{error, _Reason} -> ok
 					end,
 					socket_stream_process(State#connection_state{processes = New_processes}, Tail);
 				undefined ->
@@ -516,10 +529,7 @@ socket_stream_process(State, Binary) ->
 %% discard message after pub comp
           Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
 	        (State#connection_state.storage):remove(Prim_key),
-					socket_stream_process(
-						State#connection_state{
-																	processes = maps:remove(Packet_Id, Processes)}, 
-						Tail);
+					socket_stream_process(State#connection_state{processes = maps:remove(Packet_Id, Processes)}, Tail);
 				undefined ->
 					socket_stream_process(State, Tail)
 			end;
@@ -530,18 +540,13 @@ socket_stream_process(State, Binary) ->
 
 next(Packet_Id, State) ->
 	PI =
-	if Packet_Id == 16#FFFF -> 0; %% @todo check id in storage
-		 true -> Packet_Id + 1 
-	end,
+		if Packet_Id == 16#FFFF -> 0;
+			true -> Packet_Id + 1 
+		end,
   Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = PI},
 	case (State#connection_state.storage):exist(Prim_key) of
 		false -> PI;
 		true -> next(PI, State)
-	end.
-
-wait_pong() ->
-	receive
-		{_Pong, _State} -> ok %%io:format(user, " >>> received pong response '~p'~n", [_Pong])
 	end.
 
 get_topic_attributes(State, Topic) ->
@@ -584,7 +589,7 @@ delivery_to_application(State, Topic, QoS, Payload) ->
 do_callback(Callback, Args) ->
   case Callback of
 	  {M, F} -> spawn(M, F, Args);
-	  {F} -> spawn(fun() -> apply(F, Args) end);
+	  F -> spawn(fun() -> apply(F, Args) end);
 		_ -> false
   end.
 	
