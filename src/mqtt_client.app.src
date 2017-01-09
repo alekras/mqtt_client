@@ -1,7 +1,7 @@
 {application, mqtt_client,
 	[
     {description, "MQTT client"},
-    {vsn, "1.0.2"},
+    {vsn, "1.0.3"},
     {modules, [
       mqtt_client,
       mqtt_client_connection,
@@ -13,7 +13,7 @@
     },
     {registered, []},
     {applications, [kernel, stdlib]},
-    {mod, {mqtt_client, []}},
+    {mod, {mqtt_client, [{vsn, "1.0.3"}]}},
     {env, []}
 	]
 }.

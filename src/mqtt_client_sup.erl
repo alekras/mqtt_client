@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2016 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2017 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 %%
 
 %% @since 2015-12-25
-%% @copyright 2015-2016 Alexei Krasnopolski
+%% @copyright 2015-2017 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
 %% @doc @todo Add description to mqtt_client_sup.
@@ -61,7 +61,7 @@
 				   | temporary,
 	Modules :: [module()] | dynamic.
 %% ====================================================================
-init([]) ->
+init(_) ->
 %  io:format(user, " >>> init supervisor~n", []),
   {ok,
     { {one_for_one, 5, 10}, %% Restart strategy

@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2016 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2017 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 %%
 
 %% @since 2015-12-25
-%% @copyright 2015-2016 Alexei Krasnopolski
+%% @copyright 2015-2017 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
 %% @doc Main module of mqtt_client application. The module implements application behaviour
@@ -105,10 +105,10 @@ connect(Connection_id, Conn_config, Host, Port, Default_Callback, Socket_options
 		{ok, Pid} ->
 			{ok, Ref} = gen_server:call(Pid, {connect, Conn_config, Default_Callback}, ?GEN_SERVER_TIMEOUT),
 			receive
-				{connectack, Ref, _SP, 0, _Msg} -> 
+				{connack, Ref, _SP, 0, _Msg} -> 
 					lager:info("Client ~p is successfuly connected to ~p:~p", [Conn_config#connect.client_id, Host, Port]),
 					Pid;
-				{connectack, Ref, _, ErrNo, Msg} -> 
+				{connack, Ref, _, ErrNo, Msg} -> 
 					#mqtt_client_error{type = connection, errno = ErrNo, source = "mqtt_client:conect/6", message = Msg}
 			after ?GEN_SERVER_TIMEOUT ->
 					#mqtt_client_error{type = connection, source = "mqtt_client:conect/6", message = "timeout"}
@@ -217,7 +217,7 @@ unsubscribe(Pid, Topics) ->
 %% @doc The function sends a ping request to MQTT server.
 %% 
 pingreq(Pid, Callback) -> 
-	gen_server:call(Pid, {ping, Callback}, ?GEN_SERVER_TIMEOUT).
+	gen_server:call(Pid, {pingreq, Callback}, ?GEN_SERVER_TIMEOUT).
 
 -spec disconnect(Pid) -> Result when
  Pid :: pid(),
@@ -253,11 +253,19 @@ disconnect(Pid) ->
 start(_Type, StartArgs) ->
 %  io:format(user, " >>> start application ~p ~p~n", [_Type, StartArgs]),
 	lager:start(),
-	A = application:get_all_env(lager),
-	B = application:get_all_env(mqtt_client),
-	C = application:get_env(lager, log_root),
-	D = application:get_env(mqtt_client, host),
-	io:format(user, " >>> start() ~nlog_root: ~p, ~p~nhost: ~p ~p", [C, A, D, B]),
+%	A = application:get_all_env(lager),
+%	B = application:get_all_env(mqtt_client),
+	case application:get_env(lager, log_root) of
+		{ok, _} -> ok;
+		undefined ->
+			application:set_env(lager, log_root, "logs", [{persistent, true}]),
+			application:set_env(lager, error_logger_redirect, false, [{persistent, true}]),
+			application:set_env(lager, handlers, [{lager_console_backend, error}], [{persistent, true}]),
+			application:stop(lager),
+			lager:start()
+%% 	A = application:get_all_env(lager),
+%%   io:format(user, " >>> lager env: ~p~n", [A])
+	end,
 	
   case supervisor:start_link({local, mqtt_client_sup}, mqtt_client_sup, StartArgs) of
 		{ok, Pid} ->

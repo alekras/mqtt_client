@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2016 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2017 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 @title MQTT client for Erlang.
 @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org]
-@copyright 2015-2016 Alexei Krasnopolski
+@copyright 2015-2017 Alexei Krasnopolski
 @since 2016-10-05
 @version {@version}
 @doc 
@@ -30,6 +30,7 @@ MQTT client is an OTP application. Top level component is supervisor
 that is monitoring a child connection processes. Session state data are storing in database (DETS in current version)
 
 <h3>Getting started</h3>
+<h4>Installation</h4>
 To start with the client you have to complete two steps below:
 <ol>
 <li>Install Mosquitto [https://mosquitto.org/] or RabbitMQ (with MQTT plugin) [https://www.rabbitmq.com/] server.</li>
@@ -48,6 +49,7 @@ You have to setup 'quest' account with 'guest' password.
 ok
 </pre>
 
+<h4>Run application</h4>
 First at all we need to start application 'mqtt_client' that represents describing client.
 <pre>
 2> <span>application:start(mqtt_client).</span>
@@ -59,6 +61,8 @@ Load records definitions to console environment to make our next steps more clea
 [connect,connection_state,mqtt_client_error,primary_key,
  publish,storage_publish]
 </pre> 
+
+<h4>Connection</h4>
 Assign record #connect{} to Conn_def value:
 <pre>
 4> <span>Conn_def = #connect{</span>
@@ -92,6 +96,7 @@ We have connection PubCon to MQTT server now. Let's create one more client's con
 7> <span>SubCon = mqtt_client:connect(subscriber, Conn_def_2, "localhost", 2883, []).</span>
 &lt;0.116.0&gt;
 </pre>
+<h4>Subscribe and publish</h4>
 To finish set up of the connection we need to suscribe it to some topic for example "Test" topic. Before make subscription we
 need to define callback function. This function will act as 'application' from MQTT protokol terminology. When client receives message
 from server's topic then callback function will be invoked and the message will be passed to it.
@@ -117,5 +122,5 @@ Arg = {{Topic, Topic_QoS}, Message_QoS, Payload}
 @reference [https://mosquitto.org/] - Mosquitto MQTT server.
 @reference [https://www.rabbitmq.com/]] - RabbitMQ server with MQTT plugin.
 <!-- @reference [http://erlangcentral.org/wiki/index.php?title=] - article on Erlang Central. -->
-@see my 
+@see mqtt_client 
 

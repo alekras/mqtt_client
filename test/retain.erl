@@ -16,7 +16,7 @@
 
 %% @hidden
 %% @since 2016-12-19
-%% @copyright 2015-2016 Alexei Krasnopolski
+%% @copyright 2015-2017 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
 %% @doc This module implements a tesing of MQTT retain meaasages.

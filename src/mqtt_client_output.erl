@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2016 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2017 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 %%
 
 %% @since 2015-12-25
-%% @copyright 2015-2016 Alexei Krasnopolski
+%% @copyright 2015-2017 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
 %% @doc @todo Add description to mqtt_client_output.
@@ -40,13 +40,15 @@
 	encode_remaining_length/1,
 	fixed_header/3,
 	variable_header/2,
-	payload/2
+	payload/2,
+	packet/2
 ]).
 -endif.
 
 packet(connect, Conn_config) ->
 	Remaining_packet = <<(variable_header(connect, Conn_config))/binary, (payload(connect, Conn_config))/binary>>,
 	<<(fixed_header(connect, 0, byte_size(Remaining_packet)))/binary, Remaining_packet/binary>>;
+packet(connack, Packet_Id) -> <<(fixed_header(connack, 0, 2))/binary, Packet_Id:16>>;
 packet(publish, #publish{payload = Payload} = Params) ->
 	Remaining_packet = <<(variable_header(publish, {Params#publish.topic}))/binary, 
 											 (payload(publish, Payload))/binary>>,
@@ -64,13 +66,20 @@ packet(publish, {#publish{payload = Payload} = Params, Packet_Id}) ->
 packet(subscribe, {Subscriptions, Packet_Id}) ->
 	Remaining_packet = <<(variable_header(subscribe, Packet_Id))/binary, (payload(subscribe, Subscriptions))/binary>>,
 	<<(fixed_header(subscribe, 0, byte_size(Remaining_packet)))/binary, Remaining_packet/binary>>;
+packet(suback, {Return_Codes, Packet_Id}) ->
+	Remaining_packet = <<(variable_header(suback, Packet_Id))/binary, (payload(suback, Return_Codes))/binary>>,
+	<<(fixed_header(suback, 0, byte_size(Remaining_packet)))/binary, Remaining_packet/binary>>;
 packet(unsubscribe, {Topics, Packet_Id}) ->
 	Remaining_packet = <<(variable_header(unsubscribe, Packet_Id))/binary, (payload(unsubscribe, Topics))/binary>>,
 	<<(fixed_header(unsubscribe, 0, byte_size(Remaining_packet)))/binary, Remaining_packet/binary>>;
+packet(unsuback, Packet_Id) ->
+	<<(fixed_header(unsuback, 0, 2))/binary, Packet_Id:16>>;
 packet(disconnect, _) ->
 	<<(fixed_header(disconnect, 0, 0))/binary>>;
 packet(pingreq, _) ->
 	<<(fixed_header(pingreq, 0, 0))/binary>>;
+packet(pingresp, _) ->
+	<<(fixed_header(pingresp, 0, 0))/binary>>;
 packet(puback, Packet_Id) ->
 	<<(fixed_header(puback, 0, 2))/binary, Packet_Id:16>>;
 packet(pubrec, Packet_Id) ->
@@ -82,12 +91,18 @@ packet(pubcomp, Packet_Id) ->
 
 fixed_header(connect, _Flags, Length) ->
 	<<?CONNECT_PACK_TYPE, (encode_remaining_length(Length))/binary>>;
+fixed_header(connack, _Flags, _Length) ->
+	<<?CONNACK_PACK_TYPE, 2:8>>;
 fixed_header(publish, {Dup, QoS, Retain}, Length) ->
 	<<?PUBLISH_PACK_TYPE, Dup:1, QoS:2, Retain:1, (encode_remaining_length(Length))/binary>>;
 fixed_header(subscribe, _Flags, Length) ->
 	<<?SUBSCRIBE_PACK_TYPE, (encode_remaining_length(Length))/binary>>;
+fixed_header(suback, _Flags, Length) ->
+	<<?SUBACK_PACK_TYPE, (encode_remaining_length(Length))/binary>>;
 fixed_header(unsubscribe, _Flags, Length) ->
 	<<?UNSUBSCRIBE_PACK_TYPE, (encode_remaining_length(Length))/binary>>;
+fixed_header(unsuback, _Flags, _Length) ->
+	<<?UNSUBACK_PACK_TYPE, 2:8>>;
 fixed_header(puback, _Flags, _Length) ->
 	<<?PUBACK_PACK_TYPE, 2:8>>;
 fixed_header(pubrec, _Flags, _Length) ->
@@ -98,6 +113,8 @@ fixed_header(pubcomp, _Flags, _Length) ->
 	<<?PUBCOMP_PACK_TYPE, 2:8>>;
 fixed_header(pingreq, _Flags, _Length) ->
 	<<?PING_PACK_TYPE, 0:8>>;
+fixed_header(pingresp, _Flags, _Length) ->
+	<<?PINGRESP_PACK_TYPE, 0:8>>;
 fixed_header(disconnect, _Flags, _Length) ->
 	<<?DISCONNECT_PACK_TYPE, 0:8>>.
 
@@ -123,6 +140,8 @@ variable_header(publish, {Topic, Packet_Id}) ->
 	TopicBin = unicode:characters_to_binary(Topic, utf8),
 	<<(byte_size(TopicBin)):16, TopicBin/binary, Packet_Id:16>>;
 variable_header(subscribe, Packet_Id) ->
+	<<Packet_Id:16>>;
+variable_header(suback, Packet_Id) ->
 	<<Packet_Id:16>>;
 variable_header(unsubscribe, Packet_Id) ->
 	<<Packet_Id:16>>.
@@ -164,10 +183,16 @@ payload(connect, Config) ->
 		Password_bin/binary>>;
 payload(publish, Payload) ->
 	Payload;
+
 payload(subscribe, []) -> <<>>;
 payload(subscribe, [{Topic, QoS, _} | Subscriptions]) ->
 	TopicBin = unicode:characters_to_binary(Topic, utf8),
 	<<(byte_size(TopicBin)):16, TopicBin/binary, QoS:8, (payload(subscribe, Subscriptions))/binary>>;
+
+payload(suback, []) -> <<>>;
+payload(suback, [Return_Code | Return_Codes]) ->
+	<<Return_Code:8, (payload(suback, Return_Codes))/binary>>;
+
 payload(unsubscribe, []) -> <<>>;
 payload(unsubscribe, [Topic | Topics]) ->
 	TopicBin = unicode:characters_to_binary(Topic, utf8),
