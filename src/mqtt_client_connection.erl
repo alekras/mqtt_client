@@ -253,21 +253,16 @@ handle_cast(_Msg, State) ->
 	NewState :: term(),
 	Timeout :: non_neg_integer() | infinity.
 %% ====================================================================
-handle_info(Info, State) ->
-	Socket = State#connection_state.socket,
-	case Info of
-		{tcp, Socket, Binary} ->
+handle_info({tcp, Socket, Binary}, #connection_state{socket = Socket} = State) ->
 			New_State = socket_stream_process(State,<<(State#connection_state.tail)/binary, Binary/binary>>),
 			{noreply, New_State};
-		{tcp_closed, Socket} ->
+handle_info({tcp_closed, Socket}, State = #connection_state{socket = Socket}) ->
 %			io:format(user, " >>> handle_info tcp_closed for socket: ~p and PID: ~p.~nState:~p~n", [Socket, self(), State]),
 			gen_tcp:close(Socket),
 			{stop, normal, State};
-%			{noreply, State};
-		_ ->
+handle_info(Info, State) ->
 			io:format(user, " >>> handle_info unknown message: ~p state:~p~n", [Info, State]),
-			{noreply, State}
-	end.
+			{noreply, State}.
 
 	
 %% ====================================================================
@@ -320,10 +315,8 @@ socket_stream_process(State, Binary) ->
 		{pingresp, Tail} -> 
 			case maps:get(pingreq, Processes, undefined) of
 				{M, F} ->
-%					Pid ! {pong, State},
 					spawn(M, F, [pong]);
 				F when is_function(F)->
-%					Pid ! {pong, State},
 					spawn(fun() -> apply(F, [pong]) end);
 				_ -> true
 			end,

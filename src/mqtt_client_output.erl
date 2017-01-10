@@ -40,8 +40,7 @@
 	encode_remaining_length/1,
 	fixed_header/3,
 	variable_header/2,
-	payload/2,
-	packet/2
+	payload/2
 ]).
 -endif.
 
@@ -148,19 +147,13 @@ variable_header(unsubscribe, Packet_Id) ->
 
 payload(connect, Config) ->
 	Client_id_bin = unicode:characters_to_binary(Config#connect.client_id, utf8),
-	Will_topic_bin =
+	Will_bin =
 	if Config#connect.will == 0 ->
 				<<>>;
 			true ->
 				WT = unicode:characters_to_binary(Config#connect.will_topic, utf8),
-				<<(byte_size(WT)):16, WT/binary>>
-	end,
-	Will_message_bin =
-	if Config#connect.will == 0 ->
-				<<>>;
-			true ->
 				WM = Config#connect.will_message,
-				<<(byte_size(WM)):16, WM/binary>>
+				<<(byte_size(WT)):16, WT/binary, (byte_size(WM)):16, WM/binary>>
 	end,
 	Username_bin =
 	if length(Config#connect.user_name) == 0 ->
@@ -177,8 +170,7 @@ payload(connect, Config) ->
 				<<(byte_size(PW)):16, PW/binary>>
 	end,
 	<<(byte_size(Client_id_bin)):16, Client_id_bin/binary, 
-		Will_topic_bin/binary, 
-		Will_message_bin/binary,
+		Will_bin/binary, 
 		Username_bin/binary,
 		Password_bin/binary>>;
 payload(publish, Payload) ->
