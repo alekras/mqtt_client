@@ -78,6 +78,7 @@ input_parser(Binary) ->
 				1 -> 
 					<<SizeP:16, Password_bin:SizeP/binary>> = RestBin4
 			end,
+			
 			Config = #connect{
 				client_id = binary_to_list(Client_id), %% @todo utf8 ???
 				user_name = binary_to_list(UserName),
