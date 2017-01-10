@@ -50,8 +50,48 @@ input_parser(Binary) ->
 		<<?CONNECT_PACK_TYPE, Bin/binary>> ->
 			{RestBin, Length} = decode_remaining_length(Bin),
 			PL = Length - 10,
-			<<4:16, "MQTT", 4:8, Flags:8/binary, Keep_Alive:16, RestBin1:PL/binary, Tail/binary>> = RestBin,
-			{connect, Flags, Keep_Alive, RestBin1, Tail};
+			<<4:16, "MQTT", 4:8, 
+				User:1, Password:1, Will_retain:1, Will_QoS:2, Will:1, Clean_Session:1, _:1, 
+				Keep_Alive:16, RestBin1:PL/binary, Tail/binary>> = RestBin,
+			<<Client_id_bin_size:16, Client_id:Client_id_bin_size/binary, RestBin2/binary>> = RestBin1,
+
+			case Will of
+				0 ->
+					WillTopic = <<>>,
+					WillMessage = <<>>,
+					RestBin3 = RestBin2;
+				1 -> 
+					<<SizeT:16, WillTopic:SizeT/binary, SizeM:16, WillMessage:SizeM/binary, RestBin3/binary>> = RestBin2
+			end,
+
+			case User of
+				0 ->
+					UserName = <<>>,
+					RestBin4 = RestBin3;
+				1 -> 
+					<<SizeU:16, UserName:SizeU/binary, RestBin4/binary>> = RestBin3
+			end,
+
+			case Password of
+				0 ->
+					Password_bin = <<>>;
+				1 -> 
+					<<SizeP:16, Password_bin:SizeP/binary>> = RestBin4
+			end,
+			Config = #connect{
+				client_id = binary_to_list(Client_id), %% @todo utf8 ???
+				user_name = binary_to_list(UserName),
+				password = Password_bin,
+				will = Will,
+				will_qos = Will_QoS,
+				will_retain = Will_retain,
+				will_topic = binary_to_list(WillTopic),
+				will_message = WillMessage,
+				clean_session = Clean_Session,
+				keep_alive = Keep_Alive
+			},
+			{connect, Config, Tail};
+
 		<<?CONNACK_PACK_TYPE, 2:8, 0:7, SP:1, Connect_Return_Code:8, Tail/binary>> -> {connack, SP, Connect_Return_Code, return_code_response(Connect_Return_Code), Tail};
 		<<?PUBLISH_PACK_TYPE, _DUP:1, QoS:2, _RETAIN:1, Bin/binary>> ->
 			{RestBin, Length} = decode_remaining_length(Bin),
