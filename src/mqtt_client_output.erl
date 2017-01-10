@@ -47,7 +47,7 @@
 packet(connect, Conn_config) ->
 	Remaining_packet = <<(variable_header(connect, Conn_config))/binary, (payload(connect, Conn_config))/binary>>,
 	<<(fixed_header(connect, 0, byte_size(Remaining_packet)))/binary, Remaining_packet/binary>>;
-packet(connack, Packet_Id) -> <<(fixed_header(connack, 0, 2))/binary, Packet_Id:16>>;
+packet(connack, {SP, Connect_Return_Code}) -> <<(fixed_header(connack, 0, 2))/binary, 0:7, SP:1, Connect_Return_Code:8>>;
 packet(publish, #publish{payload = Payload} = Params) ->
 	Remaining_packet = <<(variable_header(publish, {Params#publish.topic}))/binary, 
 											 (payload(publish, Payload))/binary>>,
