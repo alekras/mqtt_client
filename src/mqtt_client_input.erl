@@ -50,7 +50,7 @@ input_parser(Binary) ->
 		<<?CONNECT_PACK_TYPE, Bin/binary>> ->
 			{RestBin, Length} = decode_remaining_length(Bin),
 			PL = Length - 10,
-			<<4:16, "MQTT", 4:8, Flags:8/binary, Keep_Alive:16, RestBin1:PL/binary, Tail/binary>> = RestBin,
+			<<4:16, "MQTT", 4:8, Flags:1/bytes, Keep_Alive:16, RestBin1:PL/binary, Tail/binary>> = RestBin,
 			{connect, Flags, Keep_Alive, RestBin1, Tail};
 		<<?CONNACK_PACK_TYPE, 2:8, 0:7, SP:1, Connect_Return_Code:8, Tail/binary>> -> {connack, SP, Connect_Return_Code, return_code_response(Connect_Return_Code), Tail};
 		<<?PUBLISH_PACK_TYPE, _DUP:1, QoS:2, _RETAIN:1, Bin/binary>> ->
