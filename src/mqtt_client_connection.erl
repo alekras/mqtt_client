@@ -466,7 +466,7 @@ socket_stream_process(State, Binary) ->
 					socket_stream_process(State, Tail)
 			end;
 		_ ->
-			io:format(user, " >>> handle_info unparsed message: ~p state:~p~n", [Binary, State]),
+			lager:debug("unparsed message: ~p state:~p~n", [Binary, State]),
 			State#connection_state{tail = Binary}
 	end.
 
