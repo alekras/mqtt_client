@@ -130,7 +130,7 @@ input_parser(Binary) ->
 			{RestBin, Length} = decode_remaining_length(Bin),
 			L = Length - 2,
 			<<Packet_Id:16, RestBin1:L/binary, Tail/binary>> = RestBin,
-			{unsubscribe, Packet_Id, RestBin1, Tail};
+			{unsubscribe, Packet_Id, parse_unsubscription(RestBin1, []), Tail};
 		<<?UNSUBACK_PACK_TYPE, Bin/binary>> -> 
 			{RestBin, _Length} = decode_remaining_length(Bin),
 			<<Packet_Id:16, Tail/binary>> = RestBin,
@@ -167,3 +167,6 @@ parse_subscription(<<>>, Subscriptions) -> Subscriptions;
 parse_subscription(<<Size:16, Topic:Size/binary, QoS:8, BinartRest/binary>>, Subscriptions) ->
 	parse_subscription(BinartRest, [{Topic, QoS} | Subscriptions]).
 
+parse_unsubscription(<<>>, Topics) -> Topics;
+parse_unsubscription(<<Size:16, Topic:Size/binary, BinartRest/binary>>, Topics) ->
+	parse_unsubscription(BinartRest, [Topic | Topics]).

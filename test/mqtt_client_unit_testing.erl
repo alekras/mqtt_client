@@ -96,9 +96,9 @@ packet_output() ->
 %	io:format(user, " value=~256p~n", [Value1_2]),
 	?assertEqual(<<16,56,0,4,"MQTT"/utf8,4,246,3,232,0,9,"publisher"/utf8,0,8,"Last_msg"/utf8,0,9,"Good bye!",0,5,"guest"/utf8,0,5,"guest">>, Value1_2),
 
-	Value2 = mqtt_client_output:packet(connack, 100),
+	Value2 = mqtt_client_output:packet(connack, {1, 2}),
 %	io:format(user, " value=~256p~n", [Value2]),
-	?assertEqual(<<32,2,0,100>>, Value2),
+	?assertEqual(<<32,2,1,2>>, Value2),
 
 	Value3 = mqtt_client_output:packet(publish, #publish{topic = "Topic", payload = <<"Test">>}),
 %	io:format(user, " value=~256p~n", [Value3]),
@@ -155,8 +155,18 @@ packet_output() ->
   ?passed.
 
 input_parser() ->
-	?assertEqual({connect, 194, 1000, <<0,9,"publisher"/utf8,0,5,"guest"/utf8,0,5,"guest">>, <<>>}, 
-							 mqtt_client_input:input_parser(<<16,35,0,4,"MQTT"/utf8,4,194,3,232,0,9,"publisher"/utf8,0,5,"guest"/utf8,0,5,"guest">>)),
+	Config = #connect{
+						client_id = "publisher",
+						user_name = "guest",
+						password = <<"guest">>,
+						will = 0,
+						will_message = <<>>,
+						will_topic = [],
+						clean_session = 1,
+						keep_alive = 1000
+					}, 
+	?assertEqual({connect, Config, <<7:8,7:8>>}, 
+							 mqtt_client_input:input_parser(<<16,35,0,4,"MQTT"/utf8,4,194,3,232,0,9,"publisher"/utf8,0,5,"guest"/utf8,0,5,"guest",7:8,7:8>>)),
 	?assertEqual({connack, 1, 0, "0x00 Connection Accepted", <<1:8, 1:8>>}, 
 							 mqtt_client_input:input_parser(<<16#20:8, 2:8, 1:8, 0:8, 1:8, 1:8>>)),
 	?assertEqual({publish, 0, 0, "Topic", <<1:8, 2:8, 3:8, 4:8, 5:8, 6:8>>, <<1:8, 1:8>>}, 
@@ -173,11 +183,11 @@ input_parser() ->
 							 mqtt_client_input:input_parser(<<16#62:8, 2:8, 102:16, 1:8, 1:8>>)),
 	?assertEqual({pubcomp, 103, <<1:8, 1:8>>}, 
 							 mqtt_client_input:input_parser(<<16#70:8, 2:8, 103:16, 1:8, 1:8>>)),
-	?assertEqual({subscribe, 101, <<0,7,"Topic_1"/utf8,0,0,7,"Topic_2"/utf8,1,0,7,"Topic_3"/utf8,2>>, <<7:8,7:8>>}, 
+	?assertEqual({subscribe, 101, [{<<"Topic_3">>,2},{<<"Topic_2">>,1},{<<"Topic_1">>,0}], <<7:8,7:8>>}, 
 							 mqtt_client_input:input_parser(<<130,32,0,101,0,7,"Topic_1"/utf8,0,0,7,"Topic_2"/utf8,1,0,7,"Topic_3"/utf8,2,7,7>>)),
 	?assertEqual({suback, 103, [7], <<1:8, 1:8>>}, 
 							 mqtt_client_input:input_parser(<<16#90:8, 3:8, 103:16, 7:8, 1:8, 1:8>>)),
-	?assertEqual({unsubscribe, 103, <<0,12,"Test_topic_1"/utf8,0,12,"Test_topic_2"/utf8>>, <<8:8, 8:8>>}, 
+	?assertEqual({unsubscribe, 103, [<<"Test_topic_2">>,<<"Test_topic_1">>], <<8:8, 8:8>>}, 
 							 mqtt_client_input:input_parser(<<162,30,0,103,0,12,"Test_topic_1"/utf8,0,12,"Test_topic_2"/utf8, 8:8, 8:8>>)),
 	?assertEqual({unsuback, 103, <<1:8, 1:8>>}, 
 							 mqtt_client_input:input_parser(<<16#B0:8, 2:8, 103:16, 1:8, 1:8>>)),

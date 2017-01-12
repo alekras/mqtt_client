@@ -179,10 +179,11 @@ publish(Pid, Params) ->
 
 -spec subscribe(Pid, Subscriptions) -> Result when
  Pid :: pid(),
- Subscriptions :: [{Topic::string(), QoS::integer(), Callback:: fun() | {module(), fun()} }], 
+ Subscriptions :: [{Topic::string(), QoS::integer(), Callback}], 
+ Callback :: fun((A :: tuple()) -> any()) | {module(), fun((A :: tuple()) -> any())},
  Result :: {suback, [integer()]} | #mqtt_client_error{}. 
 %% 
-%% @doc The function sends a subscribe packet to MQTT server.
+%% @doc The function sends a subscribe packet to MQTT server. Callback function will receive messages from the Topic.
 %% 
 subscribe(Pid, Subscriptions) ->
 	{ok, Ref} = gen_server:call(Pid, {subscribe, Subscriptions}, ?GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
@@ -211,10 +212,10 @@ unsubscribe(Pid, Topics) ->
 
 -spec pingreq(Pid, Callback) -> Result when
  Pid :: pid(),
- Callback :: fun() | {module(), fun()},
+ Callback :: fun((A::tuple()) -> any()) | {module(), fun((A::tuple()) -> any())},
  Result :: ok. 
 %% 
-%% @doc The function sends a ping request to MQTT server.
+%% @doc The function sends a ping request to MQTT server. Response will hit callback function arity 1.
 %% 
 pingreq(Pid, Callback) -> 
 	gen_server:call(Pid, {pingreq, Callback}, ?GEN_SERVER_TIMEOUT).
