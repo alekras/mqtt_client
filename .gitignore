@@ -1,6 +1,7 @@
 /_build/
 /rebar.lock
-/erl.mqtt.client-vsn-1.0.1.zip
+/erl.mqtt.client-*.zip
 /session-db.bin
-/erl.mqtt.client-vsn-1.0.2.zip
 /doc/
+/subscription-db.bin
+/connectpid-db.bin

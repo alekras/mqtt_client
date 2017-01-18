@@ -85,10 +85,10 @@ open_socket(Host, Port, Options) ->
 	Timeout :: non_neg_integer() | infinity.
 %% ====================================================================
 init({Host, Port, Options}) ->
-%	io:format(user, " >>> init connection ~p:~p ~p~n", [Host, Port, Options]),
+	lager:debug(" >>> init connection ~p:~p ~p~n", [Host, Port, Options]),
 	case R = open_socket(Host, Port, Options) of
 		#mqtt_client_error{} -> {stop, R};
-		_ -> {ok, #connection_state{socket = R}}
+		_ -> {ok, #connection_state{socket = R, transport = gen_tcp}}
 	end.
 
 %% handle_call/3
@@ -112,102 +112,113 @@ init({Host, Port, Options}) ->
 handle_call({connect, Conn_config}, From, State) ->
 	handle_call({connect, Conn_config, undefined}, From, State);
 
-handle_call({connect, Conn_config, Callback}, {_, Ref} = From, State) ->
-%	io:format(user, " >>> connect request ~p, ~p~n", [Conn_config, State]),
-	(State#connection_state.storage):start(),
-	case gen_tcp:send(State#connection_state.socket, packet(connect, Conn_config)) of
+handle_call({connect, Conn_config, Callback},
+						{_, Ref} = From,
+						#connection_state{socket = Socket, transport = Transport, storage = Storage} = State) ->
+	Storage:start(), %% @todo move to client(server) start ???
+	case Transport:send(Socket, packet(connect, Conn_config)) of
     ok -> 
-			New_Subsciptions =
-			case Conn_config#connect.clean_session of
-			 1 -> 
-				 (State#connection_state.storage):cleanup(Conn_config#connect.client_id),
-				 #{};
-		    0 ->	 
-					restore_session(State, Conn_config) %% @todo resend messages from stored session
-	    end,
 			New_processes = (State#connection_state.processes)#{connect => From},
-			{reply, {ok, Ref}, State#connection_state{config = Conn_config, default_callback = Callback, processes = New_processes, subscriptions = New_Subsciptions}};
+			New_State = State#connection_state{config = Conn_config, default_callback = Callback, processes = New_processes},
+			case Conn_config#connect.clean_session of
+				1 -> 
+					Storage:cleanup(Conn_config#connect.client_id);
+				0 ->	 
+					restore_session(New_State) 
+	    end,
+			{reply, {ok, Ref}, New_State};
     {error, Reason} -> {reply, {error, Reason}, State}
   end;
 
 ?test_fragment_set_test_flag
 
-handle_call(status, _From, State) ->	
-	{reply, [{session_present, State#connection_state.session_present}, {subscriptions, State#connection_state.subscriptions}], State};
+handle_call(status, _From, #connection_state{storage = Storage} = State) ->	
+	{reply, [{session_present, State#connection_state.session_present}, {subscriptions, Storage:get_all(topic)}], State};
 
 ?test_fragment_break_connection
 
-handle_call({publish, #publish{qos = 0} = Params}, {_, Ref}, State) ->
-%	io:format(user, " >>> publish request ~p, ~p, ~p~n", [Params, Payload, State]),
-	gen_tcp:send(State#connection_state.socket, packet(publish, Params)),
+handle_call({publish, #publish{qos = 0} = Params}, 
+						{_, Ref}, 
+						#connection_state{socket = Socket, transport = Transport} = State) ->
+	Transport:send(Socket, packet(publish, Params)),
 	{reply, {ok, Ref}, State};
 
 ?test_fragment_skip_send_publish
 
-handle_call({publish, #publish{qos = QoS} = Params}, {_, Ref} = From, State) when (QoS =:= 1) orelse (QoS =:= 2) ->
-%	io:format(user, " >>> publish request ~p, ~p, ~p~n", [Params, Payload, State]),
-	Packet_Id = State#connection_state.packet_id,
+handle_call({publish, #publish{qos = QoS} = Params}, 
+						{_, Ref} = From, 
+						#connection_state{socket = Socket, transport = Transport, packet_id = Packet_Id, storage = Storage} = State) when (QoS =:= 1) orelse (QoS =:= 2) ->
 	Packet = packet(publish, {Params, Packet_Id}),
 %% store message before sending
   Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
-	(State#connection_state.storage):save(#storage_publish{key = Prim_key, document = Params}),
-	case gen_tcp:send(State#connection_state.socket, Packet) of
+	Storage:save(#storage_publish{key = Prim_key, document = Params}),
+	case Transport:send(Socket, Packet) of
 		ok -> 
 			New_processes = (State#connection_state.processes)#{Packet_Id => {From, Params}},
 		{reply, {ok, Ref}, State#connection_state{packet_id = next(Packet_Id, State), processes = New_processes}};
 		{error, Reason} -> {reply, {error, Reason}, State}
   end;
 
-handle_call({republish, undefined, Packet_Id}, {_, Ref} = From, State) ->
+handle_call({republish, undefined, Packet_Id},
+						{_, Ref} = From,
+						#connection_state{socket = Socket, transport = Transport} = State) ->
 %	io:format(user, " >>> re-publish request undefined, PI: ~p.~n", [Packet_Id]),
 	Packet = packet(pubrel, Packet_Id),
-	case gen_tcp:send(State#connection_state.socket, Packet) of
+	case Transport:send(Socket, Packet) of
 		ok ->
 			New_processes = (State#connection_state.processes)#{Packet_Id => {From, #publish{acknowleged = pubrec}}},
 	    {reply, {ok, Ref}, State#connection_state{processes = New_processes}};
 		{error, Reason} -> {reply, {error, Reason}, State}
   end;
-handle_call({republish, #publish{topic = undefined, acknowleged = pubrec}, Packet_Id}, {_, Ref} = From, State) ->
+handle_call({republish, #publish{topic = undefined, acknowleged = pubrec}, Packet_Id},
+						{_, Ref} = From,
+						#connection_state{socket = Socket, transport = Transport} = State) ->
 %	io:format(user, " >>> re-publish request #publish{topic = undefined, acknowleged = pubrec}, PI: ~p.~n", [Packet_Id]),
 	Packet = packet(pubrec, Packet_Id),
-	case gen_tcp:send(State#connection_state.socket, Packet) of
+	case Transport:send(Socket, Packet) of
 		ok ->
 			New_processes = (State#connection_state.processes)#{Packet_Id => {From, #publish{acknowleged = pubrec}}},
 	    {reply, {ok, Ref}, State#connection_state{processes = New_processes}};
 		{error, Reason} -> {reply, {error, Reason}, State}
   end;
-handle_call({republish, Params, Packet_Id}, {_, Ref} = From, State) ->
+handle_call({republish, Params, Packet_Id},
+						{_, Ref} = From,
+						#connection_state{socket = Socket, transport = Transport} = State) ->
 %	io:format(user, " >>> re-publish request ~p, PI: ~p.~n", [Params, Packet_Id]),
 	Packet = packet(publish, {Params, Packet_Id}),
-  case gen_tcp:send(State#connection_state.socket, Packet) of
+  case Transport:send(Socket, Packet) of
     ok -> 
 	    New_processes = (State#connection_state.processes)#{Packet_Id => {From, Params}},
 	    {reply, {ok, Ref}, State#connection_state{processes = New_processes}};
     {error, Reason} -> {reply, {error, Reason}, State}
   end;
 
-handle_call({subscribe, Subscriptions}, {_, Ref} = From, State) ->
-%%	io:format(user, " >>> subscribe request ~p, ~p~n", [Subscriptions, State]),
+handle_call({subscribe, Subscriptions},
+						{_, Ref} = From,
+						#connection_state{socket = Socket, transport = Transport} = State) ->
 	Packet_Id = State#connection_state.packet_id,
-	case gen_tcp:send(State#connection_state.socket, packet(subscribe, {Subscriptions, Packet_Id})) of
+	case Transport:send(Socket, packet(subscribe, {Subscriptions, Packet_Id})) of
 		ok ->
 			New_processes = (State#connection_state.processes)#{Packet_Id => {From, Subscriptions}},
 			{reply, {ok, Ref}, State#connection_state{packet_id = next(Packet_Id, State), processes = New_processes}};
 		{error, Reason} -> {reply, {error, Reason}, State}
 	end;
 
-handle_call({unsubscribe, Topics}, {_, Ref} = From, State) ->
-%	io:format(user, " >>> unsubscribe request ~p, ~p~n", [Topic, State]),
+handle_call({unsubscribe, Topics},
+						{_, Ref} = From,
+						#connection_state{socket = Socket, transport = Transport} = State) ->
 	Packet_Id = State#connection_state.packet_id,
-	case gen_tcp:send(State#connection_state.socket, packet(unsubscribe, {Topics, Packet_Id})) of
+	case Transport:send(Socket, packet(unsubscribe, {Topics, Packet_Id})) of
 		ok ->
 			New_processes = (State#connection_state.processes)#{Packet_Id => {From, Topics}},
 			{reply, {ok, Ref}, State#connection_state{packet_id = next(Packet_Id, State), processes = New_processes}};
 		{error, Reason} -> {reply, {error, Reason}, State}
 	end;
 
-handle_call(disconnect, _From, #connection_state{config = Config} = State) ->
-	case gen_tcp:send(State#connection_state.socket, packet(disconnect, false)) of
+handle_call(disconnect,
+						_From,
+						#connection_state{socket = Socket, transport = Transport, config = Config} = State) ->
+	case Transport:send(Socket, packet(disconnect, false)) of
     ok -> 
 			lager:info("Client ~p is disconnected.", [Config#connect.client_id]),
 			{stop, normal, State};
@@ -215,11 +226,11 @@ handle_call(disconnect, _From, #connection_state{config = Config} = State) ->
 		{error, Reason} -> {reply, {error, Reason}, State}
 	end;
 
-handle_call({pingreq, Callback}, _From, State) ->
-%	io:format(user, " >>> ping request ~p~n", [State]),
-  case gen_tcp:send(State#connection_state.socket, packet(pingreq, false)) of
+handle_call({pingreq, Callback},
+						_From,
+						#connection_state{socket = Socket, transport = Transport} = State) ->
+  case Transport:send(Socket, packet(pingreq, false)) of
     ok ->
-%			Pid = spawn_link(?MODULE, wait_pong, []),
 			New_processes = (State#connection_state.processes)#{pingreq => Callback},
 			{reply, ok, State#connection_state{
 																				processes = New_processes, 
@@ -256,15 +267,13 @@ handle_cast(_Msg, State) ->
 handle_info({tcp, Socket, Binary}, #connection_state{socket = Socket} = State) ->
 			New_State = socket_stream_process(State,<<(State#connection_state.tail)/binary, Binary/binary>>),
 			{noreply, New_State};
-handle_info({tcp_closed, Socket}, State = #connection_state{socket = Socket}) ->
-%			io:format(user, " >>> handle_info tcp_closed for socket: ~p and PID: ~p.~nState:~p~n", [Socket, self(), State]),
-			gen_tcp:close(Socket),
+handle_info({tcp_closed, Socket}, State = #connection_state{socket = Socket, transport = Transport}) ->
+			Transport:close(Socket),
 			{stop, normal, State};
 handle_info(Info, State) ->
-			io:format(user, " >>> handle_info unknown message: ~p state:~p~n", [Info, State]),
+			lager:warning("handle_info unknown message: ~p state:~p~n", [Info, State]),
 			{noreply, State}.
 
-	
 %% ====================================================================
 %% @doc <a href="http://www.erlang.org/doc/man/gen_server.html#Module:terminate-2">gen_server:terminate/2</a>
 %% @private
@@ -294,12 +303,13 @@ code_change(_OldVsn, State, _Extra) ->
 %% ====================================================================
 
 socket_stream_process(State, <<>>) -> 
-%	io:format(user, " --<- socket_stream_process message: state:~p Bin: Empty~n", [State]),
 	State;
 socket_stream_process(State, Binary) ->
 % Common values:
+	Socket = State#connection_state.socket,
+	Transport = State#connection_state.transport,
   Processes = State#connection_state.processes,
-%	io:format(user, " ->-- socket_stream_process message: state:~p Bin: ~p~n", [State, Binary]),
+	Storage = State#connection_state.storage,
 	case input_parser(Binary) of
 		{connack, SP, CRC, Msg, Tail} ->
 			case maps:get(connect, Processes, undefined) of
@@ -328,43 +338,36 @@ socket_stream_process(State, Binary) ->
 			case maps:get(Packet_Id, Processes, undefined) of
 				{{Pid, Ref}, Subscriptions} when is_list(Subscriptions) ->
 %% store session subscriptions
+       		Client_Id = (State#connection_state.config)#connect.client_id,
 					[ begin 
-          		Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = 0, topic = Topic},
-          		(State#connection_state.storage):save(#storage_publish{key = Prim_key, document = {QoS, Callback}})
+							CID_List = Storage:get({topic, Topic}),
+							New_CID_List = lists:keystore(Client_Id, 1, CID_List, {Client_Id, QoS, Callback}),
+          		Storage:save(#storage_subscription{topic = Topic, document = New_CID_List})
 						end || {Topic, QoS, Callback} <- Subscriptions], %% @todo check clean_session flag
-					
-					Fun = fun ({Topic, QoS, Callback}, Subs_Map) ->
-									Subs_Map#{Topic => {QoS, Callback}}
-								end,
-					New_Subscriptions = lists:foldl(Fun, State#connection_state.subscriptions, Subscriptions),
 					Pid ! {suback, Ref, Return_codes},
 					socket_stream_process(
 						State#connection_state{
-							processes = maps:remove(Packet_Id, Processes),
-							subscriptions = New_Subscriptions},
+							processes = maps:remove(Packet_Id, Processes)
+						},
 						Tail);
 				undefined ->
 					socket_stream_process(State, Tail)
 			end;
 		{unsuback, Packet_Id, Tail} ->
-%			io:format(user, " >>> handle_info unsuback: Pk Id=~p state=~p~n", [Packet_Id, State]),
 			case maps:get(Packet_Id, Processes, undefined) of
 				{{Pid, Ref}, Topics} ->
 					Pid ! {unsuback, Ref},
 %% discard session subscriptions
 					[ begin 
-          		Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = 0, topic = Topic},
-          		(State#connection_state.storage):remove(Prim_key)
+          		Client_Id = (State#connection_state.config)#connect.client_id,
+							CID_List = Storage:get({topic, Topic}),
+							New_CID_List = lists:keydelete(Client_Id, 1, CID_List),
+          		Storage:save(#storage_subscription{topic = Topic, document = New_CID_List})
 						end || Topic <- Topics], %% @todo check clean_session flag
-					
-					Fun = fun (Topic, Subs_Map) ->
-									maps:remove(Topic, Subs_Map)
-								end,
-					New_Subscribsions = lists:foldl(Fun, State#connection_state.subscriptions, Topics),
 					socket_stream_process(
 						State#connection_state{
-							processes = maps:remove(Packet_Id, Processes),
-							subscriptions = New_Subscribsions}, 
+							processes = maps:remove(Packet_Id, Processes)
+						}, 
 						Tail);
 				undefined ->
 					socket_stream_process(State, Tail)
@@ -378,7 +381,7 @@ socket_stream_process(State, Binary) ->
 				?test_fragment_skip_send_puback
 				1 ->
 					delivery_to_application(State, Topic, QoS, Payload),
-					case gen_tcp:send(State#connection_state.socket, packet(puback, Packet_Id)) of
+					case Transport:send(Socket, packet(puback, Packet_Id)) of
 						ok -> ok;
 						{error, _Reason} -> ok
 					end,
@@ -392,8 +395,8 @@ socket_stream_process(State, Binary) ->
 					      delivery_to_application(State, Topic, QoS, Payload),
 %% store PI after receiving message
                 Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
-                (State#connection_state.storage):save(#storage_publish{key = Prim_key, document = #publish{acknowleged = pubrec}}),
-					      case gen_tcp:send(State#connection_state.socket, packet(pubrec, Packet_Id)) of
+                Storage:save(#storage_publish{key = Prim_key, document = #publish{acknowleged = pubrec}}),
+					      case Transport:send(Socket, packet(pubrec, Packet_Id)) of
 					        ok -> 
         				    New_processes = Processes#{Packet_Id => {undefined, #publish{topic = Topic, qos = QoS, acknowleged = pubrec}}},
 				        	  State#connection_state{processes = New_processes};
@@ -405,13 +408,12 @@ socket_stream_process(State, Binary) ->
 			end;
 		?test_fragment_skip_rcv_puback
 		{puback, Packet_Id, Tail} ->
-%			io:format(user, " >>> handle_info puback: Pk Id=~p state=~p~n", [Packet_Id, State]),
 			case maps:get(Packet_Id, Processes, undefined) of
 				{{Pid, Ref}, _Params} ->
 					Pid ! {puback, Ref},
 %% discard message after pub ack
           Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
-	        (State#connection_state.storage):remove(Prim_key),
+	        Storage:remove(Prim_key),
 					socket_stream_process(
 						State#connection_state{processes = maps:remove(Packet_Id, Processes)},
 						Tail);
@@ -425,9 +427,9 @@ socket_stream_process(State, Binary) ->
 				{From, Params} ->
 %% store message before pubrel
           Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
-          (State#connection_state.storage):save(#storage_publish{key = Prim_key, document = undefined}),
+          Storage:save(#storage_publish{key = Prim_key, document = undefined}),
 					New_processes = Processes#{Packet_Id => {From, Params#publish{acknowleged = pubrec}}},
-					case gen_tcp:send(State#connection_state.socket, packet(pubrel, Packet_Id)) of
+					case Transport:send(Socket, packet(pubrel, Packet_Id)) of
 						ok -> ok; 
 						{error, _Reason} -> ok
 					end,
@@ -442,9 +444,9 @@ socket_stream_process(State, Binary) ->
 				{_From, _Params} ->
 %% discard PI before pubcomp send
           Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
-          (State#connection_state.storage):remove(Prim_key),
+          Storage:remove(Prim_key),
 					New_processes = maps:remove(Packet_Id, Processes),
-					case gen_tcp:send(State#connection_state.socket, packet(pubcomp, Packet_Id)) of
+					case Transport:send(Socket, packet(pubcomp, Packet_Id)) of
 						ok -> ok;
 						{error, _Reason} -> ok
 					end,
@@ -460,7 +462,7 @@ socket_stream_process(State, Binary) ->
 					Pid ! {pubcomp, Ref},
 %% discard message after pub comp
           Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
-	        (State#connection_state.storage):remove(Prim_key),
+	        Storage:remove(Prim_key),
 					socket_stream_process(State#connection_state{processes = maps:remove(Packet_Id, Processes)}, Tail);
 				undefined ->
 					socket_stream_process(State, Tail)
@@ -470,24 +472,21 @@ socket_stream_process(State, Binary) ->
 			State#connection_state{tail = Binary}
 	end.
 
-next(Packet_Id, State) ->
+next(Packet_Id, #connection_state{storage = Storage} = State) ->
 	PI =
 		if Packet_Id == 16#FFFF -> 0;
 			true -> Packet_Id + 1 
 		end,
   Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = PI},
-	case (State#connection_state.storage):exist(Prim_key) of
+	case Storage:exist(Prim_key) of
 		false -> PI;
 		true -> next(PI, State)
 	end.
 
-get_topic_attributes(State, Topic) ->
-	case maps:get(Topic, State#connection_state.subscriptions, undefined) of
-		undefined ->
-			[TopicVal || {TopicKey, TopicVal} <- maps:to_list(State#connection_state.subscriptions), is_match(Topic, TopicKey)];
-		Value ->
-			[Value]
-	end.
+get_topic_attributes(#connection_state{storage = Storage} = State, Topic) ->
+	Client_Id = (State#connection_state.config)#connect.client_id,
+ 	Topic_List = lists:flatten([[{Topic, QoS, Callback} || {CID, QoS, Callback} <- L, CID =:= Client_Id] || #storage_subscription{topic = Topic, document = L} <- Storage:get_all(topic)]),
+	[{QoS, Callback} || {TopicKey, QoS, Callback} <- Topic_List, is_match(Topic, TopicKey)].
 
 is_match(Topic, RegexpFilter) ->
   R1 = re:replace(RegexpFilter, "\\+", "([^/]*)", [global, {return, list}]),
@@ -524,13 +523,14 @@ do_callback(Callback, Args) ->
 	  F when is_function(F) -> spawn(fun() -> apply(F, Args) end);
 		_ -> false
   end.
-	
-restore_session(State, Conn_config) ->
- 	Records = (State#connection_state.storage):get_all(Conn_config#connect.client_id),
-	MessageList = [{PI, Doc} || #storage_publish{key = #primary_key{packet_id = PI, topic = []}, document = Doc} <- Records],
-	TopicList = [{Topic, QoS, Callback} || #storage_publish{key = #primary_key{packet_id = 0, topic = Topic}, document = {QoS, Callback}} <- Records],
-  [spawn(gen_server, call, [self(), {republish, Params, PI}, ?GEN_SERVER_TIMEOUT])	|| {PI, Params} <- MessageList],
-	Fun = fun ({Topic, QoS, Callback}, Subs_Map) ->
-									Subs_Map#{Topic => {QoS, Callback}}
-				end,
-	lists:foldl(Fun, State#connection_state.subscriptions, TopicList).
+
+restore_session(#connection_state{config = #connect{client_id = Client_Id}, storage = Storage}) ->
+ 	Records = Storage:get_all({session, Client_Id}),
+	MessageList = [{PI, Doc} || #storage_publish{key = #primary_key{packet_id = PI}, document = Doc} <- Records],
+  [spawn(gen_server, call, [self(), {republish, Params, PI}, ?GEN_SERVER_TIMEOUT])	|| {PI, Params} <- MessageList].
+
+%% 	TopicList = [[{Topic, QoS, Callback} || {CID, QoS, Callback} <- L, CID =:= Client_Id] || #storage_subscription{topic = Topic, document = L} <- Storage:get_all(topic)],
+%% 	Fun = fun ({Topic, QoS, Callback}, Subs_Map) ->
+%% 									Subs_Map#{Topic => {QoS, Callback}}
+%% 				end,
+%% 	lists:foldl(Fun, State#connection_state.subscriptions, lists:flatten(TopicList)).

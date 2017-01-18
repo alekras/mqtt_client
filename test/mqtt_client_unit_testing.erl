@@ -211,4 +211,7 @@ is_match() ->
 	?assert(mqtt_client_connection:is_match("Season/Spring/Month/March/25", "Season/+/Month/+/25")),
 	?assert(mqtt_client_connection:is_match("Winter/Feb/23", "Winter/#")),
 	?assert(mqtt_client_connection:is_match("/Feb/23", "/+/23")),
+	?assert(mqtt_client_connection:is_match("/Feb/23", "/Feb/23")),
+	?assertNot(mqtt_client_connection:is_match("/Feb/23", "/February/23")),
+
 	?passed.

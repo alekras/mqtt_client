@@ -43,28 +43,42 @@
 -record(primary_key,
 	{
 		client_id :: string(),
-		packet_id = 0 :: integer(),
-		topic = [] :: string()
+		packet_id = 0 :: integer()
 	}
 ).
 
 -record(storage_publish,
 	{
     key :: #primary_key{},
-		document :: #publish{} | tuple()
+		document :: #publish{}
+	}
+).
+
+-record(storage_subscription,
+	{
+    topic :: string(),
+		document :: tuple()
+	}
+).
+
+-record(storage_connectpid,
+	{
+		client_id :: string(),
+		pid :: pid()
 	}
 ).
 
 -record(connection_state, 
   { socket :: port(),
+		transport :: atom(),
 		config :: #connect{},
 		storage = mqtt_client_dets_dao :: atom(),
 		default_callback :: tuple(),
 		session_present :: 0 | 1,
 		connected = 0 :: 0 | 1,
 		packet_id = 100 :: integer(),
-		subscriptions = #{} :: map(), %% @todo keep in persistance storage
-		processes = #{} :: map(), %% @todo keep in persistance storage
+%%		subscriptions = #{} :: map(), %% @todo keep in persistance storage
+		processes = #{} :: map(), %% @todo keep in persistance storage for QoS =1,2
 		tail = <<>> :: binary(),
 		ping_count = 0 :: integer(),
 		test_flag :: atom() %% for testing only

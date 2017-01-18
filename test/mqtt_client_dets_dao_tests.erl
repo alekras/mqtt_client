@@ -62,41 +62,59 @@ dets_dao_test_() ->
 
 do_start() ->
 	mqtt_client_dets_dao:start(),
-	dets:delete_all_objects(session_db).
+	dets:delete_all_objects(session_db),
+	dets:delete_all_objects(subscription_db),
+	dets:delete_all_objects(connectpid_db).
 
 do_stop(_X) ->
 	dets:delete_all_objects(session_db),
+	dets:delete_all_objects(session_db),
+	dets:delete_all_objects(subscription_db),
 	mqtt_client_dets_dao:close().	
 
 create() ->
-%	?debug_Msg("::test:: create."),
 	mqtt_client_dets_dao:save(#storage_publish{key = #primary_key{client_id = lemon, packet_id = 101}, document = #publish{topic = "AK", payload = <<"Payload lemon 1">>}}),
 	mqtt_client_dets_dao:save(#storage_publish{key = #primary_key{client_id = orange, packet_id = 101}, document = #publish{topic = "AK", payload = <<"Payload orange 1">>}}),
 	mqtt_client_dets_dao:save(#storage_publish{key = #primary_key{client_id = lemon, packet_id = 10101}, document = #publish{topic = "AK", payload = <<"Payload 2">>}}),
 	mqtt_client_dets_dao:save(#storage_publish{key = #primary_key{client_id = lemon, packet_id = 201}, document = #publish{topic = "AK", payload = <<"Payload 3">>}}),
-	mqtt_client_dets_dao:save(#storage_publish{key = #primary_key{client_id = orange, topic = "AKtest"}, document = {0, {erlang, timestamp}}}),
-	mqtt_client_dets_dao:save(#storage_publish{key = #primary_key{client_id = lemon, topic = "Winter/December"}, document = {1, {length}}}),
+
+	mqtt_client_dets_dao:save(#storage_subscription{topic = "AKtest", document = [{"lemon", 0, {erlang, timestamp}}]}),
+	mqtt_client_dets_dao:save(#storage_subscription{topic = "Winter/December", document = [{"orange", 1, {length}}]}),
+
+	mqtt_client_dets_dao:save(#storage_connectpid{client_id = "lemon", pid = list_to_pid("<0.4.1>")}),
+	mqtt_client_dets_dao:save(#storage_connectpid{client_id = "orange", pid = list_to_pid("<0.4.2>")}),
+	mqtt_client_dets_dao:save(#storage_connectpid{client_id = "apple", pid = list_to_pid("<0.4.3>")}),
+
 	R = dets:match_object(session_db, #storage_publish{_ = '_'}),
-%	?debug_Fmt("::test:: after create ~p", [R]),	
-	?assertEqual(6, length(R)),
+	?debug_Fmt("::test:: after create ~p", [R]),	
+	?assertEqual(4, length(R)),
+	R1 = dets:match_object(subscription_db, #storage_subscription{_ = '_'}),
+	?debug_Fmt("::test:: after create ~p", [R1]),	
+	?assertEqual(2, length(R1)),
+	R2 = dets:match_object(connectpid_db, #storage_connectpid{_ = '_'}),
+	?debug_Fmt("::test:: after create ~p", [R2]),	
+	?assertEqual(3, length(R2)),
 	?passed.
-	
+
 read() ->
-%	?debug_Msg("::test:: read."),
 	R = mqtt_client_dets_dao:get(#primary_key{client_id = lemon, packet_id = 101}),
 %	?debug_Fmt("::test:: read returns ~120p", [R]),	
 	?assertEqual(#publish{topic = "AK",payload = <<"Payload lemon 1">>}, R#storage_publish.document),
+	R1 = mqtt_client_dets_dao:get({topic, "AKtest"}),
+%	?debug_Fmt("::test:: read returns ~120p", [R1]),	
+	?assertEqual([{"lemon", 0, {erlang, timestamp}}], R1),
+	R2 = mqtt_client_dets_dao:get({client_id, "apple"}),
+%	?debug_Fmt("::test:: read returns ~120p", [R2]),	
+	?assertEqual(list_to_pid("<0.4.3>"), R2#storage_connectpid.pid),
 	?passed.
 	
 read_all() ->
-%	?debug_Msg("::test:: read ALL."),
-	R = mqtt_client_dets_dao:get_all(lemon),
+	R = mqtt_client_dets_dao:get_all({session, lemon}),
 %	?debug_Fmt("::test:: read returns ~120p", [R]),	
-	?assertEqual(4, length(R)),
+	?assertEqual(3, length(R)),
 	?passed.
 	
 update() ->
-%	?debug_Msg("::test:: update."),	
 	mqtt_client_dets_dao:save(#storage_publish{key = #primary_key{client_id = lemon, packet_id = 101}, document = #publish{topic = "", payload = <<>>}}),
 	R = mqtt_client_dets_dao:get(#primary_key{client_id = lemon, packet_id = 101}),
 %	?debug_Fmt("::test:: read returns ~120p", [R]),
@@ -108,9 +126,8 @@ update() ->
 	?passed.
 	
 delete() ->
-%	?debug_Msg("::test:: delete."),
 	mqtt_client_dets_dao:remove(#primary_key{client_id = lemon, packet_id = 101}),
 	R = dets:match_object(session_db, #storage_publish{_ = '_'}),
 %	?debug_Fmt("::test:: after delete ~p", [R]),	
-	?assertEqual(5, length(R)),
+	?assertEqual(3, length(R)),
 	?passed.
