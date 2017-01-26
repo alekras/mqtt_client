@@ -54,10 +54,18 @@
 	}
 ).
 
--record(storage_subscription,
+-record(subs_primary_key,
 	{
     topic :: string(),
-		document :: tuple()
+		client_id :: string()
+	}
+).
+
+-record(storage_subscription,
+	{
+    key :: #subs_primary_key{},
+		qos = 0 :: 0 | 1 | 2,
+		callback :: tuple()
 	}
 ).
 

@@ -46,11 +46,6 @@
 	pingreq/2,
 	disconnect/1
 ]).
-%% <dl>
-%% <dt></dt>
-%% <dd></dd>
-%% </dl>
-
 
 -spec connect(Connection_id, Conn_config, Host, Port, Socket_options) -> Result when
   Connection_id :: atom(),
@@ -115,7 +110,7 @@ connect(Connection_id, Conn_config, Host, Port, Default_Callback, Socket_options
 			end;
 		#mqtt_client_error{} = Error -> Error;
 		Exit ->
-			io:format(user, " >>> client catched: ~p, ~n", [Exit])
+			lager:error(" >>> client catched: ~p, ~n", [Exit])
 	end.
 
 -spec status(Pid) -> Result when
@@ -267,7 +262,8 @@ start(_Type, StartArgs) ->
 %% 	A = application:get_all_env(lager),
 %%   io:format(user, " >>> lager env: ~p~n", [A])
 	end,
-	
+	application:load(sasl),
+%	lager:debug("running apps: ~p",[application:which_applications()]),	
   case supervisor:start_link({local, mqtt_client_sup}, mqtt_client_sup, StartArgs) of
 		{ok, Pid} ->
 			{ok, Pid};

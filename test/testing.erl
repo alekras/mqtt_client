@@ -207,6 +207,21 @@ do_setup({_QoS, retain} = _X) ->
 		[]
 	),
 	[P1, S1, S2];
+do_setup({_, keep_alive}) ->
+%  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
+	mqtt_client:connect(
+		test_cli, 
+		#connect{
+			client_id = "test_cli",
+			user_name = "guest",
+			password = <<"guest">>,
+			clean_session = 1,
+			keep_alive = 5
+		}, 
+		"localhost", 
+		?TEST_SERVER_PORT, 
+		[]
+	);
 do_setup(_X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	mqtt_client:connect(

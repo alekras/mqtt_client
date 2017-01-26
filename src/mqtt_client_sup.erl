@@ -86,13 +86,8 @@ new_connection(Connection_id, Host, Port, Options) ->
 				supervisor:start_child(?MODULE, Child_spec) 
 			catch
 				exit:{noproc,_R1} -> 
-%%					io:format(user, "     catched: exit:{noproc, ~p}~n", [_R1]), 
 					{error, {#mqtt_client_error{type=connection, message="unexpected server connection drop"}, undef}}
 			end,
-%% >>> debug
-%%  io:format(user, "     returns: ~p~n", [R]),
-%%  io:format(user, "     from name to pid: ~p~n", [whereis(DS_name)]),
-%% <<< debug
   case R of
     {ok, _Pid} -> R;
     {ok, Pid, _Info} -> {ok, Pid};
@@ -115,8 +110,8 @@ new_connection(Connection_id, Host, Port, Options) ->
 %%     [Connection_id] -> close_connection(Connection_id);
 %%     [] -> ok
 %%   end.
+
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
-
 

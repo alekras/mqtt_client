@@ -51,6 +51,7 @@ mqtt_client_test_() ->
           fun testing:do_setup/1, 
           fun testing:do_cleanup/2, 
           [
+            {{1, keep_alive}, fun keep_alive/2},
             {{1, combined}, fun combined/2},
             {{1, subs_list}, fun subs_list/2},
             {{1, subs_filter}, fun subs_filter/2},
@@ -232,9 +233,10 @@ combined(_, Conn) -> {"combined", timeout, 100, fun() ->
 	R11 = mqtt_client:publish(Conn, #publish{topic = "AKtest", qos = 2}, <<"Test Payload QoS = 2.">>), 
 	?assertEqual(ok, R11),
 
-	wait_all(9),
+	W = wait_all(9),
 	
 	unregister(test_result),
+	?assert(W),
 
 	?passed
 end}.
@@ -254,9 +256,11 @@ subs_list(_, Conn) -> {"subscribtion list", timeout, 100, fun() ->
 	R9 = mqtt_client:unsubscribe(Conn, ["Summer", "Winter"]), 
 	?assertEqual(unsuback, R9),
 
-	wait_all(3),
+	W = wait_all(3),
 	
 	unregister(test_result),
+	?assert(W),
+
 	?PASSED
 end}.
 
@@ -275,8 +279,24 @@ subs_filter(_, Conn) -> {"subscription filter", fun() ->
 	R9 = mqtt_client:unsubscribe(Conn, ["Summer/+", "Winter/#"]), 
 	?assertEqual(unsuback, R9),
 
-	wait_all(3),
+	W = wait_all(3),
 	
+	unregister(test_result),
+	?assert(W),
+	?PASSED
+end}.
+
+keep_alive(_, Conn) -> {"keep alive test", timeout, 15, fun() ->  
+	register(test_result, self()),
+	R1 = mqtt_client:pingreq(Conn, {?MODULE, ping_callback}), 
+	?assertEqual(ok, R1),
+	timer:sleep(5000),
+	R2 = mqtt_client:status(Conn), 
+	?assertEqual([{session_present,0},{subscriptions,[]}], R2),
+	timer:sleep(5000),
+	R3 = mqtt_client:status(Conn), 
+	?assertEqual(disconnected, R3),
+
 	unregister(test_result),
 	?PASSED
 end}.
