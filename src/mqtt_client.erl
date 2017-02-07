@@ -98,14 +98,14 @@ connect(Connection_id, Conn_config, Host, Port, Default_Callback, Socket_options
 	%% @todo check input parameters
 	case mqtt_client_sup:new_connection(Connection_id, Host, Port, Socket_options) of
 		{ok, Pid} ->
-			{ok, Ref} = gen_server:call(Pid, {connect, Conn_config, Default_Callback}, ?GEN_SERVER_TIMEOUT),
+			{ok, Ref} = gen_server:call(Pid, {connect, Conn_config, Default_Callback}, ?MQTT_GEN_SERVER_TIMEOUT),
 			receive
 				{connack, Ref, _SP, 0, _Msg} -> 
 					lager:info("Client ~p is successfuly connected to ~p:~p", [Conn_config#connect.client_id, Host, Port]),
 					Pid;
 				{connack, Ref, _, ErrNo, Msg} -> 
 					#mqtt_client_error{type = connection, errno = ErrNo, source = "mqtt_client:conect/6", message = Msg}
-			after ?GEN_SERVER_TIMEOUT ->
+			after ?MQTT_GEN_SERVER_TIMEOUT ->
 					#mqtt_client_error{type = connection, source = "mqtt_client:conect/6", message = "timeout"}
 			end;
 		#mqtt_client_error{} = Error -> Error;
@@ -123,7 +123,7 @@ status(Pid) ->
 	case is_process_alive(Pid) of
 		true ->
 			try
-				gen_server:call(Pid, status, ?GEN_SERVER_TIMEOUT)
+				gen_server:call(Pid, status, ?MQTT_GEN_SERVER_TIMEOUT)
 			catch
 				_:_ -> disconnected
 			end;
@@ -149,7 +149,7 @@ publish(Pid, Params, Payload) ->
 %% @doc The function sends a publish packet to MQTT server.
 %% 
 publish(Pid, Params) -> 
-	case gen_server:call(Pid, {publish, Params}, ?GEN_SERVER_TIMEOUT) of
+	case gen_server:call(Pid, {publish, Params}, ?MQTT_GEN_SERVER_TIMEOUT) of
 		{ok, Ref} -> 
 			case Params#publish.qos of
 				0 -> ok;
@@ -157,14 +157,14 @@ publish(Pid, Params) ->
 					receive
 						{puback, Ref} -> 
 							ok
-					after ?GEN_SERVER_TIMEOUT ->
+					after ?MQTT_GEN_SERVER_TIMEOUT ->
 						#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = "puback timeout"}
 					end;
 				2 ->
 					receive
 						{pubcomp, Ref} -> 
 							ok
-					after ?GEN_SERVER_TIMEOUT ->
+					after ?MQTT_GEN_SERVER_TIMEOUT ->
 						#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = "pubcomp timeout"}
 					end
 			end;
@@ -181,11 +181,11 @@ publish(Pid, Params) ->
 %% @doc The function sends a subscribe packet to MQTT server. Callback function will receive messages from the Topic.
 %% 
 subscribe(Pid, Subscriptions) ->
-	{ok, Ref} = gen_server:call(Pid, {subscribe, Subscriptions}, ?GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
+	{ok, Ref} = gen_server:call(Pid, {subscribe, Subscriptions}, ?MQTT_GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
 	receive
 		{suback, Ref, RC} -> 
 			{suback, RC}
-	after ?GEN_SERVER_TIMEOUT ->
+	after ?MQTT_GEN_SERVER_TIMEOUT ->
 		#mqtt_client_error{type = subscribe, source = "mqtt_client:subscribe/2", message = "subscribe timeout"}
 	end.
 
@@ -197,11 +197,11 @@ subscribe(Pid, Subscriptions) ->
 %% @doc The function sends a subscribe packet to MQTT server.
 %% 
 unsubscribe(Pid, Topics) ->
-	{ok, Ref} = gen_server:call(Pid, {unsubscribe, Topics}, ?GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
+	{ok, Ref} = gen_server:call(Pid, {unsubscribe, Topics}, ?MQTT_GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
 	receive
 		{unsuback, Ref} -> 
 			unsuback
-	after ?GEN_SERVER_TIMEOUT ->
+	after ?MQTT_GEN_SERVER_TIMEOUT ->
 		#mqtt_client_error{type = subscribe, source = "mqtt_client:unsubscribe/2", message = "unsubscribe timeout"}
 	end.
 
@@ -213,7 +213,7 @@ unsubscribe(Pid, Topics) ->
 %% @doc The function sends a ping request to MQTT server. Response will hit callback function arity 1.
 %% 
 pingreq(Pid, Callback) -> 
-	gen_server:call(Pid, {pingreq, Callback}, ?GEN_SERVER_TIMEOUT).
+	gen_server:call(Pid, {pingreq, Callback}, ?MQTT_GEN_SERVER_TIMEOUT).
 
 -spec disconnect(Pid) -> Result when
  Pid :: pid(),
@@ -223,7 +223,7 @@ pingreq(Pid, Callback) ->
 %% 
 disconnect(Pid) ->
 	try 
-  	gen_server:call(Pid, disconnect, ?GEN_SERVER_TIMEOUT)
+  	gen_server:call(Pid, disconnect, ?MQTT_GEN_SERVER_TIMEOUT)
 	catch
     exit:{normal, _} = _R -> 
 %			io:format(user, " >>> disconnect: exit reason ~p~n", [_R]),
@@ -264,8 +264,14 @@ start(_Type, StartArgs) ->
 	end,
 	application:load(sasl),
 %	lager:debug("running apps: ~p",[application:which_applications()]),	
-  case supervisor:start_link({local, mqtt_client_sup}, mqtt_client_sup, StartArgs) of
+	Storage =
+	case application:get_env(mqtt_client, storage, dets) of
+		mysql -> mqtt_mysql_dao;
+		dets -> mqtt_dets_dao
+	end,
+	case supervisor:start_link({local, mqtt_client_sup}, mqtt_client_sup, StartArgs) of
 		{ok, Pid} ->
+			Storage:start(),
 			{ok, Pid};
 		Error ->
 			Error

@@ -244,13 +244,14 @@ do_setup(_X) ->
 do_cleanup({_, publish} = _X, [P, S] = _Pids) ->
 	R1 = mqtt_client:disconnect(P),
 	R2 = mqtt_client:disconnect(S),
+	(get_storage()):cleanup(),
 	?assertEqual(ok, R1),
 	?assertEqual(ok, R2);
 %  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2}]);
 do_cleanup({_, session} = _X, [P1, S1] = _Pids) ->
-	dets:delete_all_objects(session_db),
 	R1 = mqtt_client:disconnect(P1),
 	R2 = mqtt_client:disconnect(S1),
+	(get_storage()):cleanup(),
 	?assertEqual(ok, R1),
 	?assertEqual(ok, R2);
 %  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2}]);
@@ -277,6 +278,7 @@ do_cleanup({QoS, will} = _X, [P, S] = _Pids) ->
 
 	R2 = mqtt_client:disconnect(S),
 
+	(get_storage()):cleanup(),
 	?assertEqual(ok, R1),
 	?assertEqual(ok, R1_1),
 	?assertEqual(ok, R2);
@@ -310,6 +312,7 @@ do_cleanup({QoS, will_retain} = _X, [P, S] = _Pids) ->
 %	?assertEqual(ok, R1_1),
 	R3 = mqtt_client:disconnect(P1),
 
+	(get_storage()):cleanup(),
 	?assertEqual(ok, R1),
 	?assertEqual(ok, R2),
 	?assertEqual(ok, R3);
@@ -336,12 +339,14 @@ do_cleanup({QoS, retain} = _X, [P1, S1, S2] = _Pids) ->
 					mqtt_client:publish(P1, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), 
 					mqtt_client:disconnect(P1)
 			 end,
+	(get_storage()):cleanup(),
 	?assertEqual(ok, R1),
 	?assertEqual(ok, Rs1),
 	?assertEqual(ok, Rs2);
 %  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2}]);
 do_cleanup(_X, _Pids) ->
 	R = mqtt_client:disconnect(test_cli),
+	(get_storage()):cleanup(),
 	?assertEqual(ok, R).
 
 get_connect_rec() ->
@@ -353,6 +358,12 @@ get_connect_rec() ->
 		keep_alive = 1000
 	}.
 
+get_storage() ->
+	case application:get_env(mqtt_client, storage, dets) of
+		mysql -> mqtt_mysql_dao;
+		dets -> mqtt_dets_dao
+	end.
+	
 wait_all(N) ->
 	case wait_all(N, 0) of
 		{ok, _M} -> 

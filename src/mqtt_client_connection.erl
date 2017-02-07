@@ -34,11 +34,10 @@
 %% API functions
 %% ====================================================================
 
-%-ifdef(TEST).
 -export([	
-	is_match/2
+	is_match/2,
+	topic_regexp/1
 ]).
-%-endif.
 
 -import(mqtt_client_output, [packet/2]).
 -import(mqtt_client_input, [input_parser/1]).
@@ -53,11 +52,11 @@ open_socket(Host, Port, Options) ->
           binary, %% @todo check and add options from Argument _Options
           {active, true}, 
           {packet, 0}, 
-          {recbuf, ?BUFFER_SIZE}, 
-          {sndbuf, ?BUFFER_SIZE}, 
-          {send_timeout, ?SEND_TIMEOUT} | Options
+          {recbuf, ?SOC_BUFFER_SIZE}, 
+          {sndbuf, ?SOC_BUFFER_SIZE}, 
+          {send_timeout, ?SOC_SEND_TIMEOUT} | Options
         ], 
-        ?CONN_TIMEOUT
+        ?SOC_CONN_TIMEOUT
       )
     catch
       _:_Err -> {error, _Err}
@@ -86,9 +85,14 @@ open_socket(Host, Port, Options) ->
 %% ====================================================================
 init({Host, Port, Options}) ->
 	lager:debug(" >>> init connection ~p:~p ~p~n", [Host, Port, Options]),
+	Storage =
+	case application:get_env(mqtt_client, storage, dets) of
+		mysql -> mqtt_mysql_dao;
+		dets -> mqtt_dets_dao
+	end,
 	case R = open_socket(Host, Port, Options) of
 		#mqtt_client_error{} -> {stop, R};
-		_ -> {ok, #connection_state{socket = R, transport = gen_tcp}}
+		_ -> {ok, #connection_state{socket = R, transport = gen_tcp, storage = Storage}}
 	end.
 
 %% handle_call/3
@@ -115,7 +119,7 @@ handle_call({connect, Conn_config}, From, State) ->
 handle_call({connect, Conn_config, Callback},
 						{_, Ref} = From,
 						#connection_state{socket = Socket, transport = Transport, storage = Storage} = State) ->
-	Storage:start(), %% @todo move to client(server) start ???
+%%	Storage:start(), %% @todo move to client(server) start ???
 	case Transport:send(Socket, packet(connect, Conn_config)) of
     ok -> 
 			New_processes = (State#connection_state.processes)#{connect => From},
@@ -485,12 +489,7 @@ get_topic_attributes(#connection_state{storage = Storage} = State, Topic) ->
 	[{QoS, Callback} || {_TopicFilter, QoS, Callback} <- Topic_List].
 
 is_match(Topic, TopicFilter) ->
-  R1 = re:replace(TopicFilter, "\\+", "([^/]*)", [global, {return, list}]),
-%	io:format(user, " after + replacement: ~p ~n", [R1]),
-  R2 = re:replace(R1, "#", "(.*)", [global, {return, list}]),
-%	io:format(user, " after # replacement: ~p ~n", [R2]),
-	
-	{ok, Pattern} = re:compile(R2),
+	{ok, Pattern} = re:compile(topic_regexp(TopicFilter)),
 	case re:run(Topic, Pattern, [global, {capture, [1], list}]) of
 		{match, _R} -> 
 %			io:format(user, " match: ~p ~n", [_R]),
@@ -499,6 +498,13 @@ is_match(Topic, TopicFilter) ->
 %			io:format(user, " NO match: ~p ~n", [_E]),
 			false
 	end.
+
+topic_regexp(TopicFilter) ->
+  R1 = re:replace(TopicFilter, "\\+", "([^/]*)", [global, {return, list}]),
+%	io:format(user, " after + replacement: ~p ~n", [R1]),
+  R2 = re:replace(R1, "#", "(.*)", [global, {return, list}]),
+%	io:format(user, " after # replacement: ~p ~n", [R2]),
+	"^" ++ R2 ++ "$".
 
 delivery_to_application(State, Topic, QoS, Payload) ->
 	case get_topic_attributes(State, Topic) of
@@ -523,4 +529,4 @@ do_callback(Callback, Args) ->
 restore_session(#connection_state{config = #connect{client_id = Client_Id}, storage = Storage}) ->
  	Records = Storage:get_all({session, Client_Id}),
 	MessageList = [{PI, Doc} || #storage_publish{key = #primary_key{packet_id = PI}, document = Doc} <- Records],
-  [spawn(gen_server, call, [self(), {republish, Params, PI}, ?GEN_SERVER_TIMEOUT])	|| {PI, Params} <- MessageList].
+  [spawn(gen_server, call, [self(), {republish, Params, PI}, ?MQTT_GEN_SERVER_TIMEOUT])	|| {PI, Params} <- MessageList].

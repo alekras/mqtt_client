@@ -34,9 +34,10 @@ handle_call({publish, _}, _, #connection_state{test_flag = break_connection} = S
 handle_call({publish, #publish{qos = QoS} = Params}, {_, Ref}, State) when ((QoS =:= 1) orelse (QoS =:= 2)) and (State#connection_state.test_flag =:= skip_send_publish) ->
 %	io:format(user, " >>> publish request ~p, ~p, ~p~n", [Params, Payload, State]),
 	Packet_Id = State#connection_state.packet_id,
+	Storage = State#connection_state.storage,
 %% store message before sending
   Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
-	(State#connection_state.storage):save(#storage_publish{key = Prim_key, document = Params}),
+	Storage:save(#storage_publish{key = Prim_key, document = Params}),
   {reply, {ok, Ref}, State};
 ).
 
@@ -72,7 +73,7 @@ handle_call({publish, #publish{qos = QoS} = Params}, {_, Ref}, State) when ((QoS
 				{From, Params} ->
 %% store message before pubrel
           Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
-          (State#connection_state.storage):save(#storage_publish{key = Prim_key, document = undefined}),
+          Storage:save(#storage_publish{key = Prim_key, document = undefined}),
 					New_processes = Processes#{Packet_Id => {From, Params#publish{acknowleged = pubrec}}},
 					socket_stream_process(State#connection_state{processes = New_processes}, Tail);
 				undefined ->
@@ -91,7 +92,7 @@ handle_call({publish, #publish{qos = QoS} = Params}, {_, Ref}, State) when ((QoS
 				{_From, _Params} ->
 %% discard PI before pubcomp send
           Prim_key = #primary_key{client_id = (State#connection_state.config)#connect.client_id, packet_id = Packet_Id},
-          (State#connection_state.storage):remove(Prim_key),
+          Storage:remove(Prim_key),
 					New_processes = maps:remove(Packet_Id, Processes),
 					socket_stream_process(State#connection_state{processes = New_processes}, Tail);
 				undefined ->

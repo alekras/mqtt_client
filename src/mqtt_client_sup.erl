@@ -74,7 +74,7 @@ new_connection(Connection_id, Host, Port, Options) ->
   Child_spec = {
     Connection_id,
     {gen_server, start_link,
-      [{local, Connection_id}, mqtt_client_connection, {Host, Port, Options}, [{timeout, ?GEN_SERVER_TIMEOUT}]]
+      [{local, Connection_id}, mqtt_client_connection, {Host, Port, Options}, [{timeout, ?MQTT_GEN_SERVER_TIMEOUT}]]
     },
     temporary,
     brutal_kill,

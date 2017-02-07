@@ -21,7 +21,7 @@
 %% @doc @todo Add description to dets_dao.
 
 
--module(mqtt_client_dets_dao).
+-module(mqtt_dets_dao).
 %%
 %% Include files
 %%
@@ -41,6 +41,7 @@
 	get_matched_topics/1,
 	get_all/1,
   cleanup/1,
+	cleanup/0,
   exist/1
 ]).
 
@@ -124,28 +125,25 @@ get(#primary_key{} = Key) ->
 			lager:error("Get failed: key=~p reason=~p~n", [Key, Reason]),
 			undefined;
 		[D] -> D;
-		U ->
-			lager:warning("Unexpected get: ~p for key=~p~n", [U, Key]),
+		_ ->
 			undefined
 	end;
 get(#subs_primary_key{} = Key) -> %% @todo delete it
 	case dets:match_object(subscription_db, #storage_subscription{key = Key, _ = '_'}) of
 		{error, Reason} ->
 			lager:error("Get failed: key=~p reason=~p~n", [Key, Reason]),
-			[];
+			undefined;
 		[D] -> D;
-		U ->
-			lager:warning("Unexpected get: ~p for key=~p~n", [U, Key]),
-			[]
+		_ ->
+			undefined
 	end;
 get({client_id, Key}) ->
 	case dets:match_object(connectpid_db, #storage_connectpid{client_id = Key, _ = '_'}) of
 		{error, Reason} ->
 			lager:error("Get failed: key=~p reason=~p~n", [Key, Reason]),
 			undefined;
-		[D] -> D;
-		U ->
-			lager:warning("Unexpected get: ~p for key=~p~n", [U, Key]),
+		[#storage_connectpid{pid = Pid}] -> Pid;
+		_ ->
 			undefined
 	end.
 
@@ -153,7 +151,7 @@ get_client_topics(Client_Id) ->
 	MatchSpec = ets:fun2ms(fun(#storage_subscription{key = #subs_primary_key{topic = Top, client_id = CI}, qos = QoS, callback = CB}) when CI == Client_Id -> {Top, QoS, CB} end),
 	dets:select(subscription_db, MatchSpec).
 
-get_matched_topics(#subs_primary_key{topic = Topic, client_id = Client_Id} = Key) ->
+get_matched_topics(#subs_primary_key{topic = Topic, client_id = Client_Id}) ->
 	Fun =
 		fun (#storage_subscription{key = #subs_primary_key{topic = TopicFilter, client_id = CI}, qos = QoS, callback = CB}) when Client_Id =:= CI -> 
 					case mqtt_client_connection:is_match(Topic, TopicFilter) of
@@ -162,16 +160,16 @@ get_matched_topics(#subs_primary_key{topic = Topic, client_id = Client_Id} = Key
 					end;
 				(_) -> continue
 		end,
-	TL = dets:traverse(subscription_db, Fun);
+	dets:traverse(subscription_db, Fun);
 get_matched_topics(Topic) ->
 	Fun =
-		fun (#storage_subscription{key = #subs_primary_key{topic = TopicFilter}, qos = QoS, callback = CB} = Object) -> 
+		fun (#storage_subscription{key = #subs_primary_key{topic = TopicFilter}} = Object) -> 
 					case mqtt_client_connection:is_match(Topic, TopicFilter) of
 						true -> {continue, Object};
 						false -> continue
 					end
 		end,
-	TL = dets:traverse(subscription_db, Fun).
+	dets:traverse(subscription_db, Fun).
 	
 get_all({session, ClientId}) ->
 	case dets:match_object(session_db, #storage_publish{key = #primary_key{client_id = ClientId, _ = '_'}, _ = '_'}) of 
@@ -181,11 +179,11 @@ get_all({session, ClientId}) ->
 		R -> R
 	end;
 get_all(topic) ->
-	case dets:match_object(subscription_db, #storage_subscription{_ = '_'}) of 
+	case dets:match_object(subscription_db, #storage_subscription{_='_'}) of 
 		{error, Reason} -> 
 			lager:error("match_object failed: ~p~n", [Reason]),
 			[];
-		R -> R
+		R -> [Topic || #storage_subscription{key = #subs_primary_key{topic = Topic}} <- R]
 	end.
 
 cleanup(ClientId) ->
@@ -195,13 +193,18 @@ cleanup(ClientId) ->
 			ok;
 		ok -> ok
 	end,
-	case dets:match_delete(connectpid_db, #storage_connectpid{client_id = ClientId, _ = '_'}) of 
+	case dets:match_delete(subscription_db, #storage_connectpid{client_id = ClientId, _ = '_'}) of 
 		{error, Reason2} -> 
 			lager:error("match_delete failed: ~p~n", [Reason2]),
 			ok;
 		ok -> ok
 	end,
 	remove({client_id, ClientId}).
+
+cleanup() ->
+	dets:delete_all_objects(session_db),
+	dets:delete_all_objects(subscription_db),
+	dets:delete_all_objects(connectpid_db).
 
 exist(Key) ->
 	case dets:member(session_db, Key) of

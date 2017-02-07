@@ -80,7 +80,7 @@
   { socket :: port(),
 		transport :: atom(),
 		config :: #connect{},
-		storage = mqtt_client_dets_dao :: atom(),
+		storage = mqtt_dets_dao :: atom(),
 		default_callback :: tuple(),
 		session_present :: 0 | 1,
 		connected = 0 :: 0 | 1,
@@ -111,11 +111,11 @@
   }
 ).
 
--define(BUFFER_SIZE, 16#4000).
--define(RECV_TIMEOUT, 60000).
--define(SEND_TIMEOUT, 60000).
--define(CONN_TIMEOUT, 60000).
--define(GEN_SERVER_TIMEOUT, 1000).
+-define(SOC_BUFFER_SIZE, 16#4000).
+%-define(SOC_RECV_TIMEOUT, 60000).
+-define(SOC_SEND_TIMEOUT, 60000).
+-define(SOC_CONN_TIMEOUT, 60000).
+-define(MQTT_GEN_SERVER_TIMEOUT, 1000).
 
 -define(CONNECT_PACK_TYPE, 16#10:8).
 -define(CONNACK_PACK_TYPE, 16#20:8).
