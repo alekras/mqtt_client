@@ -5,6 +5,7 @@
     {modules, [
       mqtt_client,
       mqtt_client_connection,
+      mqtt_connection,
       mqtt_client_sup,
       mqtt_client_input,
       mqtt_client_output,

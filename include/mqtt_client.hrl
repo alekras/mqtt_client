@@ -81,6 +81,7 @@
 		transport :: atom(),
 		config :: #connect{},
 		storage = mqtt_dets_dao :: atom(),
+		end_type = client :: client | server,
 		default_callback :: tuple(),
 		session_present :: 0 | 1,
 		connected = 0 :: 0 | 1,

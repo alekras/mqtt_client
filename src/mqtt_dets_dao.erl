@@ -154,7 +154,7 @@ get_client_topics(Client_Id) ->
 get_matched_topics(#subs_primary_key{topic = Topic, client_id = Client_Id}) ->
 	Fun =
 		fun (#storage_subscription{key = #subs_primary_key{topic = TopicFilter, client_id = CI}, qos = QoS, callback = CB}) when Client_Id =:= CI -> 
-					case mqtt_client_connection:is_match(Topic, TopicFilter) of
+					case mqtt_connection:is_match(Topic, TopicFilter) of
 						true -> {continue, {TopicFilter, QoS, CB}};
 						false -> continue
 					end;
@@ -164,7 +164,7 @@ get_matched_topics(#subs_primary_key{topic = Topic, client_id = Client_Id}) ->
 get_matched_topics(Topic) ->
 	Fun =
 		fun (#storage_subscription{key = #subs_primary_key{topic = TopicFilter}} = Object) -> 
-					case mqtt_client_connection:is_match(Topic, TopicFilter) of
+					case mqtt_connection:is_match(Topic, TopicFilter) of
 						true -> {continue, Object};
 						false -> continue
 					end

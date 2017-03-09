@@ -73,13 +73,13 @@ init(_) ->
 new_connection(Connection_id, Host, Port, Options) ->
   Child_spec = {
     Connection_id,
-    {gen_server, start_link,
-      [{local, Connection_id}, mqtt_client_connection, {Host, Port, Options}, [{timeout, ?MQTT_GEN_SERVER_TIMEOUT}]]
+    {mqtt_client_connection, start_link,
+      [Connection_id, Host, Port, Options]
     },
     temporary,
     brutal_kill,
     worker,
-    [mqtt_client_connection]
+    [mqtt_connection]
   },
 
   R = try 
