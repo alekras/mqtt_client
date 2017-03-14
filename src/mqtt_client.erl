@@ -28,7 +28,7 @@
 %%
 %% Include files
 %%
--include("mqtt_client.hrl").
+-include_lib("mqtt_common/include/mqtt.hrl").
 
 -export([start/2, stop/1]).
 
@@ -271,7 +271,7 @@ start(_Type, StartArgs) ->
 	end,
 	case supervisor:start_link({local, mqtt_client_sup}, mqtt_client_sup, StartArgs) of
 		{ok, Pid} ->
-			Storage:start(),
+			Storage:start(client),
 			{ok, Pid};
 		Error ->
 			Error

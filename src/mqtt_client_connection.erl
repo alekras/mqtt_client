@@ -25,7 +25,7 @@
 %%
 %% Include files
 %%
--include("mqtt_client.hrl").
+-include_lib("mqtt_common/include/mqtt.hrl").
 
 -export([start_link/4]).
 

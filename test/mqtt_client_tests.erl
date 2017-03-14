@@ -27,7 +27,7 @@
 %% Include files
 %%
 -include_lib("eunit/include/eunit.hrl").
--include("mqtt_client.hrl").
+-include_lib("mqtt_common/include/mqtt.hrl").
 -include("test.hrl").
 
 -export([

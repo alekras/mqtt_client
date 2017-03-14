@@ -7,8 +7,8 @@
       mqtt_client_connection,
       mqtt_connection,
       mqtt_client_sup,
-      mqtt_client_input,
-      mqtt_client_output,
+      mqtt_input,
+      mqtt_output,
       mqtt_dets_dao,
       mqtt_mysql_dao
       ]
@@ -17,8 +17,8 @@
     {applications, [kernel, stdlib]},
     {mod, {mqtt_client, [{vsn, "1.0.3"}]}},
     {env, [
-			{storage, mysql}
-%			{storage, dets}
+%			{storage, mysql}
+			{storage, dets}
 		]}
 	]
 }.
