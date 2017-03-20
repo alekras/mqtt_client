@@ -1,7 +1,8 @@
 backend_version=19.0
+compiler/raw={i, "/Users/alexei/eclipse/data/workspace-CPP/erl.mqtt.client/_build/default/lib"}
 eclipse.preferences.version=1
 external_includes=
 external_modules=
-include_dirs=include;/_build/default/lib/mqtt_common/include;
-output_dir=/_build/default/lib/mqtt_client/ebin
+include_dirs=include;_build/default/lib/mqtt_common/include;
+output_dir=_build/default/lib/mqtt_client/ebin
 source_dirs=src;test;
