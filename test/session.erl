@@ -70,7 +70,7 @@ session_1({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 1000
 		}, 
 		"localhost", ?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 	
   W = wait_all(2),
@@ -111,7 +111,7 @@ session_1({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 1000
 		}, 
 		"localhost", ?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 	
   W = wait_all(3),
@@ -157,7 +157,7 @@ session_1({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 		}, 
 		"localhost", ?TEST_SERVER_PORT,
 		{F}, 
-		[]
+		[?TEST_TLS]
 	),
 %  ?debug_Fmt("::test:: Subscriber with saved session : ~p", [Subscriber_2]),
 	?assert(is_pid(Subscriber_2)),
@@ -200,7 +200,7 @@ session_1({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 60000
 		}, 
 		"localhost", ?TEST_SERVER_PORT,
-		[]
+		[?TEST_TLS]
 	),
 	?assert(is_pid(Subscriber_2)),
 	R3_1 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::3 Test Payload QoS = 1. function callback. ">>), 
@@ -240,7 +240,7 @@ session_2({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 1000
 		}, 
 		"localhost", ?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 	
   W = wait_all(2),
@@ -277,7 +277,7 @@ session_2({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 1000
 		}, 
 		"localhost", ?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 	
   W = wait_all(2),
@@ -315,7 +315,7 @@ session_2({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 1000
 		}, 
 		"localhost", ?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 	
   W = wait_all(2),
@@ -353,7 +353,7 @@ session_2({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 1000
 		}, 
 		"localhost", ?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 	
   W = wait_all(2),
@@ -391,7 +391,7 @@ session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 60000
 		}, 
 		"localhost", ?TEST_SERVER_PORT,
-		[]
+		[?TEST_TLS]
 	),
 	?assert(is_pid(Subscriber_2)),
 	R3_1 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::3 Test Payload QoS = 2. function callback. ">>), 
@@ -432,7 +432,7 @@ session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 60000
 		}, 
 		"localhost", ?TEST_SERVER_PORT,
-		[]
+		[?TEST_TLS]
 	),
 	?assert(is_pid(Subscriber_2)),
 	R3_1 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::3 Test Payload QoS = 2. function callback. ">>), 
@@ -473,7 +473,7 @@ session_2({7, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 60000
 		}, 
 		"localhost", ?TEST_SERVER_PORT,
-		[]
+		[?TEST_TLS]
 	),
 	?assert(is_pid(Subscriber_2)),
 	R3_1 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::3 Test Payload QoS = 2. function callback. ">>), 
@@ -514,7 +514,7 @@ session_2({8, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 60000
 		}, 
 		"localhost", ?TEST_SERVER_PORT,
-		[]
+		[?TEST_TLS]
 	),
 	?assert(is_pid(Subscriber_2)),
 	R3_1 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::3 Test Payload QoS = 2. function callback. ">>), 

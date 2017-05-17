@@ -61,7 +61,7 @@ do_setup({_, publish} = _X) ->
 		}, 
 		"localhost", 
 		?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 	S = mqtt_client:connect(
 		subscriber, 
@@ -77,7 +77,7 @@ do_setup({_, publish} = _X) ->
 		}, 
 		"localhost", 
 		?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 	[P,S];
 do_setup({_, session} = _X) ->
@@ -91,7 +91,7 @@ do_setup({_, session} = _X) ->
 			keep_alive = 60000
 		}, 
 		"localhost", ?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 	S1 = mqtt_client:connect(
 		subscriber, 
@@ -102,7 +102,7 @@ do_setup({_, session} = _X) ->
 			keep_alive = 60000
 		}, 
 		"localhost", ?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 	[P1, S1];
 do_setup({QoS, will} = _X) ->
@@ -120,7 +120,7 @@ do_setup({QoS, will} = _X) ->
 			keep_alive = 60000
 		}, 
 		"localhost", ?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 	S = mqtt_client:connect(
 		subscriber, 
@@ -131,7 +131,7 @@ do_setup({QoS, will} = _X) ->
 			keep_alive = 60000
 		}, 
 		"localhost", ?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 	[P,S];
 do_setup({QoS, will_retain} = _X) ->
@@ -152,7 +152,7 @@ do_setup({QoS, will_retain} = _X) ->
 		}, 
 		"localhost", 
 		?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 		S = mqtt_client:connect(
 		subscriber, 
@@ -168,7 +168,7 @@ do_setup({QoS, will_retain} = _X) ->
 		}, 
 		"localhost", 
 		?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 	[P,S];
 do_setup({_QoS, retain} = _X) ->
@@ -182,7 +182,7 @@ do_setup({_QoS, retain} = _X) ->
 			keep_alive = 60000
 		}, 
 		"localhost", ?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 	S1 = mqtt_client:connect(
 		subscriber_1, 
@@ -193,7 +193,7 @@ do_setup({_QoS, retain} = _X) ->
 			keep_alive = 60000
 		}, 
 		"localhost", ?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 	S2 = mqtt_client:connect(
 		subscriber_2, 
@@ -204,7 +204,7 @@ do_setup({_QoS, retain} = _X) ->
 			keep_alive = 60000
 		}, 
 		"localhost", ?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 	[P1, S1, S2];
 do_setup({_, keep_alive}) ->
@@ -220,7 +220,7 @@ do_setup({_, keep_alive}) ->
 		}, 
 		"localhost", 
 		?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	);
 do_setup(_X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
@@ -238,7 +238,7 @@ do_setup(_X) ->
 		}, 
 		"localhost", 
 		?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	).
 
 do_cleanup({_, publish} = _X, [P, S] = _Pids) ->
@@ -271,7 +271,7 @@ do_cleanup({QoS, will} = _X, [P, S] = _Pids) ->
 			keep_alive = 60000
 		}, 
 		"localhost", ?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 
 	R1_1 = mqtt_client:disconnect(P1),
@@ -301,7 +301,7 @@ do_cleanup({QoS, will_retain} = _X, [P, S] = _Pids) ->
 			keep_alive = 60000
 		}, 
 		"localhost", ?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 % 	R1_0 = mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = 0}, <<>>), 
 %% 	mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = 0}, <<>>), 
@@ -331,7 +331,7 @@ do_cleanup({QoS, retain} = _X, [P1, S1, S2] = _Pids) ->
 							keep_alive = 60000
 						}, 
 						"localhost", ?TEST_SERVER_PORT, 
-						[]
+						[?TEST_TLS]
 					),
 					mqtt_client:publish(P2, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), 
 					mqtt_client:disconnect(P2);

@@ -14,11 +14,17 @@
 %% limitations under the License. 
 %%
 
--define(TEST_SERVER_HOST_NAME, "localhost").
+%%-define(TEST_SERVER_HOST_NAME, "localhost").
+-define(TEST_SERVER_HOST_NAME, "Alexei-Mac.attlocal.net").
 -define(TEST_USER, "guest").
 -define(TEST_PASSWORD, <<"guest">>).
 %-define(TEST_SERVER_PORT, 1883). %% RabbitMQ
+
 -define(TEST_SERVER_PORT, 2883). %% Mosquitto
+-define(TEST_TLS, {exit_on_close, true}). %% Mosquitto
+
+%-define(TEST_SERVER_PORT, 2884). %% Mosquitto TSL
+%-define(TEST_TLS, ssl). %% Mosquitto TSL
 
 -define(debug_Msg(S),
 	(begin

@@ -41,7 +41,7 @@
 %%
 mqtt_client_test_() ->
   [ 
-    {module, mqtt_client_unit_testing},
+%    {module, mqtt_client_unit_testing},
     { setup, 
       fun testing:do_start/0, 
       fun testing:do_stop/1, 
@@ -86,7 +86,7 @@ mqtt_client_test_() ->
 						{{1, retain}, fun retain:retain_1/2},
 						{{2, retain}, fun retain:retain_1/2}
           ]
-        }
+       }
       ]}
     }
   ].
@@ -98,9 +98,9 @@ connect() ->
 		ConnRec, 
 		"localhost", 
 		?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
-%  ?debug_Fmt("::test:: 1. successfully connected : ~p", [Conn]),
+  ?debug_Fmt("::test:: 1. successfully connected : ~p", [Conn]),
 	?assert(erlang:is_pid(Conn)),
 	
 	Conn1 = mqtt_client:connect(
@@ -110,7 +110,7 @@ connect() ->
 		}, 
 		"localhost", 
 		3883, 
-		[]
+		[?TEST_TLS]
 	),
 %  ?debug_Fmt("::test:: 2. wrong port number : ~120p", [Conn1]),
 	?assertMatch(#mqtt_client_error{}, Conn1),
@@ -124,7 +124,7 @@ connect() ->
 		}, 
 		"localhost", 
 		?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 %  ?debug_Fmt("::test:: 3. wrong user name : ~120p", [Conn2]),
 	?assertMatch(#mqtt_client_error{}, Conn2),
@@ -138,7 +138,7 @@ connect() ->
 		}, 
 		"localhost", 
 		?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 %  ?debug_Fmt("::test:: 4. wrong user password : ~120p", [Conn3]),
 	?assertMatch(#mqtt_client_error{}, Conn3),
@@ -148,10 +148,11 @@ connect() ->
 		ConnRec, 
 		"localhost", 
 		?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
-%  ?debug_Fmt("::test:: 5. duplicate client id: ~p", [Conn4]),
+  ?debug_Fmt("::test:: 5. duplicate client id: ~p", [Conn4]),
 	?assert(erlang:is_pid(Conn4)),
+  ?debug_Fmt("::test:: 5. duplicate client id: ~p", [Conn]),
 	?assertEqual(disconnected, mqtt_client:status(Conn)),
 	
 	Conn5 = mqtt_client:connect(
@@ -163,7 +164,7 @@ connect() ->
 		}, 
 		"localhost", 
 		?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 %  ?debug_Fmt("::test:: 6. wrong utf-8 : ~p", [Conn5]),
 	?assert(erlang:is_pid(Conn5)),
@@ -178,7 +179,7 @@ connect() ->
 		}, 
 		"localhost", 
 		?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 %  ?debug_Fmt("::test:: 7. wrong utf-8 : ~p", [Conn6]),
 	?assertMatch(#mqtt_client_error{}, Conn6),
@@ -192,7 +193,7 @@ connect() ->
 		}, 
 		"localhost", 
 		?TEST_SERVER_PORT, 
-		[]
+		[?TEST_TLS]
 	),
 %  ?debug_Fmt("::test:: 8. wrong utf-8 : ~p", [Conn7]),
 	?assertMatch(#mqtt_client_error{}, Conn7),
