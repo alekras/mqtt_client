@@ -20,7 +20,7 @@
 %% @version {@version}
 %% @doc Main module of mqtt_client application. The module implements application behaviour
 %% and application API.
-%% @headerfile "mqtt_client.hrl"
+%% @ headerfile "mqtt_common/include/mqtt.hrl"
 
 -module(mqtt_client).
 -behaviour(application).

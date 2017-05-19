@@ -27,7 +27,7 @@ The client was tested with RabbitMQ and Mosquitto server on Windows/Linux/MacOSX
 
 <h3>Architecture</h3>
 MQTT client is an OTP application. Top level component is supervisor
-that is monitoring a child connection processes. Session state data are storing in database (DETS in current version)
+that is monitoring a child connection processes. Session state data are storing in database (DETS and MySQL in current version)
 
 <h3>Getting started</h3>
 <h4>Installation</h4>
@@ -96,6 +96,18 @@ We have connection PubCon to MQTT server now. Let's create one more client's con
 7> <span>SubCon = mqtt_client:connect(subscriber, Conn_def_2, "localhost", 2883, []).</span>
 &lt;0.116.0&gt;
 </pre>
+<h4>TLS/SSL Connection</h4>
+To establish connection secured by TLS we need to add to socket option list atom 'ssl' like this:
+<pre>
+7> <span>SubCon = mqtt_client:connect(subscriber, Conn_def_2, "localhost", 2884, [ssl]).</span>
+</pre>
+Note that we are using there port 2884. This MQTT server port has to be set to listen as SSL socket. How configurate Mosquitto server
+see [https://dzone.com/articles/secure-communication-with-tls-and-the-mosquitto-broker/].
+If we want to pass additional properties to SSL application on client side we can do it using options list:
+<pre>
+7> <span>SubCon = mqtt_client:connect(subscriber, Conn_def_2, "localhost", 2884, [ssl, {certfile,"client.crt"}, {verify, verify_none}]).</span>
+</pre>
+
 <h4>Subscribe and publish</h4>
 To finish set up of the connection we need to suscribe it to some topic for example "Test" topic. Before make subscription we
 need to define callback function. This function will act as 'application' from MQTT protokol terminology. When client receives message
@@ -120,7 +132,8 @@ Arg = {{Topic, Topic_QoS}, Message_QoS, Payload}
 </pre>
 
 @reference [https://mosquitto.org/] - Mosquitto MQTT server.
-@reference [https://www.rabbitmq.com/]] - RabbitMQ server with MQTT plugin.
+@reference [https://www.rabbitmq.com/] - RabbitMQ server with MQTT plugin.
 <!-- @reference [http://erlangcentral.org/wiki/index.php?title=] - article on Erlang Central. -->
 @see mqtt_client 
+
 

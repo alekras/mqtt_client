@@ -11,3 +11,11 @@ see for documentation: https://mqtt-client.sourceforge.io/
 
 #version 1.0.3
    prepared for beta release
+
+#version 1.0.4
+   added tls/ssl support
+   
+   implemented logging service with 'lager'
+   
+   refactored: mqtt common library introduced, mqtt client dependeds on mqtt common now. 
+   
