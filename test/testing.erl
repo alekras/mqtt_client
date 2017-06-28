@@ -26,6 +26,8 @@
 -include_lib("mqtt_common/include/mqtt.hrl").
 -include("test.hrl").
 
+-define(CONN_REC, (#connect{user_name = ?TEST_USER, password = ?TEST_PASSWORD, keep_alive = 60000}) ).
+
 %%
 %% API functions
 %%
@@ -45,63 +47,38 @@ do_stop(_R) ->
   R = application:stop(mqtt_client),
 	?assertEqual(ok, R).
 
+connect(Name) when is_atom(Name) ->
+	mqtt_client:connect(
+		Name, 
+		?CONN_REC#connect{client_id = atom_to_list(Name)}, 
+		?TEST_SERVER_HOST_NAME, 
+		?TEST_SERVER_PORT, 
+		[?TEST_TLS]
+	);	
+connect(Name) when is_list(Name) ->
+	mqtt_client:connect(
+		list_to_atom(Name), 
+		?CONN_REC#connect{client_id = Name}, 
+		?TEST_SERVER_HOST_NAME, 
+		?TEST_SERVER_PORT, 
+		[?TEST_TLS]
+	).	
+
 do_setup({_, publish} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
-	P = mqtt_client:connect(
-		publisher, 
-		#connect{
-			client_id = "publisher",
-			user_name = "guest",
-			password = <<"guest">>,
-			will = 0,
-			will_message = <<>>,
-			will_topic = [],
-			clean_session = 1,
-			keep_alive = 1000
-		}, 
-		"localhost", 
-		?TEST_SERVER_PORT, 
-		[?TEST_TLS]
-	),
-	S = mqtt_client:connect(
-		subscriber, 
-		#connect{
-			client_id = "subscriber",
-			user_name = "guest",
-			password = <<"guest">>,
-			will = 0,
-			will_message = <<>>,
-			will_topic = [],
-			clean_session = 1,
-			keep_alive = 1000
-		}, 
-		"localhost", 
-		?TEST_SERVER_PORT, 
-		[?TEST_TLS]
-	),
-	[P,S];
+	[connect(publisher), connect(subscriber)];
 do_setup({_, session} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	P1 = mqtt_client:connect(
 		publisher, 
-		#connect{
-			client_id = "publisher",
-			user_name = "guest", password = <<"guest">>,
-			clean_session = 0,
-			keep_alive = 60000
-		}, 
-		"localhost", ?TEST_SERVER_PORT, 
+		?CONN_REC#connect{client_id = "publisher", clean_session = 0}, 
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_TLS]
 	),
 	S1 = mqtt_client:connect(
 		subscriber, 
-		#connect{
-			client_id = "subscriber",
-			user_name = "guest", password = <<"guest">>,
-			clean_session = 0,
-			keep_alive = 60000
-		}, 
-		"localhost", ?TEST_SERVER_PORT, 
+		?CONN_REC#connect{client_id = "subscriber", clean_session = 0}, 
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_TLS]
 	),
 	[P1, S1];
@@ -109,137 +86,51 @@ do_setup({QoS, will} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	P = mqtt_client:connect(
 		publisher, 
-		#connect{
+		?CONN_REC#connect{
 			client_id = "publisher",
-			user_name = "guest", password = <<"guest">>,
 			will = 1,
 			will_qos = QoS,
 			will_message = <<"Test will message">>,
-			will_topic = "AK_will_test",
-			clean_session = 1,
-			keep_alive = 60000
+			will_topic = "AK_will_test"
 		}, 
-		"localhost", ?TEST_SERVER_PORT, 
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_TLS]
 	),
-	S = mqtt_client:connect(
-		subscriber, 
-		#connect{
-			client_id = "subscriber",
-			user_name = "guest", password = <<"guest">>,
-			clean_session = 1,
-			keep_alive = 60000
-		}, 
-		"localhost", ?TEST_SERVER_PORT, 
-		[?TEST_TLS]
-	),
+	S = connect(subscriber),
 	[P,S];
 do_setup({QoS, will_retain} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	P = mqtt_client:connect(
 		publisher, 
-		#connect{
+		?CONN_REC#connect{
 			client_id = "publisher",
-			user_name = "guest",
-			password = <<"guest">>,
 			will = 1,
 			will_retain = 1,
 			will_qos = QoS,
 			will_message = <<"Test will retain message">>,
-			will_topic = "AK_will_retain_test",
-			clean_session = 1,
-			keep_alive = 60000
+			will_topic = "AK_will_retain_test"
 		}, 
-		"localhost", 
+		?TEST_SERVER_HOST_NAME, 
 		?TEST_SERVER_PORT, 
 		[?TEST_TLS]
 	),
-		S = mqtt_client:connect(
-		subscriber, 
-		#connect{
-			client_id = "subscriber",
-			user_name = "guest",
-			password = <<"guest">>,
-			will = 0,
-			will_message = <<>>,
-			will_topic = [],
-			clean_session = 1,
-			keep_alive = 60000
-		}, 
-		"localhost", 
-		?TEST_SERVER_PORT, 
-		[?TEST_TLS]
-	),
+	S = connect(subscriber),
 	[P,S];
 do_setup({_QoS, retain} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
-	P1 = mqtt_client:connect(
-		publisher, 
-		#connect{
-			client_id = "publisher",
-			user_name = "guest", password = <<"guest">>,
-			clean_session = 1,
-			keep_alive = 60000
-		}, 
-		"localhost", ?TEST_SERVER_PORT, 
-		[?TEST_TLS]
-	),
-	S1 = mqtt_client:connect(
-		subscriber_1, 
-		#connect{
-			client_id = "subscriber_1",
-			user_name = "guest", password = <<"guest">>,
-			clean_session = 1,
-			keep_alive = 60000
-		}, 
-		"localhost", ?TEST_SERVER_PORT, 
-		[?TEST_TLS]
-	),
-	S2 = mqtt_client:connect(
-		subscriber_2, 
-		#connect{
-			client_id = "subscriber_2",
-			user_name = "guest", password = <<"guest">>,
-			clean_session = 1,
-			keep_alive = 60000
-		}, 
-		"localhost", ?TEST_SERVER_PORT, 
-		[?TEST_TLS]
-	),
-	[P1, S1, S2];
+	[connect(publisher), connect(subscriber_1), connect(subscriber_2)];
 do_setup({_, keep_alive}) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	mqtt_client:connect(
-		test_cli, 
-		#connect{
-			client_id = "test_cli",
-			user_name = "guest",
-			password = <<"guest">>,
-			clean_session = 1,
-			keep_alive = 5
-		}, 
-		"localhost", 
+		publisher, 
+		?CONN_REC#connect{client_id = "publisher", keep_alive = 5}, 
+		?TEST_SERVER_HOST_NAME, 
 		?TEST_SERVER_PORT, 
 		[?TEST_TLS]
 	);
 do_setup(_X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
-	mqtt_client:connect(
-		test_cli, 
-		#connect{
-			client_id = "test_cli",
-			user_name = "guest",
-			password = <<"guest">>,
-			will = 0,
-			will_message = <<>>,
-			will_topic = [],
-			clean_session = 1,
-			keep_alive = 1000
-		}, 
-		"localhost", 
-		?TEST_SERVER_PORT, 
-		[?TEST_TLS]
-	).
+	connect(publisher).
 
 do_cleanup({_, publish} = _X, [P, S] = _Pids) ->
 	R1 = mqtt_client:disconnect(P),
@@ -260,17 +151,15 @@ do_cleanup({QoS, will} = _X, [P, S] = _Pids) ->
 	
 	P1 = mqtt_client:connect(
 		publisher, 
-		#connect{
+		?CONN_REC#connect{
 			client_id = "publisher",
-			user_name = "guest", password = <<"guest">>,
 			will = 1,
 			will_qos = QoS,
 			will_message = <<"Test will message">>,
-			will_topic = "AK_will_test",
-			clean_session = 1,
-			keep_alive = 60000
+			will_topic = "AK_will_test"
 		}, 
-		"localhost", ?TEST_SERVER_PORT, 
+		?TEST_SERVER_HOST_NAME,
+		?TEST_SERVER_PORT, 
 		[?TEST_TLS]
 	),
 
@@ -289,18 +178,15 @@ do_cleanup({QoS, will_retain} = _X, [P, S] = _Pids) ->
 
 	P1 = mqtt_client:connect(
 		publisher, 
-		#connect{
+		?CONN_REC#connect{
 			client_id = "publisher",
-			user_name = "guest", password = <<"guest">>,
 			will = 1,
 			will_retain = 1,
 			will_qos = QoS,
 			will_message = <<"Test will retain message">>,
-			will_topic = "AK_will_retain_test",
-			clean_session = 1,
-			keep_alive = 60000
+			will_topic = "AK_will_retain_test"
 		}, 
-		"localhost", ?TEST_SERVER_PORT, 
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_TLS]
 	),
 % 	R1_0 = mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = 0}, <<>>), 
@@ -324,13 +210,9 @@ do_cleanup({QoS, retain} = _X, [P1, S1, S2] = _Pids) ->
 				disconnected ->
 					P2 = mqtt_client:connect(
 						publisher, 
-						#connect{
-							client_id = "publisher",
-							user_name = "guest", password = <<"guest">>,
-							clean_session = 0,
-							keep_alive = 60000
-						}, 
-						"localhost", ?TEST_SERVER_PORT, 
+						?CONN_REC#connect{client_id = "publisher", clean_session = 0}, 
+						?TEST_SERVER_HOST_NAME,
+						?TEST_SERVER_PORT, 
 						[?TEST_TLS]
 					),
 					mqtt_client:publish(P2, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), 
@@ -345,18 +227,12 @@ do_cleanup({QoS, retain} = _X, [P1, S1, S2] = _Pids) ->
 	?assertEqual(ok, Rs2);
 %  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2}]);
 do_cleanup(_X, _Pids) ->
-	R = mqtt_client:disconnect(test_cli),
+	R = mqtt_client:disconnect(publisher),
 	(get_storage()):cleanup(client),
 	?assertEqual(ok, R).
 
 get_connect_rec() ->
-	#connect{
-		client_id = "test_client",
-		user_name = "guest",
-		password = <<"guest">>,
-		clean_session = 1,
-		keep_alive = 1000
-	}.
+	?CONN_REC#connect{client_id = "test_client"}.
 
 get_storage() ->
 	case application:get_env(mqtt_client, storage, dets) of

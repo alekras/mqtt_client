@@ -112,7 +112,7 @@ connect() ->
 		3883, 
 		[?TEST_TLS]
 	),
-%  ?debug_Fmt("::test:: 2. wrong port number : ~120p", [Conn1]),
+  ?debug_Fmt("::test:: 2. wrong port number : ~120p", [Conn1]),
 	?assertMatch(#mqtt_client_error{}, Conn1),
 	
 	Conn2 = mqtt_client:connect(
@@ -126,7 +126,7 @@ connect() ->
 		?TEST_SERVER_PORT, 
 		[?TEST_TLS]
 	),
-%  ?debug_Fmt("::test:: 3. wrong user name : ~120p", [Conn2]),
+  ?debug_Fmt("::test:: 3. wrong user name : ~120p", [Conn2]),
 	?assertMatch(#mqtt_client_error{}, Conn2),
 	
 	Conn3 = mqtt_client:connect(

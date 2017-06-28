@@ -20,6 +20,7 @@
 -define(TEST_PASSWORD, <<"guest">>).
 %-define(TEST_SERVER_PORT, 1883). %% RabbitMQ
 
+%-define(TEST_SERVER_PORT, 18883). %% Erlang
 -define(TEST_SERVER_PORT, 2883). %% Mosquitto
 -define(TEST_TLS, {exit_on_close, true}). %% Mosquitto
 

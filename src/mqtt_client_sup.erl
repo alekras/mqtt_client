@@ -86,7 +86,7 @@ new_connection(Connection_id, Host, Port, Options) ->
 				supervisor:start_child(?MODULE, Child_spec) 
 			catch
 				exit:{noproc,_R1} -> 
-					{error, {#mqtt_client_error{type=connection, message="unexpected server connection drop"}, undef}}
+					{error, {#mqtt_client_error{type=connection, source = "mqtt_client_sup:new_connection/4:", message="unexpected server connection drop"}, undef}}
 			end,
   case R of
     {ok, _Pid} -> R;
@@ -94,6 +94,7 @@ new_connection(Connection_id, Host, Port, Options) ->
     {error, {#mqtt_client_error{} = Reason, _}} -> Reason;
     {error, Reason} -> #mqtt_client_error{
                                     type = connection,
+																		source = "mqtt_client_sup:new_connection/4:",
                                     message = Reason}
   end.
 

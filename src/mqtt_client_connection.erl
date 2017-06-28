@@ -54,7 +54,7 @@ open_socket(gen_tcp, Host, Port, Options) ->
     end
   of
     {ok, Socket} -> Socket;
-    {error, Reason} -> #mqtt_client_error{type = tcp, source="open_socket/3", message = Reason}
+    {error, Reason} -> #mqtt_client_error{type = tcp, source="mqtt_client_connection:open_socket/4:", message = Reason}
   end;  
 open_socket(ssl, Host, Port, Options) ->
   case 
@@ -77,7 +77,7 @@ open_socket(ssl, Host, Port, Options) ->
     end
   of
     {ok, Socket} -> Socket;
-    {error, Reason} -> #mqtt_client_error{type = tcp, source="open_socket/3", message = Reason}
+    {error, Reason} -> #mqtt_client_error{type = tcp, source="mqtt_client_connection:open_socket/4:" , message = Reason}
   end.  
 
 start_link(Connection_id, Host, Port, Options) ->
@@ -96,6 +96,10 @@ start_link(Connection_id, Host, Port, Options) ->
 		#mqtt_client_error{} -> R;
 		_ -> #connection_state{socket = R, transport = Transport, storage = Storage, end_type = client}
 	end,	
-	{ok, Pid} = gen_server:start_link({local, Connection_id}, mqtt_connection, State, [{timeout, ?MQTT_GEN_SERVER_TIMEOUT}]),
-	ok = Transport:controlling_process(R, Pid),
-	{ok, Pid}.
+	case T = gen_server:start_link({local, Connection_id}, mqtt_connection, State, [{timeout, ?MQTT_GEN_SERVER_TIMEOUT}]) of
+		{ok, Pid} ->
+			ok = Transport:controlling_process(R, Pid),
+			T;
+		{error, _} ->
+			T
+	end.
