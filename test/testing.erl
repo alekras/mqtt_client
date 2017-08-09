@@ -180,6 +180,7 @@ do_cleanup({QoS, will_retain} = _X, [P, S] = _Pids) ->
 		publisher, 
 		?CONN_REC#connect{
 			client_id = "publisher",
+			clean_session = 0,
 			will = 1,
 			will_retain = 1,
 			will_qos = QoS,
@@ -189,12 +190,12 @@ do_cleanup({QoS, will_retain} = _X, [P, S] = _Pids) ->
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_TLS]
 	),
-% 	R1_0 = mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = 0}, <<>>), 
-%% 	mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = 0}, <<>>), 
-%% 	mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = 0}, <<>>), 
-%% 	mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = 0}, <<>>), 
-%	?assertEqual(ok, R1_0),
-%	R1_1 = mqtt_client:publish(P1, #publish{topic = "AK_will_test", retain = 1, qos = 0}, <<>>), 
+ 	R1_0 = mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = QoS}, <<>>), 
+	?assertEqual(ok, R1_0),
+% 	mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = QoS}, <<>>), 
+% 	mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = QoS}, <<>>), 
+% 	mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = QoS}, <<>>), 
+%	R1_1 = mqtt_client:publish(P1, #publish{topic = "AK_will_test", retain = 1, qos = QoS}, <<>>), 
 %	?assertEqual(ok, R1_1),
 	R3 = mqtt_client:disconnect(P1),
 
@@ -251,7 +252,7 @@ wait_all(N) ->
 %			?assert(true)
 	end
 	and
-	case wait_all(N, 0) of
+	case wait_all(1, 0) of
 		{fail, _Z} -> 
 %			?debug_Fmt("::test:: ~p additional done received.", [_Z]),
 			true;

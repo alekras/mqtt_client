@@ -32,6 +32,7 @@
 -include("test.hrl").
 
 -export([
+  will_a/2,
   will_0/2,
 	will_retain/2
 ]).
@@ -40,11 +41,35 @@
 %% API Functions
 %%
 
+will_a({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", timeout, 100, fun() ->
+	register(test_result, self()),
+  
+	F = fun({{Topic, Q}, _QoS, _Dup, Msg} = _Arg) -> 
+%					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
+					 ?assertEqual(0, Q),
+					 ?assertEqual("AK_will_test", Topic),
+					 ?assertEqual(<<"Test will message">>, Msg),
+					 test_result ! done 
+			end,
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 0, F}]), 
+	?assertEqual({suback,[0]}, R1_0),
+%% generate connection close:
+	R2 = mqtt_client:stop(Publisher),
+	?debug_Fmt("::test:: after stop publisher: ~100p",[R2]),
+	?assertEqual(ok, R2),
+
+	W = wait_all(0),
+
+	unregister(test_result),
+	?assert(W),
+	?PASSED
+end}.
+
 %% .
 will_0({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(0, Q),
 					 ?assertEqual("AK_will_test", Topic),
@@ -72,7 +97,7 @@ end};
 will_0({1, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=1.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(1, Q),
 					 ?assertEqual("AK_will_test", Topic),
@@ -100,7 +125,7 @@ end};
 will_0({2, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=2.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(2, Q),
 					 ?assertEqual("AK_will_test", Topic),
@@ -128,7 +153,7 @@ end}.
 will_retain({1, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will with retain QoS=1.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(1, Q),
 					 ?assertEqual("AK_will_retain_test", Topic),

@@ -123,12 +123,12 @@ Now we can publish message to "Test" topic. After short moment subscriber reciev
 <pre>
 10> <span>mqtt_client:publish(PubCon, #publish{topic = "Test"}, &lt;&lt;"Test Message Payload."&gt;&gt;).</span>
 ok
-11> callback function: {{"Test",1},0,&lt;&lt;"Test Message Payload."&gt;&gt;}
+11> callback function: {{"Test",1},0,0,&lt;&lt;"Test Message Payload."&gt;&gt;}
 </pre>
 Callback function arqument is a tuple of three elements. First element is topic description from which message is arrived.
-Second element is QoS of the message. Third element is message payload itself.
+Second element is QoS of the message. Third element marks message as duplicated. Fourth element is message payload itself.
 <pre>
-Arg = {{Topic, Topic_QoS}, Message_QoS, Payload}
+Arg = {{Topic, Topic_QoS}, Message_QoS, Dup, Payload}
 </pre>
 
 @reference [https://mosquitto.org/] - Mosquitto MQTT server.
