@@ -263,10 +263,10 @@ session_2({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			end,
 	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKTest", 2, F}]), 
 	?assertEqual({suback,[2]}, R1_0),
-	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"Test Payload QoS = 2. annon. function callback. ">>), 
+	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"Test Payload QoS = 2. annon. function callback.">>), 
 	?assertEqual(ok, R2_0),
 	gen_server:call(Publisher, {set_test_flag, skip_rcv_pubrec}),
-	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"Test Payload QoS = 2. annon. function callback. ">>), 
+	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"Test Payload QoS = 2. annon. function callback.">>), 
 	?assertEqual({mqtt_client_error,publish,none,"mqtt_client:publish/2","pubcomp timeout"}, R3_0),
 	mqtt_client:disconnect(Publisher),
 	Publisher_2 = mqtt_client:connect(

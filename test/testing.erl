@@ -146,30 +146,30 @@ do_cleanup({_, session} = _X, [P1, S1] = _Pids) ->
 	?assertEqual(ok, R1),
 	?assertEqual(ok, R2);
 %  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2}]);
-do_cleanup({QoS, will} = _X, [P, S] = _Pids) ->
+do_cleanup({_QoS, will} = _X, [P, S] = _Pids) ->
 	R1 = mqtt_client:disconnect(P),
 	
-	P1 = mqtt_client:connect(
-		publisher, 
-		?CONN_REC#connect{
-			client_id = "publisher",
-			will = 1,
-			will_qos = QoS,
-			will_message = <<"Test will message">>,
-			will_topic = "AK_will_test"
-		}, 
-		?TEST_SERVER_HOST_NAME,
-		?TEST_SERVER_PORT, 
-		[?TEST_TLS]
-	),
-
-	R1_1 = mqtt_client:disconnect(P1),
+%% 	P1 = mqtt_client:connect(
+%% 		publisher, 
+%% 		?CONN_REC#connect{
+%% 			client_id = "publisher",
+%% 			will = 1,
+%% 			will_qos = QoS,
+%% 			will_message = <<"Test will message">>,
+%% 			will_topic = "AK_will_test"
+%% 		}, 
+%% 		?TEST_SERVER_HOST_NAME,
+%% 		?TEST_SERVER_PORT, 
+%% 		[?TEST_TLS]
+%% 	),
+%% 
+%% 	R1_1 = mqtt_client:disconnect(P1),
 
 	R2 = mqtt_client:disconnect(S),
 
 	(get_storage()):cleanup(client),
 	?assertEqual(ok, R1),
-	?assertEqual(ok, R1_1),
+%	?assertEqual(ok, R1_1),
 	?assertEqual(ok, R2);
 %  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2}]);
 do_cleanup({QoS, will_retain} = _X, [P, S] = _Pids) ->
