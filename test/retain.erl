@@ -44,7 +44,7 @@
 retain_0({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {"retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _Ret, Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(QoS, Q),
 					 ?assertEqual("AK_retain_test", Topic),
@@ -71,7 +71,7 @@ end}.
 retain_1({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {"retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(QoS, Q),
 					 ?assertEqual("AK_retain_test", Topic),

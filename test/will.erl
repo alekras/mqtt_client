@@ -44,7 +44,7 @@
 will_a({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(0, Q),
 					 ?assertEqual("AK_will_test", Topic),
@@ -69,7 +69,7 @@ end}.
 will_0({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(0, Q),
 					 ?assertEqual("AK_will_test", Topic),
@@ -97,7 +97,7 @@ end};
 will_0({1, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=1.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(1, Q),
 					 ?assertEqual("AK_will_test", Topic),
@@ -125,7 +125,7 @@ end};
 will_0({2, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=2.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(2, Q),
 					 ?assertEqual("AK_will_test", Topic),
@@ -153,7 +153,7 @@ end}.
 will_retain({1, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will with retain QoS=1.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(1, Q),
 					 ?assertEqual("AK_will_retain_test", Topic),

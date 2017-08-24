@@ -208,7 +208,7 @@ combined(_, Conn) -> {"combined", timeout, 100, fun() ->
 	R1 = mqtt_client:pingreq(Conn, {?MODULE, ping_callback}), 
 	?assertEqual(ok, R1),
 	
-	R2_0 = mqtt_client:subscribe(Conn, [{"AKtest", 2, fun(Arg) -> ?assertMatch({{"AKtest",2},0,0,<<"Test Payload QoS = 0. annon. function callback. ">>}, Arg), test_result ! done end}]), 
+	R2_0 = mqtt_client:subscribe(Conn, [{"AKtest", 2, fun(Arg) -> ?assertMatch({{"AKtest",2},0,0,0,<<"Test Payload QoS = 0. annon. function callback. ">>}, Arg), test_result ! done end}]), 
 	?assertEqual({suback,[2]}, R2_0),
 	R3_0 = mqtt_client:publish(Conn, #publish{topic = "AKtest"}, <<"Test Payload QoS = 0. annon. function callback. ">>), 
 	?assertEqual(ok, R3_0),
@@ -321,29 +321,29 @@ keep_alive(_, Conn) -> {"keep alive test", timeout, 15, fun() ->
 	?PASSED
 end}.
 
-callback({{"AKTest", 0}, QoS, _, _} = Arg) ->
+callback({{"AKTest", 0}, QoS, _, _, _} = Arg) ->
   case QoS of
-		0 -> ?assertMatch({{"AKTest",0},0,0,<<"Test Payload QoS = 0.">>}, Arg)
+		0 -> ?assertMatch({{"AKTest",0},0,0,0,<<"Test Payload QoS = 0.">>}, Arg)
 	end,
 %	?debug_Fmt("::test:: ~p:callback: ~p",[?MODULE, Arg]),
 	test_result ! done;
-callback({{"AKTest", 1}, QoS, _, _} = Arg) ->
+callback({{"AKTest", 1}, QoS, _, _, _} = Arg) ->
   case QoS of
-		0 -> ?assertMatch({{"AKTest",1},0,0,<<"Test Payload QoS = 0.">>}, Arg);
-		1 -> ?assertMatch({{"AKTest",1},1,0,<<"Test Payload QoS = 1.">>}, Arg)
+		0 -> ?assertMatch({{"AKTest",1},0,0,0,<<"Test Payload QoS = 0.">>}, Arg);
+		1 -> ?assertMatch({{"AKTest",1},1,0,0,<<"Test Payload QoS = 1.">>}, Arg)
 	end,
 	test_result ! done;
-callback({{"AKTest", 2}, QoS, _, _} = Arg) ->
+callback({{"AKTest", 2}, QoS, _, _, _} = Arg) ->
   case QoS of
-		0 -> ?assertMatch({{"AKTest",2},0,0,<<"Test Payload QoS = 0.">>}, Arg);
-		1 -> ?assertMatch({{"AKTest",2},1,0,<<"Test Payload QoS = 2.">>}, Arg)
+		0 -> ?assertMatch({{"AKTest",2},0,0,0,<<"Test Payload QoS = 0.">>}, Arg);
+		1 -> ?assertMatch({{"AKTest",2},1,0,0,<<"Test Payload QoS = 2.">>}, Arg)
 	end,
 	test_result ! done;
-callback({_, QoS, _, _} = Arg) ->
+callback({_, QoS, _, _, _} = Arg) ->
   case QoS of
-		0 -> ?assertMatch({{"AKtest",2},0,0,<<"Test Payload QoS = 0.">>}, Arg);
-		1 -> ?assertMatch({{"AKtest",2},1,0,<<"Test Payload QoS = 1.">>}, Arg);
-		2 -> ?assertMatch({{"AKtest",2},2,0,<<"Test Payload QoS = 2.">>}, Arg)
+		0 -> ?assertMatch({{"AKtest",2},0,0,0,<<"Test Payload QoS = 0.">>}, Arg);
+		1 -> ?assertMatch({{"AKtest",2},1,0,0,<<"Test Payload QoS = 1.">>}, Arg);
+		2 -> ?assertMatch({{"AKtest",2},2,0,0,<<"Test Payload QoS = 2.">>}, Arg)
 	end,
 %	?debug_Fmt("::test:: ~p:callback: ~p",[?MODULE, Arg]),
 	test_result ! done.
@@ -353,32 +353,32 @@ ping_callback(Arg) ->
 	?assertEqual(pong, Arg),
 	test_result ! done.
 
-summer_callback({{"Summer/Jul", _}, QoS, _, _} = Arg) ->
-	?assertMatch({{"Summer/Jul",2},QoS,0,<<"Sent to Summer/Jul.">>}, Arg),
+summer_callback({{"Summer/Jul", _}, QoS, _, _, _} = Arg) ->
+	?assertMatch({{"Summer/Jul",2},QoS,0,0,<<"Sent to Summer/Jul.">>}, Arg),
 	test_result ! done;
-summer_callback({_, QoS, _, _} = Arg) ->
-	?assertMatch({{"Summer",2},QoS,0,<<"Sent to summer.">>}, Arg),
+summer_callback({_, QoS, _, _, _} = Arg) ->
+	?assertMatch({{"Summer",2},QoS,0,0,<<"Sent to summer.">>}, Arg),
 	test_result ! done.
 
-winter_callback({{"Winter/Jan", _}, QoS, _, _} = Arg) ->
-	?assertMatch({{"Winter/Jan",1},QoS,0,<<"Sent to Winter/Jan.">>}, Arg),
+winter_callback({{"Winter/Jan", _}, QoS, _, _, _} = Arg) ->
+	?assertMatch({{"Winter/Jan",1},QoS,0,0,<<"Sent to Winter/Jan.">>}, Arg),
 	test_result ! done;
-winter_callback({{"Winter/Feb/23", _}, QoS, _, _} = Arg) ->
-	?assertMatch({{"Winter/Feb/23",1},QoS,0,<<"Sent to Winter/Feb/23. QoS = 2.">>}, Arg),
+winter_callback({{"Winter/Feb/23", _}, QoS, _, _, _} = Arg) ->
+	?assertMatch({{"Winter/Feb/23",1},QoS,0,0,<<"Sent to Winter/Feb/23. QoS = 2.">>}, Arg),
 	test_result ! done;
-winter_callback({_, QoS, _, _} = Arg) ->
-	?assertMatch({{"Winter",1},QoS,0,<<"Sent to winter. QoS = ", _/binary>>}, Arg),
+winter_callback({_, QoS, _, _, _} = Arg) ->
+	?assertMatch({{"Winter",1},QoS,0,0,<<"Sent to winter. QoS = ", _/binary>>}, Arg),
 	test_result ! done.
 
-spring_callback({{"Spring/March/Month/08", _}, QoS, _, _} = Arg) ->
+spring_callback({{"Spring/March/Month/08", _}, QoS, _, _, _} = Arg) ->
 %  ?debug_Fmt("::test:: spring_callback: ~p",[Arg]),
-	?assertMatch({{"Spring/March/Month/08",0},QoS,0,<<"Sent to Spring/March/Month/08. QoS = 2.">>}, Arg),
+	?assertMatch({{"Spring/March/Month/08",0},QoS,0,0,<<"Sent to Spring/March/Month/08. QoS = 2.">>}, Arg),
 	test_result ! done;
-spring_callback({{"Spring/April/Month/01", _}, QoS, _, _} = Arg) ->
+spring_callback({{"Spring/April/Month/01", _}, QoS, _, _, _} = Arg) ->
 %  ?debug_Fmt("::test:: spring_callback: ~p",[Arg]),
-	?assertMatch({{"Spring/April/Month/01",0},QoS,0,<<"Sent to Spring/April/Month/01. QoS = 1.">>}, Arg),
+	?assertMatch({{"Spring/April/Month/01",0},QoS,0,0,<<"Sent to Spring/April/Month/01. QoS = 1.">>}, Arg),
 	test_result ! done;
-spring_callback({{"Spring/May/Month/09", _}, QoS, _, _} = Arg) ->
+spring_callback({{"Spring/May/Month/09", _}, QoS, _, _, _} = Arg) ->
 %  ?debug_Fmt("::test:: spring_callback: ~p",[Arg]),
-	?assertMatch({{"Spring/May/Month/09",0},QoS,0,<<"Sent to Spring/May/Month/09. QoS = 0.">>}, Arg),
+	?assertMatch({{"Spring/May/Month/09",0},QoS,0,0,<<"Sent to Spring/May/Month/09. QoS = 0.">>}, Arg),
 	test_result ! done.

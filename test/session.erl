@@ -44,7 +44,7 @@
 session_1({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=1, publisher skips send publish.", timeout, 100, fun() ->
 %  ?debug_Fmt("::test:: session_1 : ~p ~p", [_X, _Conns]),
 	register(test_result, self()),
-	F = fun({{Topic, Q}, _QoS, _Dup, _Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, _Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(1, Q),
 					 ?assertEqual("AKtest", Topic),
@@ -85,7 +85,7 @@ session_1({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 %  ?debug_Fmt("::test:: session_1 : ~p ~p", [_X, _Conns]),
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, _Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, _Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(1, Q),
 					 ?assertEqual("AKtest", Topic),
@@ -127,7 +127,7 @@ session_1({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 %  ?debug_Fmt("::test:: session_1 : ~p ~p", [_X, _Conns]),
 	register(test_result, self()),
 
-	F = fun({{Topic, Q}, _QoS, _Dup, _Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, _Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(1, Q),
 					 ?assertEqual("AKtest", Topic),
@@ -176,7 +176,7 @@ end};
 session_1({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=1, subscriber skips send puback.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, _Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, _Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(1, Q),
 					 ?assertEqual("AKtest", Topic),
@@ -219,7 +219,7 @@ end}.
 session_2({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, publisher skips send publish.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, _Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, _Msg} = _Arg) -> 
 					 ?assertEqual(2, Q),
 					 ?assertEqual("AKTest", Topic),
 					 test_result ! done 
@@ -256,7 +256,7 @@ end};
 session_2({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, publisher skips receive pubrec.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, _Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, _Msg} = _Arg) -> 
 					 ?assertEqual(2, Q),
 					 ?assertEqual("AKTest", Topic),
 					 test_result ! done 
@@ -293,7 +293,7 @@ end};
 session_2({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, publisher skips send pubrel.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, _Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, _Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(2, Q),
 					 ?assertEqual("AKTest", Topic),
@@ -331,7 +331,7 @@ end};
 session_2({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, publisher skips receive pubcomp.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, _Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, _Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(2, Q),
 					 ?assertEqual("AKTest", Topic),
@@ -369,7 +369,7 @@ end};
 session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, subscriber skips receive publish.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, _Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, _Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(2, Q),
 					 ?assertEqual("AKtest", Topic),
@@ -412,7 +412,7 @@ end};
 session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, subscriber skips send pubrec.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, _Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, _Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(2, Q),
 					 ?assertEqual("AKtest", Topic),
@@ -455,7 +455,7 @@ end};
 session_2({7, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, subscriber skips receive pubrel.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, _Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, _Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(2, Q),
 					 ?assertEqual("AKtest", Topic),
@@ -498,7 +498,7 @@ end};
 session_2({8, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, subscriber skips send pubcomp.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, _Msg} = _Arg) -> 
+	F = fun({{Topic, Q}, _QoS, _Dup, _, _Msg} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(2, Q),
 					 ?assertEqual("AKtest", Topic),
