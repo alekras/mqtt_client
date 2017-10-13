@@ -150,22 +150,29 @@ will_0({2, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=2.", time
 end}.
 
 %% .
-will_retain({1, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will with retain QoS=1.", timeout, 100, fun() ->
+will_retain({QoS, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will with retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
-  
+
 	F = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
-%					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
-					 ?assertEqual(1, Q),
+					 ?debug_Fmt("::test:: fun F callback: ~100p",[_Arg]),
+					 ?assertEqual(QoS, Q),
 					 ?assertEqual("AK_will_retain_test", Topic),
 					 ?assertEqual(<<"Test will retain message">>, Msg),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_retain_test", 1, F}]), 
-	?assertEqual({suback,[1]}, R1_0),
+	F1 = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
+					 ?debug_Fmt("::test:: fun F1 callback: ~100p",[_Arg]),
+					 ?assertEqual(QoS, Q),
+					 ?assertEqual("AK_will_retain_test", Topic),
+					 ?assertEqual(<<"Test will retain message">>, Msg),
+					 test_result ! done 
+			end,
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_retain_test", QoS, F}]), 
+	?assertEqual({suback,[QoS]}, R1_0),
 %% generate connection lost:
 	gen_server:call(Publisher, {set_test_flag, break_connection}),
 	try
-		mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"Test Payload QoS = 2. annon. function callback. ">>)
+		mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = QoS}, <<"Test Payload QoS = 2. annon. function callback. ">>)
 	catch
 		_:_ -> ok
 	end,
@@ -182,8 +189,8 @@ will_retain({1, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will w
 		[?TEST_TLS]
 	),
 	?assert(is_pid(Subscriber_2)),
-	R2_0 = mqtt_client:subscribe(Subscriber_2, [{"AK_will_retain_test", 1, F}]), 
-	?assertEqual({suback,[1]}, R2_0),
+	R2_0 = mqtt_client:subscribe(Subscriber_2, [{"AK_will_retain_test", QoS, F1}]), 
+	?assertEqual({suback,[QoS]}, R2_0),
 
   W = wait_all(2),
 

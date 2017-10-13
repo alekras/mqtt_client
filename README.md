@@ -1,5 +1,5 @@
 ## MQTT client (mqtt_client) 
-(developing in process)
+(developing in process. Beta version is ready.)
 
 see for documentation: https://mqtt-client.sourceforge.io/
 
@@ -18,4 +18,12 @@ see for documentation: https://mqtt-client.sourceforge.io/
    implemented logging service with 'lager'
    
    refactored: mqtt common library introduced, mqtt client dependeds on mqtt common now. 
+
+#version 1.0.5
+   fixed documentation and web site.
    
+   fixed some bugs.
+   
+   refactored code.
+   
+   improved test suits. 

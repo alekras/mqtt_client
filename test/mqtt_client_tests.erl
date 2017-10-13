@@ -80,6 +80,7 @@ mqtt_client_test_() ->
 						{{1, will}, fun will:will_0/2},
 						{{2, will}, fun will:will_0/2},
 						{{1, will_retain}, fun will:will_retain/2},
+						{{2, will_retain}, fun will:will_retain/2},
 
 						{{0, retain}, fun retain:retain_0/2},
 						{{1, retain}, fun retain:retain_0/2},
@@ -213,6 +214,7 @@ combined(_, Conn) -> {"combined", timeout, 100, fun() ->
 	R3_0 = mqtt_client:publish(Conn, #publish{topic = "AKtest"}, <<"Test Payload QoS = 0. annon. function callback. ">>), 
 	?assertEqual(ok, R3_0),
 
+	timer:sleep(100),
 	R2 = mqtt_client:subscribe(Conn, [{"AKtest", 2, {?MODULE, callback}}]), 
 	?assertEqual({suback,[2]}, R2),
 	R3 = mqtt_client:publish(Conn, #publish{topic = "AKtest"}, <<"Test Payload QoS = 0.">>), 
@@ -310,10 +312,10 @@ keep_alive(_, Conn) -> {"keep alive test", timeout, 15, fun() ->
 	register(test_result, self()),
 	R1 = mqtt_client:pingreq(Conn, {?MODULE, ping_callback}), 
 	?assertEqual(ok, R1),
-	timer:sleep(5000),
+	timer:sleep(4900),
 	R2 = mqtt_client:status(Conn), 
 	?assertEqual([{session_present,0},{subscriptions,[]}], R2),
-	timer:sleep(5000),
+	timer:sleep(1000),
 	R3 = mqtt_client:status(Conn), 
 	?assertEqual(disconnected, R3),
 

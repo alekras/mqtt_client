@@ -53,11 +53,11 @@ session_1({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	R1_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 1, F}]), 
 %	?debug_Fmt("::test:: subscribe returns: ~p",[R1_0]),
 	?assertEqual({suback,[1]}, R1_0),
-	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"Test Payload QoS = 1. annon. function callback. ">>), 
+	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"1) Test Payload QoS = 1. annon. function callback. ">>), 
 %	?debug_Fmt("::test:: publish (QoS = 1) returns: ~120p",[R2_0]),
 	?assertEqual(ok, R2_0),
 	gen_server:call(Publisher, {set_test_flag, skip_send_publish}),
-	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"Test Payload QoS = 1. annon. function callback. ">>), 
+	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"2) Test Payload QoS = 1. annon. function callback. ">>), 
 %	?debug_Fmt("::test:: publish (QoS = 1) returns: ~120p",[R3_0]),
 	?assertEqual({mqtt_client_error,publish,none,"mqtt_client:publish/2","puback timeout"}, R3_0),
 	mqtt_client:disconnect(Publisher),
@@ -139,12 +139,12 @@ session_1({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::1 Test Payload QoS = 1. function callback. ">>), 
 %	?debug_Fmt("::test:: publish (QoS = 1) returns: ~120p",[R2_0]),
 	?assertEqual(ok, R2_0),
-	timer:sleep(500), %% allow subscriber to receive first message 
+	timer:sleep(1000), %% allow subscriber to receive first message 
 	gen_server:call(Subscriber, {set_test_flag, skip_rcv_publish}),
 	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::2 Test Payload QoS = 1. function callback. ">>), 
 %	?debug_Fmt("::test:: publish (QoS = 1) returns: ~120p",[R3_0]),
 	?assertEqual(ok, R3_0),
-	timer:sleep(500), %% allow subscriber to receive second message 
+	timer:sleep(1000), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
 	Subscriber_2 = mqtt_client:connect(
 		subscriber, 

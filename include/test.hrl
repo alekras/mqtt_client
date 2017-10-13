@@ -18,14 +18,15 @@
 -define(TEST_SERVER_HOST_NAME, "Alexei-Mac.attlocal.net").
 -define(TEST_USER, "guest").
 -define(TEST_PASSWORD, <<"guest">>).
+
 %-define(TEST_SERVER_PORT, 1883). %% RabbitMQ
-
-%-define(TEST_SERVER_PORT, 18883). %% Erlang
--define(TEST_SERVER_PORT, 2883). %% Mosquitto
--define(TEST_TLS, {exit_on_close, true}). %% Mosquitto
-
+-define(TEST_SERVER_PORT, 18883). %% Erlang
+%-define(TEST_SERVER_PORT, 18483). %% Erlang TSL
+%-define(TEST_SERVER_PORT, 2883). %% Mosquitto
 %-define(TEST_SERVER_PORT, 2884). %% Mosquitto TSL
-%-define(TEST_TLS, ssl). %% Mosquitto TSL
+
+-define(TEST_TLS, {exit_on_close, true}). %% No SSL for client
+%-define(TEST_TLS, ssl). %% TSL/SSL for client
 
 -define(debug_Msg(S),
 	(begin

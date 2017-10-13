@@ -237,7 +237,6 @@ disconnect(Pid) ->
 %% Behavioural functions
 %% ====================================================================
 
-%% start/2
 %% ====================================================================
 %% @doc <a href="http://www.erlang.org/doc/apps/kernel/application.html#Module:start-2">application:start/2</a>
 %% @private
@@ -277,7 +276,6 @@ start(_Type, StartArgs) ->
 			Error
   end.
 
-%% stop/1
 %% ====================================================================
 %% @doc <a href="http://www.erlang.org/doc/apps/kernel/application.html#Module:stop-1">application:stop/1</a>
 -spec stop(State :: term()) ->  Any :: term().
