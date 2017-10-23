@@ -183,7 +183,8 @@ will_retain({QoS, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will
 			client_id = "subscriber_2",
 			user_name = "guest", password = <<"guest">>,
 			clean_session = 1,
-			keep_alive = 60000
+			keep_alive = 60000,
+			version = ?TEST_PROTOCOL
 		}, 
 		"localhost", ?TEST_SERVER_PORT,
 		[?TEST_TLS]

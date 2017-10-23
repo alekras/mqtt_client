@@ -315,7 +315,7 @@ keep_alive(_, Conn) -> {"keep alive test", timeout, 15, fun() ->
 	timer:sleep(4900),
 	R2 = mqtt_client:status(Conn), 
 	?assertEqual([{session_present,0},{subscriptions,[]}], R2),
-	timer:sleep(1000),
+	timer:sleep(2000),
 	R3 = mqtt_client:status(Conn), 
 	?assertEqual(disconnected, R3),
 

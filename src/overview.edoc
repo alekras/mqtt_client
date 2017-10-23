@@ -31,10 +31,11 @@ that is monitoring a child connection processes. Session state data are storing 
 
 <h3>Getting started</h3>
 <h4>Installation</h4>
-To start with the client you have to complete two steps below:
+To start with the client you have to complete three steps below:
 <ol>
 <li>Install Mosquitto [https://mosquitto.org/] or RabbitMQ (with MQTT plugin) [https://www.rabbitmq.com/] server.</li>
 <li>Install Erlang [http://www.erlang.org/download.html].</li>
+<li>Install Rebar3 [https://www.rebar3.org/].</li>
 </ol>
 
 <h4>Building</h4>

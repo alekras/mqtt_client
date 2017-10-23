@@ -18,6 +18,7 @@
 -define(TEST_SERVER_HOST_NAME, "Alexei-Mac.attlocal.net").
 -define(TEST_USER, "guest").
 -define(TEST_PASSWORD, <<"guest">>).
+-define(TEST_PROTOCOL, '3.1').
 
 %-define(TEST_SERVER_PORT, 1883). %% RabbitMQ
 -define(TEST_SERVER_PORT, 18883). %% Erlang
