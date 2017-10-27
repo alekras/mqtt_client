@@ -14,20 +14,31 @@
 %% limitations under the License. 
 %%
 
-%%-define(TEST_SERVER_HOST_NAME, "localhost").
--define(TEST_SERVER_HOST_NAME, "Alexei-Mac.attlocal.net").
+-define(TEST_SERVER_HOST_NAME, "localhost").
+%%-define(TEST_SERVER_HOST_NAME, "Alexei-Mac.attlocal.net").
 -define(TEST_USER, "guest").
 -define(TEST_PASSWORD, <<"guest">>).
--define(TEST_PROTOCOL, '3.1').
+-define(TEST_PROTOCOL, '3.1.1').
 
 %-define(TEST_SERVER_PORT, 1883). %% RabbitMQ
--define(TEST_SERVER_PORT, 18883). %% Erlang
-%-define(TEST_SERVER_PORT, 18483). %% Erlang TSL
+
+%%%%%%%%%%%%% Clear socket test %%%%%%%%%%%%%%%%% 
+%-define(TEST_CONN_TYPE, {conn_type, clear}). %% Clear tcp for client
+%-define(TEST_SERVER_PORT, 18883). %% Erlang
 %-define(TEST_SERVER_PORT, 2883). %% Mosquitto
+
+%%%%%%%%%%%%% SSL/TSL socket test %%%%%%%%%%%%%%%%% 
+%-define(TEST_CONN_TYPE, {conn_type, ssl}). %% TSL/SSL for client
+%-define(TEST_SERVER_PORT, 18483). %% Erlang TSL
 %-define(TEST_SERVER_PORT, 2884). %% Mosquitto TSL
 
--define(TEST_TLS, {exit_on_close, true}). %% No SSL for client
-%-define(TEST_TLS, ssl). %% TSL/SSL for client
+%%%%%%%%%%%%% Clear WEB socket test %%%%%%%%%%%%%%%%% 
+%-define(TEST_CONN_TYPE, {conn_type, web_socket}). %% Web socket connection for client
+%-define(TEST_SERVER_PORT, 8080). %% Erlang WEBSocket
+
+%%%%%%%%%%%%% SSL/TSL WEB socket test %%%%%%%%%%%%%%%%% 
+-define(TEST_CONN_TYPE, {conn_type, web_sec_socket}). %% Web socket connection for client
+-define(TEST_SERVER_PORT, 8443). %% Erlang WEBSocket
 
 -define(debug_Msg(S),
 	(begin

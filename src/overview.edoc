@@ -149,6 +149,8 @@ Arg = {{Topic, Topic_QoS}, Message_QoS, Dup, Retain, Payload}
 @reference [https://mosquitto.org/] - Mosquitto MQTT server.
 @reference [https://www.rabbitmq.com/] - RabbitMQ server with MQTT plugin.
 @reference [https://sourceforge.net/projects/mqtt-server/] - Erlang MQTT server.
+@reference [http://www.hivemq.com/demos/websocket-client/] - MQTT websocket client.
+@reference [http://www.mqttfx.org/] - MQTT client.
 <!-- @reference [http://erlangcentral.org/wiki/index.php?title=] - article on Erlang Central. -->
 @see mqtt_client 
 

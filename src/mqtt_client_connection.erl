@@ -33,6 +33,39 @@
 %% API functions
 %% ====================================================================
 
+start_link(Connection_id, Host, Port, Options) ->
+	Transport =
+	case proplists:get_value(conn_type, Options) of 
+		ssl -> ssl;
+		tsl -> ssl;
+		clear -> gen_tcp;
+		web_socket -> mqtt_ws_handler;
+		web_sec_socket -> mqtt_ws_handler;
+		_ -> gen_tcp
+	end,
+
+	Storage =
+	case application:get_env(mqtt_client, storage, dets) of
+		mysql -> mqtt_mysql_dao;
+		dets -> mqtt_dets_dao
+	end,
+
+%% 	Host = application:get_env(mqtt_client, host, "localhost"),
+%% 	Port = application:get_env(mqtt_client, port, 1883),
+
+	State =
+	case Socket = open_socket(Transport, Host, Port, Options) of
+		#mqtt_client_error{} -> Socket;
+		_ -> #connection_state{socket = Socket, transport = Transport, storage = Storage, end_type = client}
+	end,	
+	case T = gen_server:start_link({local, Connection_id}, mqtt_connection, State, [{timeout, ?MQTT_GEN_SERVER_TIMEOUT}]) of
+		{ok, Pid} ->
+			ok = Transport:controlling_process(Socket, Pid),
+			T;
+		{error, _} ->
+			T
+	end.
+
 open_socket(gen_tcp, Host, Port, Options) ->
   case 
     try
@@ -45,7 +78,7 @@ open_socket(gen_tcp, Host, Port, Options) ->
           {packet, 0}, 
           {recbuf, ?SOC_BUFFER_SIZE}, 
           {sndbuf, ?SOC_BUFFER_SIZE}, 
-          {send_timeout, ?SOC_SEND_TIMEOUT} | Options
+          {send_timeout, ?SOC_SEND_TIMEOUT} | proplists:delete(conn_type, Options)
         ], 
         ?SOC_CONN_TIMEOUT
       )
@@ -60,7 +93,7 @@ open_socket(ssl, Host, Port, Options) ->
   case 
     try
       ssl:connect(
-        Host, 
+        Host,
         Port, 
         [
           binary, %% @todo check and add options from Argument _Options
@@ -68,7 +101,7 @@ open_socket(ssl, Host, Port, Options) ->
           {packet, 0}, 
           {recbuf, ?SOC_BUFFER_SIZE}, 
           {sndbuf, ?SOC_BUFFER_SIZE}, 
-          {send_timeout, ?SOC_SEND_TIMEOUT} | Options
+          {send_timeout, ?SOC_SEND_TIMEOUT} | proplists:delete(conn_type, Options)
         ], 
         ?SOC_CONN_TIMEOUT
       )
@@ -78,28 +111,16 @@ open_socket(ssl, Host, Port, Options) ->
   of
     {ok, Socket} -> Socket;
     {error, Reason} -> #mqtt_client_error{type = tcp, source="mqtt_client_connection:open_socket/4:" , message = Reason}
+  end;  
+open_socket(mqtt_ws_handler, Host, Port, Options) ->
+  case 
+    try
+			mqtt_ws_handler:start_link(Host, Port, Options)
+    catch
+      _:_Err -> {error, _Err}
+    end
+  of
+    {ok, WS_handler_Pid} -> WS_handler_Pid;
+    {error, Reason} -> #mqtt_client_error{type = tcp, source="mqtt_client_connection:open_socket/4:" , message = Reason}
   end.  
 
-start_link(Connection_id, Host, Port, Options) ->
-	Transport =
-	case proplists:is_defined(ssl, Options) of 
-		true -> ssl;
-		false -> gen_tcp
-	end,
-	Storage =
-	case application:get_env(mqtt_client, storage, dets) of
-		mysql -> mqtt_mysql_dao;
-		dets -> mqtt_dets_dao
-	end,
-	State =
-	case R = open_socket(Transport, Host, Port, proplists:delete(ssl,Options)) of
-		#mqtt_client_error{} -> R;
-		_ -> #connection_state{socket = R, transport = Transport, storage = Storage, end_type = client}
-	end,	
-	case T = gen_server:start_link({local, Connection_id}, mqtt_connection, State, [{timeout, ?MQTT_GEN_SERVER_TIMEOUT}]) of
-		{ok, Pid} ->
-			ok = Transport:controlling_process(R, Pid),
-			T;
-		{error, _} ->
-			T
-	end.

@@ -154,14 +154,14 @@ will_retain({QoS, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will
 	register(test_result, self()),
 
 	F = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
-					 ?debug_Fmt("::test:: fun F callback: ~100p",[_Arg]),
+					 ?debug_Fmt("::test:: fun F callback: ~100p~n",[_Arg]),
 					 ?assertEqual(QoS, Q),
 					 ?assertEqual("AK_will_retain_test", Topic),
 					 ?assertEqual(<<"Test will retain message">>, Msg),
 					 test_result ! done 
 			end,
 	F1 = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
-					 ?debug_Fmt("::test:: fun F1 callback: ~100p",[_Arg]),
+					 ?debug_Fmt("::test:: fun F1 callback: ~100p~n",[_Arg]),
 					 ?assertEqual(QoS, Q),
 					 ?assertEqual("AK_will_retain_test", Topic),
 					 ?assertEqual(<<"Test will retain message">>, Msg),
@@ -187,7 +187,7 @@ will_retain({QoS, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will
 			version = ?TEST_PROTOCOL
 		}, 
 		"localhost", ?TEST_SERVER_PORT,
-		[?TEST_TLS]
+		[?TEST_CONN_TYPE]
 	),
 	?assert(is_pid(Subscriber_2)),
 	R2_0 = mqtt_client:subscribe(Subscriber_2, [{"AK_will_retain_test", QoS, F1}]), 
