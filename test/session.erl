@@ -405,6 +405,7 @@ session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 		"localhost", ?TEST_SERVER_PORT,
 		[?TEST_CONN_TYPE]
 	),
+%	?debug_Fmt("::test:: after connection: ~100p",[Subscriber_2]),
 	?assert(is_pid(Subscriber_2)),
 	R3_1 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::3 Test Payload QoS = 2. function callback. ">>), 
 	?assertEqual(ok, R3_1),
@@ -481,6 +482,7 @@ session_2({7, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	?assertEqual(ok, R3_0),
 	timer:sleep(500), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
+	timer:sleep(500),
 	Subscriber_2 = mqtt_client:connect(
 		subscriber, 
 		#connect{
@@ -493,6 +495,7 @@ session_2({7, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 		"localhost", ?TEST_SERVER_PORT,
 		[?TEST_CONN_TYPE]
 	),
+	?debug_Fmt("::test:: after connection: ~100p",[Subscriber_2]),
 	?assert(is_pid(Subscriber_2)),
 	R3_1 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::3 Test Payload QoS = 2. function callback. ">>), 
 	?assertEqual(ok, R3_1),
@@ -525,6 +528,7 @@ session_2({8, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	?assertEqual(ok, R3_0),
 	timer:sleep(500), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
+	timer:sleep(500), %%  
 	Subscriber_2 = mqtt_client:connect(
 		subscriber, 
 		#connect{

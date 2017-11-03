@@ -119,7 +119,7 @@ connect(Connection_id, Conn_config, Host, Port, Default_Callback, Socket_options
                          {subscriptions, #{Topic::string() => {QoS::integer(), Callback::{fun()} | {module(), fun()}}}}].
 %% @doc The function returns status of connection with pid = Pid.
 %% 
-status(Pid) ->
+status(Pid) when is_pid(Pid) ->
 	case is_process_alive(Pid) of
 		true ->
 			try
@@ -128,7 +128,13 @@ status(Pid) ->
 				_:_ -> disconnected
 			end;
 		false -> disconnected
-	end.
+	end;
+status(Name) when is_atom(Name) ->
+	case whereis(Name) of
+		undefined -> disconnected;
+		Pid -> status(Pid)
+	end;
+status(_) -> disconnected.
 
 -spec publish(Pid, Params, Payload) -> Result when
  Pid :: pid(),
@@ -221,17 +227,24 @@ pingreq(Pid, Callback) ->
 %% 
 %% @doc The function sends a disconnect request to MQTT server.
 %% 
-disconnect(Pid) ->
-	try 
-  	gen_server:cast(Pid, disconnect)
-	catch
-    exit:{normal, _} = _R ->
-%			io:format(user, " >>> disconnect: exit reason ~p~n", [_R]),
-			ok;
-    exit:{noproc, _} = _R -> 
-%			io:format(user, " >>> disconnect: exit with reason: ~120p~n", [_R]),
-			ok %% @todo return error record if not stop:normal
-	end.
+disconnect(Pid) when is_pid(Pid) ->
+	case is_process_alive(Pid) of
+		true ->
+			{ok, Ref} = gen_server:call(Pid, disconnect),
+			receive
+				{disconnected, Ref} -> 
+					ok
+			after ?MQTT_GEN_SERVER_TIMEOUT ->
+				#mqtt_client_error{type = subscribe, source = "mqtt_client:disconnect/2", message = "disconnect timeout"}
+			end;
+		false -> ok
+	end;
+disconnect(Name) when is_atom(Name) ->
+	case whereis(Name) of
+		undefined -> ok;
+		Pid -> disconnect(Pid)
+	end;
+disconnect(_) -> ok.
 
 %% ====================================================================
 %% Behavioural functions

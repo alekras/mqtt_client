@@ -48,21 +48,27 @@ do_stop(_R) ->
 	?assertEqual(ok, R).
 
 connect(Name) when is_atom(Name) ->
-	mqtt_client:connect(
+	Pid = mqtt_client:connect(
 		Name, 
 		?CONN_REC#connect{client_id = atom_to_list(Name)}, 
 		?TEST_SERVER_HOST_NAME, 
 		?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
-	);	
+	),
+%	?debug_Fmt("~n::test:: connect: ~p",[Pid]),
+	?assert(is_pid(Pid)),
+	Pid;	
 connect(Name) when is_list(Name) ->
-	mqtt_client:connect(
+	Pid = mqtt_client:connect(
 		list_to_atom(Name), 
 		?CONN_REC#connect{client_id = Name}, 
 		?TEST_SERVER_HOST_NAME, 
 		?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
-	).	
+	),
+%	?debug_Fmt("~n::test:: connect: ~p",[Pid]),
+	?assert(is_pid(Pid)),
+	Pid.	
 
 do_setup({_, publish} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
@@ -75,12 +81,14 @@ do_setup({_, session} = _X) ->
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
+	?assert(is_pid(P1)),
 	S1 = mqtt_client:connect(
 		subscriber, 
 		?CONN_REC#connect{client_id = "subscriber", clean_session = 0}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
+	?assert(is_pid(S1)),
 	[P1, S1];
 do_setup({QoS, will} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
@@ -96,8 +104,8 @@ do_setup({QoS, will} = _X) ->
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
-	S = connect(subscriber),
-	[P,S];
+	?assert(is_pid(P)),
+	[P, connect(subscriber)];
 do_setup({QoS, will_retain} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	P = mqtt_client:connect(
@@ -114,20 +122,22 @@ do_setup({QoS, will_retain} = _X) ->
 		?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
-	S = connect(subscriber),
-	[P,S];
+	?assert(is_pid(P)),
+	[P, connect(subscriber)];
 do_setup({_QoS, retain} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	[connect(publisher), connect(subscriber_1), connect(subscriber_2)];
 do_setup({_, keep_alive}) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
-	mqtt_client:connect(
+	P = mqtt_client:connect(
 		publisher, 
 		?CONN_REC#connect{client_id = "publisher", keep_alive = 5}, 
 		?TEST_SERVER_HOST_NAME, 
 		?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
-	);
+	),
+	?assert(is_pid(P)),
+	P;
 do_setup(_X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	connect(publisher).
