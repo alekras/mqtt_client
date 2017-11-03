@@ -223,9 +223,9 @@ pingreq(Pid, Callback) ->
 %% 
 disconnect(Pid) ->
 	try 
-  	gen_server:call(Pid, disconnect, ?MQTT_GEN_SERVER_TIMEOUT)
+  	gen_server:cast(Pid, disconnect)
 	catch
-    exit:{normal, _} = _R -> 
+    exit:{normal, _} = _R ->
 %			io:format(user, " >>> disconnect: exit reason ~p~n", [_R]),
 			ok;
     exit:{noproc, _} = _R -> 
