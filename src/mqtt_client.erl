@@ -101,7 +101,6 @@ connect(Connection_id, Conn_config, Host, Port, Default_Callback, Socket_options
 			{ok, Ref} = gen_server:call(Pid, {connect, Conn_config, Default_Callback}, ?MQTT_GEN_SERVER_TIMEOUT),
 			receive
 				{connack, Ref, _SP, 0, _Msg} -> 
-					lager:info([{endtype, client}], "Client ~p is successfuly connected to ~p:~p", [Conn_config#connect.client_id, Host, Port]),
 					Pid;
 				{connack, Ref, _, ErrNo, Msg} -> 
 					#mqtt_client_error{type = connection, errno = ErrNo, source = "mqtt_client:conect/6", message = Msg}
@@ -259,10 +258,7 @@ disconnect(_) -> ok.
 	| {error, Reason :: term()}.
 %% ====================================================================
 start(_Type, StartArgs) ->
-%  io:format(user, " >>> start application ~p ~p~n", [_Type, StartArgs]),
 	lager:start(),
-%	A = application:get_all_env(lager),
-%	B = application:get_all_env(mqtt_client),
 	case application:get_env(lager, log_root) of
 		{ok, _} -> ok;
 		undefined ->
@@ -271,8 +267,6 @@ start(_Type, StartArgs) ->
 			application:set_env(lager, handlers, [{lager_console_backend, error}], [{persistent, true}]),
 			application:stop(lager),
 			lager:start()
-%% 	A = application:get_all_env(lager),
-%%   io:format(user, " >>> lager env: ~p~n", [A])
 	end,
 	application:load(sasl),
 %	lager:debug([{endtype, client}], "running apps: ~p",[application:which_applications()]),	
@@ -295,7 +289,6 @@ start(_Type, StartArgs) ->
 %% ====================================================================
 %% @private
 stop(_State) ->
-%  io:format(user, " <<< stop application ~p~n", [_State]),
   ok.
 
 %% ====================================================================

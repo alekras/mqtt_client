@@ -183,7 +183,7 @@ do_cleanup({_QoS, will} = _X, [P, S] = _Pids) ->
 	?assertEqual(ok, R2);
 %  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2}]);
 do_cleanup({QoS, will_retain} = _X, [P, S] = _Pids) ->
-	?debug_Fmt("::test:: do cleanup: ~p  pids=~p",[_X, _Pids]),
+%	?debug_Fmt("::test:: do cleanup: ~p  pids=~p",[_X, _Pids]),
 	R1 = mqtt_client:disconnect(P),
 	R2 = mqtt_client:disconnect(S),
 
@@ -213,8 +213,8 @@ do_cleanup({QoS, will_retain} = _X, [P, S] = _Pids) ->
 	(get_storage()):cleanup(client),
 	?assertEqual(ok, R1),
 	?assertEqual(ok, R2),
-	?assertEqual(ok, R3),
-	?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2, R3}]);
+	?assertEqual(ok, R3);
+%	?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2, R3}]);
 do_cleanup({QoS, retain} = _X, [P1, S1, S2] = _Pids) ->
 	Rs1 = mqtt_client:disconnect(S1),
 	Rs2 = mqtt_client:disconnect(S2),

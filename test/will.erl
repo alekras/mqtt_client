@@ -55,7 +55,7 @@ will_a({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", time
 	?assertEqual({suback,[0]}, R1_0),
 %% generate connection close:
 	R2 = mqtt_client:stop(Publisher),
-	?debug_Fmt("::test:: after stop publisher: ~100p",[R2]),
+%	?debug_Fmt("::test:: after stop publisher: ~100p",[R2]),
 	?assertEqual(ok, R2),
 
 	W = wait_all(0),
@@ -154,14 +154,14 @@ will_retain({QoS, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will
 	register(test_result, self()),
 
 	F = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
-					 ?debug_Fmt("::test:: fun F callback: ~100p~n",[_Arg]),
+%					 ?debug_Fmt("::test:: fun F callback: ~100p~n",[_Arg]),
 					 ?assertEqual(QoS, Q),
 					 ?assertEqual("AK_will_retain_test", Topic),
 					 ?assertEqual(<<"Test will retain message">>, Msg),
 					 test_result ! done 
 			end,
 	F1 = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
-					 ?debug_Fmt("::test:: fun F1 callback: ~100p~n",[_Arg]),
+%					 ?debug_Fmt("::test:: fun F1 callback: ~100p~n",[_Arg]),
 					 ?assertEqual(QoS, Q),
 					 ?assertEqual("AK_will_retain_test", Topic),
 					 ?assertEqual(<<"Test will retain message">>, Msg),
