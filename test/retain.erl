@@ -44,9 +44,9 @@
 retain_0({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {"retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun(SubN) ->
+	F = fun(_SubN) ->
 			fun({{Topic, Q}, _QoS, _Dup, _Ret, Msg} = _Arg) -> 
-%					 ?debug_Fmt("::test:: Subs:~p fun callback: ~100p",[SubN, _Arg]),
+%					 ?debug_Fmt("::test:: Subs:~p fun callback: ~100p",[_SubN, _Arg]),
 					 ?assertEqual(QoS, Q),
 					 ?assertEqual("AK_retain_test", Topic),
 					 ?assertEqual(<<"Test 0 retain message QoS=", (list_to_binary((integer_to_list(QoS))))/binary>>, Msg),

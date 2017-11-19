@@ -161,7 +161,7 @@ session_1({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 		{F}, 
 		[?TEST_CONN_TYPE]
 	),
-%	?debug_Fmt("::test:: Subscriber with saved session : ~p", [Subscriber_2]),
+	?debug_Fmt("::test:: Subscriber with saved session : ~p", [Subscriber_2]),
 	?assert(is_pid(Subscriber_2)),
 	R3_1 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::3 Test Payload QoS = 1. function callback. ">>), 
 %	?debug_Fmt("::test:: publish (QoS = 1) returns: ~120p",[R3_1]),
@@ -393,6 +393,7 @@ session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	?assertEqual(ok, R3_0),
 	timer:sleep(500), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
+	timer:sleep(50),
 	Subscriber_2 = mqtt_client:connect(
 		subscriber, 
 		#connect{

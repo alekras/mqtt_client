@@ -107,9 +107,12 @@ connect(Connection_id, Conn_config, Host, Port, Default_Callback, Socket_options
 			after ?MQTT_GEN_SERVER_TIMEOUT ->
 					#mqtt_client_error{type = connection, source = "mqtt_client:conect/6", message = "timeout"}
 			end;
-		#mqtt_client_error{} = Error -> Error;
+		#mqtt_client_error{} = Error -> 
+			lager:error([{endtype, client}], "client catched error: ~p, ~n", [Error]),
+			Error;
 		Exit ->
-			lager:error([{endtype, client}], "client catched: ~p, ~n", [Exit])
+			lager:error([{endtype, client}], "client catched exit: ~p, ~n", [Exit]),
+			#mqtt_client_error{type = connection, source = "mqtt_client:conect/6", message = Exit}
 	end.
 
 -spec status(Pid) -> Result when
