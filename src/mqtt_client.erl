@@ -272,7 +272,7 @@ start(_Type, StartArgs) ->
 			lager:start()
 	end,
 	application:load(sasl),
-%	lager:debug([{endtype, client}], "running apps: ~p",[application:which_applications()]),	
+	lager:info([{endtype, client}], "running apps: ~p",[application:which_applications()]),	
 	Storage =
 	case application:get_env(mqtt_client, storage, dets) of
 		mysql -> mqtt_mysql_dao;

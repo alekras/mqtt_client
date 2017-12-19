@@ -17,7 +17,8 @@
          websocket_terminate/3,
 				 send/2,
 				 close/1,
-				 controlling_process/2
+				 controlling_process/2,
+				 peername/1
         ]).
 
 start_link(Host, Port, Options) ->
@@ -103,6 +104,8 @@ close(WS_Handler_Pid) ->
 controlling_process(WS_Handler_Pid, Conn_Process_Pid) ->
 	WS_Handler_Pid ! {start, Conn_Process_Pid},
 	ok.
+
+peername(_WS_Handler_Pid) -> ok.
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
