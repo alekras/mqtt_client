@@ -71,7 +71,7 @@ ok
 </pre> 
 Load records definitions to console environment to make our next steps more clear:
 <pre>
-3> <span>rr("../include/mqtt_client.hrl").</span>
+3> <span>rr("include/mqtt_client.hrl").</span>
 [connect,connection_state,mqtt_client_error,primary_key,
  publish,storage_publish]
 </pre> 
