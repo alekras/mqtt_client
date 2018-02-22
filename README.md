@@ -119,7 +119,7 @@ Now we can publish message to "Test" topic. After short moment subscriber reciev
 ok
 11> callback function: {{"Test",1},0,0,0,<<"Test Message Payload.">>}
 ```
-Callback function arqument is a tuple of three elements. First element is topic description from which message is arrived.
+Callback function arqument is a tuple of five elements. First element is topic description from which message is arrived.
 Second element is QoS of the message. Third element marks message as duplicated. Fourth element marks message as retained.
 Fifth element is message payload itself.
 ```erlang repl
