@@ -10,11 +10,11 @@ that is monitoring a child connection processes. Session state data are storing 
 ## Getting started
 ### Installation
 To start with the client you have to complete three steps below:
-<ol>
-<li>Install Mosquitto [https://mosquitto.org/] or RabbitMQ (with MQTT plugin) [https://www.rabbitmq.com/] server.</li>
-<li>Install Erlang [http://www.erlang.org/download.html].</li>
-<li>Install Rebar3 [https://www.rebar3.org/].</li>
-</ol>
+
+1. Install [Mosquitto](https://mosquitto.org/) or [RabbitMQ](https://www.rabbitmq.com/) (with MQTT plugin) server.
+2. Install [Erlang](http://www.erlang.org/download.html).
+3. Install [Rebar3](https://www.rebar3.org/).
+
 
 ### Building
 #### Download or clone from SourceForge GIT repository
@@ -64,32 +64,32 @@ Assign record #connect{} to Conn_def value:
 4> Conn_def = #connect{
 4> client_id = "publisher", 
 4> user_name = "guest",
-4> password = &lt;&lt;"guest"&gt;&gt;,
+4> password = <<"guest">>,
 4> will = 0,
-4> will_message = &lt;&lt;&gt;&gt;,
+4> will_message = <<>>,
 4> will_topic = "",
 4> clean_session = 1,
 4> keep_alive = 1000
 4> }.
 #connect{client_id = "publisher",user_name = "guest",
-         password = &lt;&lt;"guest"&gt;&gt;,will = 0,will_qos = 0,
-         will_retain = 0,will_topic = [],will_message = &lt;&lt;&gt;&gt;,
+         password = <<"guest">>,will = 0,will_qos = 0,
+         will_retain = 0,will_topic = [],will_message = <<>>,
          clean_session = 1,keep_alive = 1000}
 ```
 And finally create new connection to MQTT server:
 ```erlang repl
 5> PubCon = mqtt_client:connect(publisher, Conn_def, "localhost", 1883, []).
-&lt;0.77.0&gt;
+<0.77.0>
 ```
 We have connection PubCon to MQTT server now. Let's create one more client's connection with different client Id:
 ```erlang repl
 6> Conn_def_2 = Conn_def#connect{client_id = "subscriber"}.
 #connect{client_id = "subscriber",user_name = "guest",
-         password = &lt;&lt;"guest"&gt;&gt;,will = 0,will_qos = 0,
-         will_retain = 0,will_topic = [],will_message = &lt;&lt;&gt;&gt;,
+         password = <<"guest">>,will = 0,will_qos = 0,
+         will_retain = 0,will_topic = [],will_message = <<>>,
          clean_session = 1,keep_alive = 1000}
 7> SubCon = mqtt_client:connect(subscriber, Conn_def_2, "localhost", 2883, []).
-&lt;0.116.0&gt;
+<0.116.0>
 ```
 ## TLS/SSL Connection
 To establish connection secured by TLS we need to add to socket option list atom 'ssl' like this:
@@ -109,15 +109,15 @@ from server's topic then callback function will be invoked and the message will 
 
 ```erlang repl
 8> CBF = fun(Arg) -> io:format(user,"callback function: ~p",[Arg]) end.
-#Fun&lt;erl_eval.6.52032458&gt;
+#Fun<erl_eval.6.52032458>
 9> mqtt_client:subscribe(SubCon, [{"Test", 1, CBF}]).
 {suback,[1]}
 ```
 Now we can publish message to "Test" topic. After short moment subscriber recieves this message and fire callback function:
 ```erlang repl
-10> mqtt_client:publish(PubCon, #publish{topic = "Test"}, &lt;&lt;"Test Message Payload."&gt;&gt;).
+10> mqtt_client:publish(PubCon, #publish{topic = "Test"}, <<"Test Message Payload.">>).
 ok
-11> callback function: {{"Test",1},0,0,0,&lt;&lt;"Test Message Payload."&gt;&gt;}
+11> callback function: {{"Test",1},0,0,0,<<"Test Message Payload.">>}
 ```
 Callback function arqument is a tuple of three elements. First element is topic description from which message is arrived.
 Second element is QoS of the message. Third element marks message as duplicated. Fourth element marks message as retained.
@@ -128,13 +128,13 @@ Arg = {{Topic, Topic_QoS}, Message_QoS, Dup, Retain, Payload}
 
 ## References
 
-[https://mosquitto.org/] - Mosquitto MQTT server.
+1. [https://mosquitto.org/] - Mosquitto MQTT server.
 
-[https://www.rabbitmq.com/] - RabbitMQ server with MQTT plugin.
+2. [https://www.rabbitmq.com/] - RabbitMQ server with MQTT plugin.
 
-[https://sourceforge.net/projects/mqtt-server/] - Erlang MQTT server.
+3. [https://sourceforge.net/projects/mqtt-server/] - Erlang MQTT server.
 
-[http://www.hivemq.com/demos/websocket-client/] - MQTT websocket client.
+4. [http://www.hivemq.com/demos/websocket-client/] - MQTT websocket client.
 
-[http://www.mqttfx.org/] - MQTT client.
+5. [http://www.mqttfx.org/] - MQTT client.
 
