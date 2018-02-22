@@ -47,10 +47,12 @@ erl -pa _build/default/lib/*/ebin</pre>
 
 ## Run application
 After we start Erlang shell for testing we need to start application 'mqtt_client' that represents describing client.
-```erlang repl
+```erlang
 2> application:start(mqtt_client).
 ok
+```
 Load records definitions to console environment to make our next steps more clear:
+```erlang repl
 3> rr("include/mqtt_client.hrl").
 [connect,connection_state,mqtt_client_error,primary_key,
  publish,storage_publish]
@@ -69,7 +71,7 @@ Assign record #connect{} to Conn_def value:
 4> clean_session = 1,
 4> keep_alive = 1000
 4> }.
- #connect{client_id = "publisher",user_name = "guest",
+#connect{client_id = "publisher",user_name = "guest",
          password = &lt;&lt;"guest"&gt;&gt;,will = 0,will_qos = 0,
          will_retain = 0,will_topic = [],will_message = &lt;&lt;&gt;&gt;,
          clean_session = 1,keep_alive = 1000}
