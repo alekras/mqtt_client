@@ -52,13 +52,13 @@ erl -pa _build/default/lib/*/ebin</pre>
 ## Run application
 After we start Erlang shell for testing we need to start application 'mqtt_client' that represents describing client.
 
-```erlang REPL
+```erlang
 2> application:start(mqtt_client).
 ok
 ```
 Load records definitions to console environment to make our next steps more clear:
 
-```erlang repl
+```erlang
 3> rr("include/mqtt_client.hrl").
 [connect,connection_state,mqtt_client_error,primary_key,
  publish,storage_publish]
@@ -67,7 +67,7 @@ Load records definitions to console environment to make our next steps more clea
 ## Connection
 Assign record #connect{} to Conn_def value:
 
-```erlang repl
+```erlang
 4> Conn_def = #connect{
 4> client_id = "publisher", 
 4> user_name = "guest",
@@ -85,13 +85,13 @@ Assign record #connect{} to Conn_def value:
 ```
 And finally create new connection to MQTT server:
 
-```erlang repl
+```erlang
 5> PubCon = mqtt_client:connect(publisher, Conn_def, "localhost", 1883, []).
 <0.77.0>
 ```
 We have connection PubCon to MQTT server now. Let's create one more client's connection with different client Id:
 
-```erlang repl
+```erlang
 6> Conn_def_2 = Conn_def#connect{client_id = "subscriber"}.
 #connect{client_id = "subscriber",user_name = "guest",
          password = <<"guest">>,will = 0,will_qos = 0,
@@ -103,14 +103,14 @@ We have connection PubCon to MQTT server now. Let's create one more client's con
 ## TLS/SSL Connection
 To establish connection secured by TLS we need to add to socket option list atom 'ssl' like this:
 
-```erlang repl
+```erlang
 7> SubCon = mqtt_client:connect(subscriber, Conn_def_2, "localhost", 2884, [ssl]).
 ```
 Note that we are using there port 2884. This MQTT server port has to be set to listen as SSL socket. How configurate Mosquitto server
 see [https://dzone.com/articles/secure-communication-with-tls-and-the-mosquitto-broker/].
 If we want to pass additional properties to SSL application on client side we can do it using options list:
 
-```erlang repl
+```erlang
 7> SubCon = mqtt_client:connect(subscriber, Conn_def_2, "localhost", 2884, [ssl, {certfile,"client.crt"}, {verify, verify_none}]).
 ```
 ## Subscribe and publish
@@ -118,7 +118,7 @@ To finish set up of the connection we need to suscribe it to some topic for exam
 need to define callback function. This function will act as 'application' from MQTT protokol terminology. When client receives message
 from server's topic then callback function will be invoked and the message will be passed to it.
 
-```erlang repl
+```erlang
 8> CBF = fun(Arg) -> io:format(user,"callback function: ~p",[Arg]) end.
 #Fun<erl_eval.6.52032458>
 9> mqtt_client:subscribe(SubCon, [{"Test", 1, CBF}]).
@@ -126,7 +126,7 @@ from server's topic then callback function will be invoked and the message will 
 ```
 Now we can publish message to "Test" topic. After short moment subscriber recieves this message and fire callback function:
 
-```erlang repl
+```erlang
 10> mqtt_client:publish(PubCon, #publish{topic = "Test"}, <<"Test Message Payload.">>).
 ok
 11> callback function: {{"Test",1},0,0,0,<<"Test Message Payload.">>}
@@ -135,7 +135,7 @@ Callback function arqument is a tuple of five elements. First element is topic d
 Second element is QoS of the message. Third element marks message as duplicated. Fourth element marks message as retained.
 Fifth element is message payload itself.
 
-```erlang repl
+```erlang
 Arg = {{Topic, Topic_QoS}, Message_QoS, Dup, Retain, Payload}
 ```
 
