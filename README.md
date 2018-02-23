@@ -52,7 +52,7 @@ erl -pa _build/default/lib/*/ebin</pre>
 ## Run application
 After we start Erlang shell for testing we need to start application 'mqtt_client' that represents describing client.
 
-```erlang
+```erlang REPL
 2> application:start(mqtt_client).
 ok
 ```
