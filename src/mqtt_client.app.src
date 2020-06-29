@@ -1,7 +1,7 @@
 {application, mqtt_client,
 	[
-    {description, "MQTT client"},
-    {vsn, "1.0.3"},
+    {description, "The MQTT client is written in Erlang and allows to connect to MQTT server and send/receive messages according to MQTT messaging protocol version 3.1.1"},
+    {vsn, "1.0.5"},
     {modules, [
       mqtt_client,
       mqtt_client_connection,
@@ -19,6 +19,10 @@
     {env, [
 %			{storage, mysql}
 			{storage, dets}
-		]}
+		]},
+%% For Hex publishing
+    {files, ["src", "priv", "test", "include", "doc", "rebar.config", "README.md", "HISTORY.md", "dets-storage", "mqtt.config"]},
+    {licenses, ["Apache-2.0"]},
+    {links, [{"GitHub", "https://github.com/alekras/mqtt_client"}]}
 	]
 }.

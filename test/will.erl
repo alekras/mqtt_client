@@ -186,7 +186,7 @@ will_retain({QoS, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will
 			keep_alive = 60000,
 			version = ?TEST_PROTOCOL
 		}, 
-		"localhost", ?TEST_SERVER_PORT,
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
 		[?TEST_CONN_TYPE]
 	),
 	?assert(is_pid(Subscriber_2)),

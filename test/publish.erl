@@ -71,7 +71,8 @@ publish_0({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish wi
 	?assertEqual(ok, R3),
 %% errors:
 	R4 = mqtt_client:publish(Publisher, #publish{topic = binary_to_list(<<"AK",0,0,0,"Test">>), qos = 2}, <<"Test Payload QoS = 0.">>), 
-	?assertEqual(ok, R4),
+%	?assertEqual(ok, R4), %% Erlang server @todo - have to fail!!!
+	?assertMatch(#mqtt_client_error{}, R4), %% Mosquitto server
 
 	W = wait_all(4),
 	unregister(test_result),

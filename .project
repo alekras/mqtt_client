@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>erl.mqtt.client</name>
+	<name>erl.mqtt.client[sf]</name>
 	<comment>MQTT client on SF</comment>
 	<projects>
 	</projects>

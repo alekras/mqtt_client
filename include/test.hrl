@@ -14,7 +14,8 @@
 %% limitations under the License. 
 %%
 
--define(TEST_SERVER_HOST_NAME, "localhost").
+%-define(TEST_SERVER_HOST_NAME, "localhost").
+-define(TEST_SERVER_HOST_NAME, {127,0,0,1}).
 %%-define(TEST_SERVER_HOST_NAME, "Alexei-Mac.attlocal.net").
 -define(TEST_USER, "guest").
 -define(TEST_PASSWORD, <<"guest">>).
@@ -24,8 +25,8 @@
 
 %%%%%%%%%%%%% Clear socket test %%%%%%%%%%%%%%%%% 
 -define(TEST_CONN_TYPE, {conn_type, clear}). %% Clear tcp for client
--define(TEST_SERVER_PORT, 18883). %% Erlang
-%-define(TEST_SERVER_PORT, 2883). %% Mosquitto
+%-define(TEST_SERVER_PORT, 18883). %% Erlang
+-define(TEST_SERVER_PORT, 1883). %% Mosquitto
 
 %%%%%%%%%%%%% SSL/TSL socket test %%%%%%%%%%%%%%%%% 
 %-define(TEST_CONN_TYPE, {conn_type, ssl}). %% TSL/SSL for client

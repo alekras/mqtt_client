@@ -70,7 +70,7 @@ session_1({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 1000,
 			version = ?TEST_PROTOCOL
 		}, 
-		"localhost", ?TEST_SERVER_PORT, 
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
 	
@@ -112,7 +112,7 @@ session_1({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 1000,
 			version = ?TEST_PROTOCOL
 		}, 
-		"localhost", ?TEST_SERVER_PORT, 
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
 	
@@ -157,7 +157,7 @@ session_1({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 60000,
 			version = ?TEST_PROTOCOL
 		}, 
-		"localhost", ?TEST_SERVER_PORT,
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
 		{F}, 
 		[?TEST_CONN_TYPE]
 	),
@@ -204,7 +204,7 @@ session_1({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 60000,
 			version = ?TEST_PROTOCOL
 		}, 
-		"localhost", ?TEST_SERVER_PORT,
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
 		[?TEST_CONN_TYPE]
 	),
 	?assert(is_pid(Subscriber_2)),
@@ -245,7 +245,7 @@ session_2({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 1000,
 			version = ?TEST_PROTOCOL
 		}, 
-		"localhost", ?TEST_SERVER_PORT, 
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
 	
@@ -283,7 +283,7 @@ session_2({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 1000,
 			version = ?TEST_PROTOCOL
 		}, 
-		"localhost", ?TEST_SERVER_PORT, 
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
 	
@@ -322,7 +322,7 @@ session_2({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 1000,
 			version = ?TEST_PROTOCOL
 		}, 
-		"localhost", ?TEST_SERVER_PORT, 
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
 	
@@ -361,7 +361,7 @@ session_2({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 1000,
 			version = ?TEST_PROTOCOL
 		}, 
-		"localhost", ?TEST_SERVER_PORT, 
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
 	
@@ -403,7 +403,7 @@ session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 60000,
 			version = ?TEST_PROTOCOL
 		}, 
-		"localhost", ?TEST_SERVER_PORT,
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
 		[?TEST_CONN_TYPE]
 	),
 %	?debug_Fmt("::test:: after connection: ~100p",[Subscriber_2]),
@@ -448,7 +448,7 @@ session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 60000,
 			version = ?TEST_PROTOCOL
 		}, 
-		"localhost", ?TEST_SERVER_PORT,
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
 		[?TEST_CONN_TYPE]
 	),
 	?assert(is_pid(Subscriber_2)),
@@ -493,7 +493,7 @@ session_2({7, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 60000,
 			version = ?TEST_PROTOCOL
 		}, 
-		"localhost", ?TEST_SERVER_PORT,
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
 		[?TEST_CONN_TYPE]
 	),
 %	?debug_Fmt("::test:: after connection: ~100p",[Subscriber_2]),
@@ -539,7 +539,7 @@ session_2({8, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			keep_alive = 60000,
 			version = ?TEST_PROTOCOL
 		}, 
-		"localhost", ?TEST_SERVER_PORT,
+		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
 		[?TEST_CONN_TYPE]
 	),
 	?assert(is_pid(Subscriber_2)),

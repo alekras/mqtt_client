@@ -83,7 +83,7 @@ Assign record #connect{} to Conn_def value:
          will_retain = 0,will_topic = [],will_message = <<>>,
          clean_session = 1,keep_alive = 1000}
 ```
-And finally create new connection to MQTT server:
+And finally create new connection to MQTT server as localhost:1883 (use {127,0,0,1} if "localhost" does not work in your host):
 
 ```erlang
 5> PubCon = mqtt_client:connect(publisher, Conn_def, "localhost", 1883, []).

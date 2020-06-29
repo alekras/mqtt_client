@@ -47,7 +47,7 @@ mqtt_client_test_() ->
 			fun testing:do_start/0, 
 			fun testing:do_stop/1, 
 			{inorder, [
-				{"connect", fun connect/0},
+				{"connect", timeout, 15, fun connect/0},
 				{ foreachx, 
 					fun testing:do_setup/1, 
 					fun testing:do_cleanup/2, 
@@ -77,10 +77,10 @@ mqtt_client_test_() ->
 
 						{{0, will}, fun will:will_a/2},
 						{{0, will}, fun will:will_0/2},
- 						{{1, will}, fun will:will_0/2},
- 						{{2, will}, fun will:will_0/2},
- 						{{1, will_retain}, fun will:will_retain/2},
- 						{{2, will_retain}, fun will:will_retain/2},
+						{{1, will}, fun will:will_0/2},
+						{{2, will}, fun will:will_0/2},
+						{{1, will_retain}, fun will:will_retain/2},
+						{{2, will_retain}, fun will:will_retain/2},
 
 						{{0, retain}, fun retain:retain_0/2},
 						{{1, retain}, fun retain:retain_0/2},
@@ -89,7 +89,7 @@ mqtt_client_test_() ->
 						{{1, retain}, fun retain:retain_1/2},
 						{{2, retain}, fun retain:retain_1/2}
 					]
-			 }
+				}
 			]}
 		}
 	].
@@ -125,11 +125,11 @@ connect() ->
 			user_name = "quest",
 			password = <<"guest">>
 		}, 
-		"localhost", 
+		?TEST_SERVER_HOST_NAME, 
 		?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
-	?debug_Fmt("::test:: 3. wrong user name : ~120p", [Conn2]),
+	?debug_Fmt("::test:: 3. wrong user name : ~p Connection:~120p", [ConnRec#connect.user_name, Conn2]),
 	?assertMatch(#mqtt_client_error{}, Conn2),
 	
 	Conn3 = mqtt_client:connect(
@@ -143,7 +143,7 @@ connect() ->
 		?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
-%	?debug_Fmt("::test:: 4. wrong user password : ~120p", [Conn3]),
+	?debug_Fmt("::test:: 4. wrong user password : ~120p", [Conn3]),
 	?assertMatch(#mqtt_client_error{}, Conn3),
 	
 	Conn4 = mqtt_client:connect(
@@ -169,9 +169,9 @@ connect() ->
 		?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
-%	?debug_Fmt("::test:: 6. wrong utf-8 : ~p", [Conn5]),
-	?assert(erlang:is_pid(Conn5)),
-%	?assertMatch(#mqtt_client_error{}, Conn5),
+	?debug_Fmt("::test:: 6. wrong utf-8 : ~p", [Conn5]),
+	?assertNot(erlang:is_pid(Conn5)),
+	?assertMatch(#mqtt_client_error{}, Conn5),
 	
 	Conn6 = mqtt_client:connect(
 		test_client_6, 
@@ -184,7 +184,7 @@ connect() ->
 		?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
-%	?debug_Fmt("::test:: 7. wrong utf-8 : ~p", [Conn6]),
+	?debug_Fmt("::test:: 7. wrong utf-8 : ~p", [Conn6]),
 	?assertMatch(#mqtt_client_error{}, Conn6),
 	
 	Conn7 = mqtt_client:connect(
@@ -193,12 +193,13 @@ connect() ->
 			client_id = "test_client_7",
 			user_name = "guest",
 			password = <<"gu", 0, "est">>
+%%			password = <<"guest">>
 		}, 
 		?TEST_SERVER_HOST_NAME, 
 		?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
-%	?debug_Fmt("::test:: 8. wrong utf-8 : ~p", [Conn7]),
+	?debug_Fmt("::test:: 8. wrong utf-8 : ~p", [Conn7]),
 	?assertMatch(#mqtt_client_error{}, Conn7),
 	
 	?PASSED.
@@ -318,7 +319,7 @@ keep_alive(_, Conn) -> {"keep alive test", timeout, 15, fun() ->
 	timer:sleep(4900),
 	R2 = mqtt_client:status(Conn), 
 	?assertEqual([{session_present,0},{subscriptions,[]}], R2),
-	timer:sleep(2000),
+	timer:sleep(3000),
 	R3 = mqtt_client:status(Conn), 
 	?assertEqual(disconnected, R3),
 
