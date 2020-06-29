@@ -267,7 +267,7 @@ start(_Type, StartArgs) ->
 		undefined ->
 			application:set_env(lager, log_root, "logs", [{persistent, true}]),
 			application:set_env(lager, error_logger_redirect, true, [{persistent, true}]),
-			application:set_env(lager, handlers, [{lager_console_backend, error}], [{persistent, true}]),
+			application:set_env(lager, handlers, [{lager_console_backend, [{level, error}]}], [{persistent, true}]),
 			application:stop(lager),
 			lager:start()
 	end,

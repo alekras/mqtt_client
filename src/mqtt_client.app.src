@@ -21,8 +21,8 @@
 			{storage, dets}
 		]},
 %% For Hex publishing
-    {files, ["src", "priv", "test", "include", "doc", "rebar.config", "README.md", "HISTORY.md", "dets-storage", "mqtt.config"]},
+    {files, ["src", "priv", "test", "include", "doc", "_build/default", "rebar.config", "README.md", "HISTORY.md", "dets-storage", "mqtt.config"]},
     {licenses, ["Apache-2.0"]},
-    {links, [{"GitHub", "https://github.com/alekras/mqtt_client"}]}
+    {links, [{"GitHub", "https://github.com/alekras/mqtt_client"}, {"SourceForge", "https://sourceforge.net/projects/mqtt-client"}]}
 	]
 }.
