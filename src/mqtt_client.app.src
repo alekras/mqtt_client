@@ -1,7 +1,7 @@
 {application, mqtt_client,
 	[
-    {description, "The MQTT client is written in Erlang and allows to connect to MQTT server and send/receive messages according to MQTT messaging protocol version 3.1.1"},
-    {vsn, "1.0.5"},
+    {description, "The MQTT client is written in Erlang and allows to connect to MQTT server and send/receive messages according to MQTT messaging protocol versions 3.1.1 and 5.0"},
+    {vsn, "1.1.0"},
     {modules, [
       mqtt_client,
       mqtt_client_connection,
@@ -15,7 +15,7 @@
     },
     {registered, []},
     {applications, [kernel, stdlib]},
-    {mod, {mqtt_client, [{vsn, "1.0.5"}]}},
+    {mod, {mqtt_client, [{vsn, "1.1.0"}]}},
     {env, [
 %			{storage, mysql}
 			{storage, dets}

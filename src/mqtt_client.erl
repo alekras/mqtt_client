@@ -100,9 +100,9 @@ connect(Connection_id, Conn_config, Host, Port, Default_Callback, Socket_options
 		{ok, Pid} ->
 			{ok, Ref} = gen_server:call(Pid, {connect, Conn_config, Default_Callback}, ?MQTT_GEN_SERVER_TIMEOUT),
 			receive
-				{connack, Ref, _SP, 0, _Msg} -> 
+				{connack, Ref, _SP, 0, _Msg, _Properties} -> 
 					Pid;
-				{connack, Ref, _, ErrNo, Msg} -> 
+				{connack, Ref, _, ErrNo, Msg, _Properties} -> 
 					#mqtt_client_error{type = connection, errno = ErrNo, source = "mqtt_client:conect/6", message = Msg}
 			after ?MQTT_GEN_SERVER_TIMEOUT ->
 					#mqtt_client_error{type = connection, source = "mqtt_client:conect/6", message = "timeout"}
@@ -163,14 +163,14 @@ publish(Pid, Params) ->
 				0 -> ok;
 				1 ->
 					receive
-						{puback, Ref} -> 
+						{puback, Ref, _ReasonCode, _Properties} ->
 							ok
 					after ?MQTT_GEN_SERVER_TIMEOUT ->
 						#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = "puback timeout"}
 					end;
 				2 ->
 					receive
-						{pubcomp, Ref} -> 
+						{pubcomp, Ref, _ReasonCode, _Properties} ->
 							ok
 					after ?MQTT_GEN_SERVER_TIMEOUT ->
 						#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = "pubcomp timeout"}
@@ -191,8 +191,8 @@ publish(Pid, Params) ->
 subscribe(Pid, Subscriptions) ->
 	{ok, Ref} = gen_server:call(Pid, {subscribe, Subscriptions}, ?MQTT_GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
 	receive
-		{suback, Ref, RC} -> 
-			{suback, RC}
+		{suback, Ref, Return_codes, _Properties} ->
+			{suback, Return_codes}
 	after ?MQTT_GEN_SERVER_TIMEOUT ->
 		#mqtt_client_error{type = subscribe, source = "mqtt_client:subscribe/2", message = "subscribe timeout"}
 	end.
@@ -207,7 +207,7 @@ subscribe(Pid, Subscriptions) ->
 unsubscribe(Pid, Topics) ->
 	{ok, Ref} = gen_server:call(Pid, {unsubscribe, Topics}, ?MQTT_GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
 	receive
-		{unsuback, Ref} -> 
+		{unsuback, Ref, _ReturnCodes, _Properties} ->
 			unsuback
 	after ?MQTT_GEN_SERVER_TIMEOUT ->
 		#mqtt_client_error{type = subscribe, source = "mqtt_client:unsubscribe/2", message = "unsubscribe timeout"}
