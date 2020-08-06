@@ -1,5 +1,5 @@
 ## Introduction
-The client allows to connect to MQTT server and send/receive messages according to MQTT messaging protocol version 3.1.1.
+The client allows to connect to MQTT server and send/receive messages according to MQTT messaging protocol version 3.1, 3.1.1 and 5.0.
 The client is written in Erlang. 
 The client was tested with RabbitMQ and Mosquitto server on Windows/Linux/MacOSX boxes.
 
