@@ -18,7 +18,7 @@ To start with the client you have to complete three steps below:
 
 ### Building
 #### Download or clone from SourceForge GIT repository
-Download zip file erl.mqtt.client-vsn-1.0.{x}.zip from project files folder [https://sourceforge.net/projects/mqtt-client/files/versions-1.0.x/],
+Download zip file erl.mqtt.client-vsn-1.0.{x}.zip from project files [folder](https://sourceforge.net/projects/mqtt-client/files/versions-1.0.x/),
 unzip it and rename unziped folder to erl.mqtt.client. This is an Eclipse project folder. You do not need to use Eclipse to build the client but 
 if you want you can use convenience of Eclipse and Erlide plugin.
 Other way to get the client code is GIT. Type command 
@@ -46,7 +46,7 @@ for listening a TCP/IP connections from clients.
 You have to setup 'quest' account with 'guest' password.
 Start Erlang shell: 
 ```bash
-erl -pa _build/default/lib/*/ebin</pre>
+erl -pa _build/default/lib/*/ebin
 ```
 
 ## Run application
@@ -106,8 +106,8 @@ To establish connection secured by TLS we need to add to socket option list atom
 ```erlang
 7> SubCon = mqtt_client:connect(subscriber, Conn_def_2, "localhost", 2884, [ssl]).
 ```
-Note that we are using there port 2884. This MQTT server port has to be set to listen as SSL socket. How configurate Mosquitto server
-see [https://dzone.com/articles/secure-communication-with-tls-and-the-mosquitto-broker/].
+Note that we are using there port 2884. This MQTT server port has to be set to listen as SSL socket. How configure Mosquitto server
+[see](https://dzone.com/articles/secure-communication-with-tls-and-the-mosquitto-broker/).
 If we want to pass additional properties to SSL application on client side we can do it using options list:
 
 ```erlang
