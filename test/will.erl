@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2017 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2020 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 %% @hidden
 %% @since 2016-09-29
-%% @copyright 2015-2017 Alexei Krasnopolski
+%% @copyright 2015-2020 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
 %% @doc This module implements a tesing of MQTT will.
@@ -44,7 +44,7 @@
 will_a({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
+	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(0, Q),
 					 ?assertEqual("AK_will_test", Topic),
@@ -69,7 +69,7 @@ end}.
 will_0({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
+	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(0, Q),
 					 ?assertEqual("AK_will_test", Topic),
@@ -97,7 +97,7 @@ end};
 will_0({1, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=1.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
+	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(1, Q),
 					 ?assertEqual("AK_will_test", Topic),
@@ -125,7 +125,7 @@ end};
 will_0({2, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=2.", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
+	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(2, Q),
 					 ?assertEqual("AK_will_test", Topic),
@@ -153,14 +153,14 @@ end}.
 will_retain({QoS, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will with retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
 
-	F = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
+	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun F callback: ~100p~n",[_Arg]),
 					 ?assertEqual(QoS, Q),
 					 ?assertEqual("AK_will_retain_test", Topic),
 					 ?assertEqual(<<"Test will retain message">>, Msg),
 					 test_result ! done 
 			end,
-	F1 = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
+	F1 = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun F1 callback: ~100p~n",[_Arg]),
 					 ?assertEqual(QoS, Q),
 					 ?assertEqual("AK_will_retain_test", Topic),

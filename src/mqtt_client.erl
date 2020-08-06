@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2017 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2020 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -15,12 +15,12 @@
 %%
 
 %% @since 2015-12-25
-%% @copyright 2015-2017 Alexei Krasnopolski
+%% @copyright 2015-2020 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
 %% @doc Main module of mqtt_client application. The module implements application behaviour
 %% and application API.
-%% @ headerfile "mqtt_common/include/mqtt.hrl"
+%% @headerfile "mqtt.hrl"
 
 -module(mqtt_client).
 -behaviour(application).
@@ -36,13 +36,11 @@
 %% API functions
 %% ====================================================================
 -export([
-	connect/5,
-	connect/6,
+	connect/5, connect/6,
 	status/1,
-	publish/2,
-	publish/3,
-	subscribe/2,
-	unsubscribe/2,
+	publish/2, publish/3,
+	subscribe/2, subscribe/3,
+	unsubscribe/2, unsubscribe/3,
 	pingreq/2,
 	disconnect/1
 ]).
@@ -189,12 +187,29 @@ publish(Pid, Params) ->
 %% @doc The function sends a subscribe packet to MQTT server. Callback function will receive messages from the Topic.
 %% 
 subscribe(Pid, Subscriptions) ->
-	{ok, Ref} = gen_server:call(Pid, {subscribe, Subscriptions}, ?MQTT_GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
-	receive
-		{suback, Ref, Return_codes, _Properties} ->
-			{suback, Return_codes}
-	after ?MQTT_GEN_SERVER_TIMEOUT ->
-		#mqtt_client_error{type = subscribe, source = "mqtt_client:subscribe/2", message = "subscribe timeout"}
+	case gen_server:call(Pid, {subscribe, Subscriptions}, ?MQTT_GEN_SERVER_TIMEOUT) of
+		{ok, Ref} ->
+			receive
+				{suback, Ref, Return_codes, _Properties} ->
+					{suback, Return_codes}
+			after ?MQTT_GEN_SERVER_TIMEOUT ->
+				#mqtt_client_error{type = subscribe, source = "mqtt_client:subscribe/2", message = "subscribe timeout"}
+			end;
+		{error, Reason} ->
+				#mqtt_client_error{type = subscribe, source = "mqtt_client:subscribe/2", message = Reason}
+	end.
+
+subscribe(Pid, Subscriptions, Properties) ->
+	case gen_server:call(Pid, {subscribe, Subscriptions, Properties}, ?MQTT_GEN_SERVER_TIMEOUT) of
+		{ok, Ref} ->
+			receive
+				{suback, Ref, Return_codes, Props} ->
+					{suback, Return_codes, Props}
+			after ?MQTT_GEN_SERVER_TIMEOUT ->
+				#mqtt_client_error{type = subscribe, source = "mqtt_client:subscribe/3", message = "subscribe timeout"}
+			end;
+		{error, Reason} ->
+				#mqtt_client_error{type = subscribe, source = "mqtt_client:subscribe/3", message = Reason}
 	end.
 
 -spec unsubscribe(Pid, Topics) -> Result when
@@ -209,6 +224,15 @@ unsubscribe(Pid, Topics) ->
 	receive
 		{unsuback, Ref, _ReturnCodes, _Properties} ->
 			unsuback
+	after ?MQTT_GEN_SERVER_TIMEOUT ->
+		#mqtt_client_error{type = subscribe, source = "mqtt_client:unsubscribe/2", message = "unsubscribe timeout"}
+	end.
+
+unsubscribe(Pid, Topics, Properties) ->
+	{ok, Ref} = gen_server:call(Pid, {unsubscribe, Topics, Properties}, ?MQTT_GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
+	receive
+		{unsuback, Ref, ReturnCodes, Props} ->
+			{unsuback, ReturnCodes, Props}
 	after ?MQTT_GEN_SERVER_TIMEOUT ->
 		#mqtt_client_error{type = subscribe, source = "mqtt_client:unsubscribe/2", message = "unsubscribe timeout"}
 	end.

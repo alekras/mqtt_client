@@ -21,12 +21,12 @@
 %% @doc @todo Add description to testing.
 
 
--module(testing).
+-module(testing_v5).
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("mqtt_common/include/mqtt.hrl").
 -include("test.hrl").
 
--define(CONN_REC, (#connect{user_name = ?TEST_USER, password = ?TEST_PASSWORD, keep_alive = 60000, version = ?TEST_PROTOCOL}) ).
+-define(CONN_REC, (#connect{user_name = ?TEST_USER, password = ?TEST_PASSWORD, keep_alive = 60, version = '5.0'}) ).
 
 %%
 %% API functions
@@ -244,7 +244,7 @@ do_cleanup(_X, _Pids) ->
 	?assertEqual(ok, R).
 
 get_connect_rec() ->
-	?CONN_REC#connect{client_id = "test_client"}.
+	?CONN_REC#connect{client_id = "test_client", version='5.0'}.
 
 get_storage() ->
 	case application:get_env(mqtt_client, storage, dets) of

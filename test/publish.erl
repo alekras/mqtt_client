@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2017 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2020 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 %% @hidden
 %% @since 2017-01-05
-%% @copyright 2015-2017 Alexei Krasnopolski
+%% @copyright 2015-2020 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
 %% @doc This module implements a tesing of MQTT retain meaasages.
@@ -45,7 +45,7 @@
 publish_0({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish with QoS = " ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
 
-	F = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
+	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
 					 <<QoS_m:1/bytes, _/binary>> = Msg,
 %					 ?debug_Fmt("::test:: fun callback: ~100p Q=~p",[_Arg, binary_to_list(QoS_m)]),
 					 ?assertEqual(QoS, Q),
@@ -84,7 +84,9 @@ end}.
 publish_1({_QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish with QoS = 1", timeout, 100, fun() ->
 	register(test_result, self()),
 
-	R2_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 1, fun(Arg) -> ?assertMatch({{"AKtest",1},_,_,_,<<"Test Payload QoS = 1. annon. function callback. ">>}, Arg), test_result ! done end}]), 
+	R2_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 1, 
+																						 fun(Arg) -> ?assertMatch({1,#publish{topic= "AKtest", payload= <<"Test Payload QoS = 1. annon. function callback. ">>}}, Arg), test_result ! done end}
+																					 ]), 
 	?assertEqual({suback,[1]}, R2_0),
 	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 0}, <<"Test Payload QoS = 1. annon. function callback. ">>), 
 	?assertEqual(ok, R3_0),
@@ -109,7 +111,7 @@ end}.
 publish_2({_QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish with QoS = 2", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, QoS, _Dup, _, Msg} = _Arg) -> 
+	F = fun({Q, #publish{topic= Topic, qos=QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
 					 <<QoS_m:1/bytes, _/binary>> = Msg,
 %					 ?debug_Fmt("::test:: fun callback: ~100p Q=~p",[_Arg, binary_to_list(QoS_m)]),
 					 ?assertEqual(2, Q),

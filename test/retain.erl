@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2017 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2020 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 %% @hidden
 %% @since 2016-12-19
-%% @copyright 2015-2017 Alexei Krasnopolski
+%% @copyright 2015-2020 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
 %% @doc This module implements a tesing of MQTT retain meaasages.
@@ -45,7 +45,7 @@ retain_0({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> 
 	register(test_result, self()),
   
 	F = fun(_SubN) ->
-			fun({{Topic, Q}, _QoS, _Dup, _Ret, Msg} = _Arg) -> 
+			fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
 %					 ?debug_Fmt("::test:: Subs:~p fun callback: ~100p",[_SubN, _Arg]),
 					 ?assertEqual(QoS, Q),
 					 ?assertEqual("AK_retain_test", Topic),
@@ -75,7 +75,7 @@ end}.
 retain_1({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {"retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
   
-	F = fun({{Topic, Q}, _QoS, _Dup, _, Msg} = _Arg) -> 
+	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(QoS, Q),
 					 ?assertEqual("AK_retain_test", Topic),
