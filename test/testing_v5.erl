@@ -24,6 +24,7 @@
 -module(testing_v5).
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("mqtt_common/include/mqtt.hrl").
+-include_lib("mqtt_common/include/mqtt_property.hrl").
 -include("test.hrl").
 
 -define(CONN_REC, (#connect{user_name = ?TEST_USER, password = ?TEST_PASSWORD, keep_alive = 60, version = '5.0'}) ).
@@ -77,14 +78,14 @@ do_setup({_, session} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	P1 = mqtt_client:connect(
 		publisher, 
-		?CONN_REC#connect{client_id = "publisher", clean_session = 0}, 
+		?CONN_REC#connect{client_id = "publisher", clean_session = 0, properties=[{?Session_Expiry_Interval, 16#FFFFFFFF}]}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
 	?assert(is_pid(P1)),
 	S1 = mqtt_client:connect(
 		subscriber, 
-		?CONN_REC#connect{client_id = "subscriber", clean_session = 0}, 
+		?CONN_REC#connect{client_id = "subscriber", clean_session = 0, properties=[{?Session_Expiry_Interval, 16#FFFFFFFF}]}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),

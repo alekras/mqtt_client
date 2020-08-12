@@ -21,7 +21,7 @@
 %% @version {@version}
 %% @doc This module implements a tesing of MQTT will.
 
--module(will).
+-module(will_v5).
 
 %%
 %% Include files
@@ -43,7 +43,7 @@
 
 will_a({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", timeout, 100, fun() ->
 	register(test_result, self()),
-  
+
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(0, Q),
@@ -54,7 +54,7 @@ will_a({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", time
 	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 0, F}]), 
 	?assertEqual({suback,[0],[]}, R1_0),
 %% generate connection close:
-	R2 = mqtt_client:stop(Publisher),
+	R2 = mqtt_client:stop(ok),
 %	?debug_Fmt("::test:: after stop publisher: ~100p",[R2]),
 	?assertEqual(ok, R2),
 

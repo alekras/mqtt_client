@@ -217,13 +217,13 @@ combined(_, Conn) -> {"combined", timeout, 100, fun() ->
 										 test_result ! done 
 				end
 																			}]), 
-	?assertEqual({suback,[2]}, R2_0),
+	?assertEqual({suback,[2],[]}, R2_0),
 	R3_0 = mqtt_client:publish(Conn, #publish{topic = "AKtest"}, <<"Test Payload QoS = 0. annon. function callback. ">>), 
 	?assertEqual(ok, R3_0),
 
 	timer:sleep(100),
 	R2 = mqtt_client:subscribe(Conn, [{"AKtest", 2, {?MODULE, callback}}]), 
-	?assertEqual({suback,[2]}, R2),
+	?assertEqual({suback,[2],[]}, R2),
 	R3 = mqtt_client:publish(Conn, #publish{topic = "AKtest"}, <<"Test Payload QoS = 0.">>), 
 	?assertEqual(ok, R3),
 	R4 = mqtt_client:pingreq(Conn, {?MODULE, ping_callback}), 
@@ -238,7 +238,7 @@ combined(_, Conn) -> {"combined", timeout, 100, fun() ->
 	?assertEqual(ok, R8),
 	timer:sleep(500),
 	R9 = mqtt_client:unsubscribe(Conn, ["AKtest"]), 
-	?assertEqual(unsuback, R9),
+	?assertEqual({unsuback, [],[]}, R9),
 	R10 = mqtt_client:pingreq(Conn, {?MODULE, ping_callback}), 
 	?assertEqual(ok, R10),
 % does not come
@@ -256,7 +256,7 @@ end}.
 subs_list(_, Conn) -> {"subscribtion list", timeout, 100, fun() ->	
 	register(test_result, self()),
 	R2 = mqtt_client:subscribe(Conn, [{"Summer", 2, {?MODULE, summer_callback}}, {"Winter", 1, {?MODULE, winter_callback}}]), 
-	?assertEqual({suback,[2,1]}, R2),
+	?assertEqual({suback,[2,1],[]}, R2),
 	timer:sleep(100),
 	R3 = mqtt_client:publish(Conn, #publish{topic = "Winter"}, <<"Sent to winter. QoS = 0.">>), 
 	?assertEqual(ok, R3),
@@ -270,7 +270,7 @@ subs_list(_, Conn) -> {"subscribtion list", timeout, 100, fun() ->
 	W = wait_all(4),
 
 	R8 = mqtt_client:unsubscribe(Conn, ["Summer", "Winter"]), 
-	?assertEqual(unsuback, R8),
+	?assertEqual({unsuback, [],[]}, R8),
 	timer:sleep(100),
 	R9 = mqtt_client:publish(Conn, #publish{topic = "Winter", qos = 2}, <<"Sent to winter. QoS = 2.">>), 
 	?assertEqual(ok, R9),
@@ -290,7 +290,7 @@ subs_filter(_, Conn) -> {"subscription filter", fun() ->
 																		{"Winter/#", 1, {?MODULE, winter_callback}},
 																		{"Spring/+/Month/+", 0, {?MODULE, spring_callback}}
 																	 ]), 
-	?assertEqual({suback,[2,1,0]}, R2),
+	?assertEqual({suback,[2,1,0],[]}, R2),
 	timer:sleep(100),
 	R3 = mqtt_client:publish(Conn, #publish{topic = "Winter/Jan"}, <<"Sent to Winter/Jan.">>), 
 	?assertEqual(ok, R3),
@@ -311,7 +311,7 @@ subs_filter(_, Conn) -> {"subscription filter", fun() ->
 	W = wait_all(6),
 
 	R12 = mqtt_client:unsubscribe(Conn, ["Summer/+", "Winter/#", "Spring/+/Month/+"]),
-	?assertEqual(unsuback, R12),
+	?assertEqual({unsuback, [], []}, R12),
 	
 	unregister(test_result),
 	?assert(W),
@@ -337,21 +337,21 @@ callback({0, #publish{topic= "AKTest", qos= QoS}} = Arg) ->
 	case QoS of
 		0 -> ?assertMatch({0, #publish{topic= "AKTest", qos= 0, payload= <<"Test Payload QoS = 0.">>}}, Arg)
 	end,
-	?debug_Fmt("::test:: ~p:callback<0>: ~p",[?MODULE, Arg]),
+%	?debug_Fmt("::test:: ~p:callback<0>: ~p",[?MODULE, Arg]),
 	test_result ! done;
 callback({1, #publish{topic= "AKTest", qos= QoS}} = Arg) ->
 	case QoS of
 		0 -> ?assertMatch({1, #publish{topic= "AKTest", qos= 0, payload= <<"Test Payload QoS = 0.">>}}, Arg);
 		1 -> ?assertMatch({1, #publish{topic= "AKTest", qos= 1, payload= <<"Test Payload QoS = 1.">>}}, Arg)
 	end,
-	?debug_Fmt("::test:: ~p:callback<1>: ~p",[?MODULE, Arg]),
+%	?debug_Fmt("::test:: ~p:callback<1>: ~p",[?MODULE, Arg]),
 	test_result ! done;
 callback({2, #publish{topic= "AKTest", qos= QoS}} = Arg) ->
 	case QoS of
 		0 -> ?assertMatch({2, #publish{topic= "AKTest", qos= 0, payload= <<"Test Payload QoS = 0.">>}}, Arg);
 		1 -> ?assertMatch({2, #publish{topic= "AKTest", qos= 1, payload= <<"Test Payload QoS = 2.">>}}, Arg)
 	end,
-	?debug_Fmt("::test:: ~p:callback<2>: ~p",[?MODULE, Arg]),
+%	?debug_Fmt("::test:: ~p:callback<2>: ~p",[?MODULE, Arg]),
 	test_result ! done;
 callback({_, #publish{qos= QoS}} = Arg) ->
 	case QoS of
@@ -359,7 +359,7 @@ callback({_, #publish{qos= QoS}} = Arg) ->
 		1 -> ?assertMatch({2, #publish{topic= "AKtest", qos= 1, payload= <<"Test Payload QoS = 1.">>}}, Arg);
 		2 -> ?assertMatch({2, #publish{topic= "AKtest", qos= 2, payload= <<"Test Payload QoS = 2.">>}}, Arg)
 	end,
-	?debug_Fmt("::test:: ~p:callback<_>: ~p",[?MODULE, Arg]),
+%	?debug_Fmt("::test:: ~p:callback<_>: ~p",[?MODULE, Arg]),
 	test_result ! done.
 
 ping_callback(Arg) ->

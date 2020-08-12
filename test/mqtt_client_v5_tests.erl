@@ -52,42 +52,48 @@ mqtt_client_test_() ->
 					fun testing_v5:do_setup/1, 
 					fun testing_v5:do_cleanup/2, 
 					[
-%						{{1, keep_alive}, fun keep_alive/2},
+						{{1, keep_alive}, fun keep_alive/2},
 						{{1, combined}, fun combined/2},
 						{{1, subs_list}, fun subs_list/2},
-						{{1, subs_filter}, fun subs_filter/2}
-%% 
-%% 						{{0, publish}, fun publish:publish_0/2},
-%% 						{{1, publish}, fun publish:publish_0/2},
-%% 						{{2, publish}, fun publish:publish_0/2},
-%% 
-%% 						{{1, session}, fun session:session_1/2},
-%% 						{{2, session}, fun session:session_1/2},
-%% 						{{3, session}, fun session:session_1/2},
-%% 						{{4, session}, fun session:session_1/2},
-%% 
-%% 						{{1, session}, fun session:session_2/2},
-%% 						{{2, session}, fun session:session_2/2},
-%% 						{{3, session}, fun session:session_2/2},
-%% 						{{4, session}, fun session:session_2/2},
-%% 						{{5, session}, fun session:session_2/2},
-%% 						{{6, session}, fun session:session_2/2},
-%% 						{{7, session}, fun session:session_2/2},
-%% 						{{8, session}, fun session:session_2/2},
-%% 
-%% 						{{0, will}, fun will:will_a/2},
-%% 						{{0, will}, fun will:will_0/2},
-%% 						{{1, will}, fun will:will_0/2},
-%% 						{{2, will}, fun will:will_0/2},
-%% 						{{1, will_retain}, fun will:will_retain/2},
-%% 						{{2, will_retain}, fun will:will_retain/2},
-%% 
-%% 						{{0, retain}, fun retain:retain_0/2},
-%% 						{{1, retain}, fun retain:retain_0/2},
-%% 						{{2, retain}, fun retain:retain_0/2},
-%% 						{{0, retain}, fun retain:retain_1/2},
-%% 						{{1, retain}, fun retain:retain_1/2},
-%% 						{{2, retain}, fun retain:retain_1/2}
+						{{1, subs_filter}, fun subs_filter/2},
+
+						{{0, publish}, fun publish_v5:publish_0/2},
+						{{1, publish}, fun publish_v5:publish_0/2},
+						{{2, publish}, fun publish_v5:publish_0/2},
+						{{0, publish}, fun publish_v5:publish_1/2},
+						{{1, publish}, fun publish_v5:publish_1/2},
+						{{2, publish}, fun publish_v5:publish_1/2},
+						{{0, publish}, fun publish_v5:publish_2/2},
+						{{1, publish}, fun publish_v5:publish_2/2},
+						{{2, publish}, fun publish_v5:publish_2/2},
+
+						{{1, session}, fun session_v5:session_1/2},
+						{{2, session}, fun session_v5:session_1/2},
+						{{3, session}, fun session_v5:session_1/2},
+						{{4, session}, fun session_v5:session_1/2},
+
+						{{5, session}, fun session_v5:session_2/2},
+						{{6, session}, fun session_v5:session_2/2},
+						{{7, session}, fun session_v5:session_2/2},
+						{{8, session}, fun session_v5:session_2/2},
+						{{9, session}, fun session_v5:session_2/2},
+						{{10, session}, fun session_v5:session_2/2},
+						{{11, session}, fun session_v5:session_2/2},
+						{{12, session}, fun session_v5:session_2/2},
+
+						{{0, will}, fun will_v5:will_a/2},
+						{{0, will}, fun will_v5:will_0/2},
+						{{1, will}, fun will_v5:will_0/2},
+						{{2, will}, fun will_v5:will_0/2},
+						{{1, will_retain}, fun will_v5:will_retain/2},
+						{{2, will_retain}, fun will_v5:will_retain/2},
+
+						{{0, retain}, fun retain_v5:retain_0/2},
+						{{1, retain}, fun retain_v5:retain_0/2},
+						{{2, retain}, fun retain_v5:retain_0/2},
+						{{0, retain}, fun retain_v5:retain_1/2},
+						{{1, retain}, fun retain_v5:retain_1/2},
+						{{2, retain}, fun retain_v5:retain_1/2}
 					]
 				}
 			]}
@@ -96,9 +102,9 @@ mqtt_client_test_() ->
 
 connect() ->
 	ConnRec = (get_connect_rec())#connect{
-			properties=[{?Topic_Alias_Maximum, 10},{?Request_Problem_Information, 1},{?Request_Response_Information, 1},{?User_Property, [{name,"Key"}, {value,"Value"}]}],
+			properties=[{?Topic_Alias_Maximum, 10},{?Request_Problem_Information, 1},{?Request_Response_Information, 1},{?User_Property, {"Key", "Value"}}],
 			will = 1, will_qos = 1, will_retain = 0, will_topic = "Will_Topic", will_message = <<"Msg">>,
-			will_properties = [{?Payload_Format_Indicator, 1},{?User_Property, [{name,"Key"}, {value,"Value"}]}]
+			will_properties = [{?Payload_Format_Indicator, 1},{?User_Property, {"Key", "Value"}}]
 																			 },
 	Conn = mqtt_client:connect(
 		test_client, 
@@ -233,17 +239,17 @@ combined(_, Conn) -> {"combined", timeout, 100, fun() ->
 	R2_0 = mqtt_client:subscribe(Conn, 
 			[{"AKtest", 2, 
 				fun(Arg) -> ?assertMatch({2,#publish{topic = "AKtest", 
-																							properties= [{?User_Property, [{name,<<"Key">>}, {value,<<"Value">>}]},{?Subscription_Identifier, 21}], 
+																							properties= [{?User_Property, {<<"Key">>, <<"Value">>}},{?Subscription_Identifier, 21}], 
 																							payload= <<"Test Payload QoS = 0. annon. function callback. ">>}}, 
 																	Arg), 
 										 test_result ! done 
 				end
 			 }],
-			[{?Subscription_Identifier, 21},{?User_Property, [{name,"Key"}, {value,"Value"}]}]
+			[{?Subscription_Identifier, 21},{?User_Property, {"Key", "Value"}}]
 															), 
 	?debug_Fmt("::test:: combined->suback : ~p", [R2_0]),
 	?assertMatch({suback,[2], _}, R2_0),
-	R3_0 = mqtt_client:publish(Conn, #publish{topic = "AKtest", properties = [{?User_Property, [{name,"Key"}, {value,"Value"}]}]},
+	R3_0 = mqtt_client:publish(Conn, #publish{topic = "AKtest", properties = [{?User_Property, {"Key", "Value"}}]},
 														 <<"Test Payload QoS = 0. annon. function callback. ">>), 
 	?assertEqual(ok, R3_0),
 
@@ -344,31 +350,13 @@ subs_filter(_, Conn) -> {"subscription filter", fun() ->
 	?PASSED
 end}.
 
-callback({0, #publish{topic= "AKTest", qos= QoS}} = Arg) ->
-	case QoS of
-		0 -> ?assertMatch({0, #publish{topic= "AKTest", qos= 0, payload= <<"Test Payload QoS = 0.">>}}, Arg)
-	end,
-%	?debug_Fmt("::test:: ~p:callback: ~p",[?MODULE, Arg]),
-	test_result ! done;
-callback({1, #publish{topic= "AKTest", qos= QoS}} = Arg) ->
-	case QoS of
-		0 -> ?assertMatch({1, #publish{topic= "AKTest", qos= 0, payload= <<"Test Payload QoS = 0.">>}}, Arg);
-		1 -> ?assertMatch({1, #publish{topic= "AKTest", qos= 1, payload= <<"Test Payload QoS = 1.">>}}, Arg)
-	end,
-	test_result ! done;
-callback({2, #publish{topic= "AKTest", qos= QoS}} = Arg) ->
-	case QoS of
-		0 -> ?assertMatch({2, #publish{topic= "AKTest", qos= 0, payload= <<"Test Payload QoS = 0.">>}}, Arg);
-		1 -> ?assertMatch({2, #publish{topic= "AKTest", qos= 1, payload= <<"Test Payload QoS = 2.">>}}, Arg)
-	end,
-	test_result ! done;
 callback({_, #publish{qos= QoS}} = Arg) ->
 	case QoS of
 		0 -> ?assertMatch({2, #publish{topic= "AKtest", qos= 0, payload= <<"Test Payload QoS = 0.">>}}, Arg);
 		1 -> ?assertMatch({2, #publish{topic= "AKtest", qos= 1, payload= <<"Test Payload QoS = 1.">>}}, Arg);
 		2 -> ?assertMatch({2, #publish{topic= "AKtest", qos= 2, payload= <<"Test Payload QoS = 2.">>}}, Arg)
 	end,
-%	?debug_Fmt("::test:: ~p:callback: ~p",[?MODULE, Arg]),
+	?debug_Fmt("::test:: ~p:callback<_>: ~p",[?MODULE, Arg]),
 	test_result ! done.
 
 ping_callback(Arg) ->

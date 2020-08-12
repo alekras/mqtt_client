@@ -19,7 +19,7 @@
 %% @copyright 2015-2020 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
-%% @doc This module implements a tesing of MQTT retain meaasages.
+%% @doc This module implements a testing of MQTT retain meaasages.
 
 -module(publish).
 
@@ -57,7 +57,7 @@ publish_0({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish wi
 			end,
 
 	R2_0 = mqtt_client:subscribe(Subscriber, [{"AKTest", QoS, F}]), 
-	?assertEqual({suback,[QoS]}, R2_0),
+	?assertEqual({suback,[QoS],[]}, R2_0),
 	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 0}, <<"0) Test Payload QoS = 0. annon. function callback. ">>), 
 	?assertEqual(ok, R3_0),
 	R4_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 1}, <<"1) Test Payload QoS = 0. annon. function callback. ">>), 
@@ -66,7 +66,7 @@ publish_0({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish wi
 	?assertEqual(ok, R5_0),
 
 	R2 = mqtt_client:subscribe(Subscriber, [{"AKTest", QoS, {mqtt_client_tests, callback}}]), 
-	?assertEqual({suback,[QoS]}, R2),
+	?assertEqual({suback,[QoS],[]}, R2),
 	R3 = mqtt_client:publish(Publisher, #publish{topic = "AKTest"}, <<"Test Payload QoS = 0.">>), 
 	?assertEqual(ok, R3),
 %% errors:
@@ -87,7 +87,7 @@ publish_1({_QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish w
 	R2_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 1, 
 																						 fun(Arg) -> ?assertMatch({1,#publish{topic= "AKtest", payload= <<"Test Payload QoS = 1. annon. function callback. ">>}}, Arg), test_result ! done end}
 																					 ]), 
-	?assertEqual({suback,[1]}, R2_0),
+	?assertEqual({suback,[1],[]}, R2_0),
 	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 0}, <<"Test Payload QoS = 1. annon. function callback. ">>), 
 	?assertEqual(ok, R3_0),
 	R4_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"Test Payload QoS = 1. annon. function callback. ">>), 
@@ -96,7 +96,7 @@ publish_1({_QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish w
 	?assertEqual(ok, R5_0),
 
 	R2 = mqtt_client:subscribe(Subscriber, [{"AKTest", 1, {mqtt_client_tests, callback}}]), 
-	?assertEqual({suback,[1]}, R2),
+	?assertEqual({suback,[1],[]}, R2),
 	R3 = mqtt_client:publish(Publisher, #publish{topic = "AKTest"}, <<"Test Payload QoS = 0.">>), 
 	?assertEqual(ok, R3),
 
@@ -120,7 +120,7 @@ publish_2({_QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish w
 					 test_result ! done 
 			end,
 	R2_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 2, F}]), 
-	?assertEqual({suback,[2]}, R2_0),
+	?assertEqual({suback,[2],[]}, R2_0),
 	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 0}, <<"0) Test Payload QoS = 2. annon. function callback. ">>), 
 	?assertEqual(ok, R3_0),
 	R4_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"1) Test Payload QoS = 2. annon. function callback. ">>), 
@@ -129,7 +129,7 @@ publish_2({_QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish w
 	?assertEqual(ok, R5_0),
 
 	R2 = mqtt_client:subscribe(Subscriber, [{"AKTest", 2, {mqtt_client_tests, callback}}]), 
-	?assertEqual({suback,[2]}, R2),
+	?assertEqual({suback,[2],[]}, R2),
 	R3 = mqtt_client:publish(Publisher, #publish{topic = "AKTest"}, <<"Test Payload QoS = 0.">>), 
 	?assertEqual(ok, R3),
 

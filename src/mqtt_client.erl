@@ -187,17 +187,7 @@ publish(Pid, Params) ->
 %% @doc The function sends a subscribe packet to MQTT server. Callback function will receive messages from the Topic.
 %% 
 subscribe(Pid, Subscriptions) ->
-	case gen_server:call(Pid, {subscribe, Subscriptions}, ?MQTT_GEN_SERVER_TIMEOUT) of
-		{ok, Ref} ->
-			receive
-				{suback, Ref, Return_codes, _Properties} ->
-					{suback, Return_codes}
-			after ?MQTT_GEN_SERVER_TIMEOUT ->
-				#mqtt_client_error{type = subscribe, source = "mqtt_client:subscribe/2", message = "subscribe timeout"}
-			end;
-		{error, Reason} ->
-				#mqtt_client_error{type = subscribe, source = "mqtt_client:subscribe/2", message = Reason}
-	end.
+	subscribe(Pid, Subscriptions, []).
 
 subscribe(Pid, Subscriptions, Properties) ->
 	case gen_server:call(Pid, {subscribe, Subscriptions, Properties}, ?MQTT_GEN_SERVER_TIMEOUT) of
@@ -220,21 +210,19 @@ subscribe(Pid, Subscriptions, Properties) ->
 %% @doc The function sends a subscribe packet to MQTT server.
 %% 
 unsubscribe(Pid, Topics) ->
-	{ok, Ref} = gen_server:call(Pid, {unsubscribe, Topics}, ?MQTT_GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
-	receive
-		{unsuback, Ref, _ReturnCodes, _Properties} ->
-			unsuback
-	after ?MQTT_GEN_SERVER_TIMEOUT ->
-		#mqtt_client_error{type = subscribe, source = "mqtt_client:unsubscribe/2", message = "unsubscribe timeout"}
-	end.
+	unsubscribe(Pid, Topics, []).
 
 unsubscribe(Pid, Topics, Properties) ->
-	{ok, Ref} = gen_server:call(Pid, {unsubscribe, Topics, Properties}, ?MQTT_GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
-	receive
-		{unsuback, Ref, ReturnCodes, Props} ->
-			{unsuback, ReturnCodes, Props}
-	after ?MQTT_GEN_SERVER_TIMEOUT ->
-		#mqtt_client_error{type = subscribe, source = "mqtt_client:unsubscribe/2", message = "unsubscribe timeout"}
+	case gen_server:call(Pid, {unsubscribe, Topics, Properties}, ?MQTT_GEN_SERVER_TIMEOUT) of
+		{ok, Ref} ->
+			receive
+				{unsuback, Ref, ReturnCodes, Props} ->
+					{unsuback, ReturnCodes, Props}
+			after ?MQTT_GEN_SERVER_TIMEOUT ->
+				#mqtt_client_error{type = unsubscribe, source = "mqtt_client:unsubscribe/3", message = "unsubscribe timeout"}
+			end;
+		{error, Reason} ->
+				#mqtt_client_error{type = unsubscribe, source = "mqtt_client:unsubscribe/3", message = Reason}
 	end.
 
 -spec pingreq(Pid, Callback) -> Result when
@@ -261,7 +249,7 @@ disconnect(Pid) when is_pid(Pid) ->
 				{disconnected, Ref} -> 
 					ok
 			after ?MQTT_GEN_SERVER_TIMEOUT ->
-				#mqtt_client_error{type = subscribe, source = "mqtt_client:disconnect/2", message = "disconnect timeout"}
+				#mqtt_client_error{type = disconnect, source = "mqtt_client:disconnect/2", message = "disconnect timeout"}
 			end;
 		false -> ok
 	end;

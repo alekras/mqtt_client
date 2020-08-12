@@ -21,7 +21,7 @@
 %% @version {@version}
 %% @doc This module implements a tesing of MQTT session.
 
--module(session).
+-module(session_v5).
 
 %%
 %% Include files
@@ -68,7 +68,7 @@ session_1({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			user_name = "guest", password = <<"guest">>,
 			clean_session = 0,
 			keep_alive = 1000,
-			version = ?TEST_PROTOCOL
+			version = '5.0'
 		}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
@@ -110,7 +110,7 @@ session_1({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			user_name = "guest", password = <<"guest">>,
 			clean_session = 0,
 			keep_alive = 1000,
-			version = ?TEST_PROTOCOL
+			version = '5.0'
 		}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
@@ -155,7 +155,7 @@ session_1({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			user_name = "guest", password = <<"guest">>,
 			clean_session = 0,
 			keep_alive = 60000,
-			version = ?TEST_PROTOCOL
+			version = '5.0'
 		}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
 		{F}, 
@@ -202,7 +202,7 @@ session_1({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			user_name = "guest", password = <<"guest">>,
 			clean_session = 0,
 			keep_alive = 60000,
-			version = ?TEST_PROTOCOL
+			version = '5.0'
 		}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
 		[?TEST_CONN_TYPE]
@@ -220,7 +220,7 @@ session_1({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 end}.
 
 %% Publisher: skip send publish. Resend publish after reconnect and restore session.
-session_2({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, publisher skips send publish.", timeout, 100, fun() ->
+session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, publisher skips send publish.", timeout, 100, fun() ->
 	register(test_result, self()),
   
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= _Msg}} = _Arg) -> 
@@ -243,7 +243,7 @@ session_2({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			user_name = "guest", password = <<"guest">>,
 			clean_session = 0,
 			keep_alive = 1000,
-			version = ?TEST_PROTOCOL
+			version = '5.0'
 		}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
@@ -258,7 +258,7 @@ session_2({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 end};
 
 %% Publisher: skip receive pubrec. Resend publish after reconnect and restore session.
-session_2({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, publisher skips receive pubrec.", timeout, 100, fun() ->
+session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, publisher skips receive pubrec.", timeout, 100, fun() ->
 	register(test_result, self()),
   
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= _Msg}} = _Arg) -> 
@@ -281,7 +281,7 @@ session_2({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			user_name = "guest", password = <<"guest">>,
 			clean_session = 0,
 			keep_alive = 1000,
-			version = ?TEST_PROTOCOL
+			version = '5.0'
 		}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
@@ -296,7 +296,7 @@ session_2({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 end};
 
 %% Publisher: skip send pubrel. Resend pubrel after reconnect and restore session.
-session_2({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, publisher skips send pubrel.", timeout, 100, fun() ->
+session_2({7, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, publisher skips send pubrel.", timeout, 100, fun() ->
 	register(test_result, self()),
   
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= _Msg}} = _Arg) -> 
@@ -309,6 +309,7 @@ session_2({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	?assertEqual({suback,[2],[]}, R1_0),
 	R2_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"1) Test Payload QoS = 2. annon. function callback. ">>), 
 	?assertEqual(ok, R2_0),
+	
 	gen_server:call(Publisher, {set_test_flag, skip_send_pubrel}),
 	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"2) Test Payload QoS = 2. annon. function callback. ">>), 
 	?assertEqual({mqtt_client_error,publish,none,"mqtt_client:publish/2","pubcomp timeout"}, R3_0),
@@ -320,7 +321,7 @@ session_2({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			user_name = "guest", password = <<"guest">>,
 			clean_session = 0,
 			keep_alive = 1000,
-			version = ?TEST_PROTOCOL
+			version = '5.0'
 		}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
@@ -335,7 +336,7 @@ session_2({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 end};
 
 %% Publisher: skip receive pubcomp. Resend publish after reconnect and restore session.
-session_2({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, publisher skips receive pubcomp.", timeout, 100, fun() ->
+session_2({8, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, publisher skips receive pubcomp.", timeout, 100, fun() ->
 	register(test_result, self()),
   
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= _Msg}} = _Arg) -> 
@@ -359,7 +360,7 @@ session_2({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			user_name = "guest", password = <<"guest">>,
 			clean_session = 0,
 			keep_alive = 1000,
-			version = ?TEST_PROTOCOL
+			version = '5.0'
 		}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
@@ -374,7 +375,7 @@ session_2({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 end};
 
 %% Subscriber: skip receive publish. Resend publish after reconnect and restore session.
-session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, subscriber skips receive publish.", timeout, 100, fun() ->
+session_2({9, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, subscriber skips receive publish.", timeout, 100, fun() ->
 	register(test_result, self()),
   
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= _Msg}} = _Arg) -> 
@@ -401,7 +402,7 @@ session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			user_name = "guest", password = <<"guest">>,
 			clean_session = 0,
 			keep_alive = 60000,
-			version = ?TEST_PROTOCOL
+			version = '5.0'
 		}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
 		[?TEST_CONN_TYPE]
@@ -420,7 +421,7 @@ session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 end};
 
 %% Subscriber: skip send pubrec. Resend publish after reconnect and restore session.
-session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, subscriber skips send pubrec.", timeout, 100, fun() ->
+session_2({10, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, subscriber skips send pubrec.", timeout, 100, fun() ->
 	register(test_result, self()),
   
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= _Msg}} = _Arg) -> 
@@ -446,7 +447,7 @@ session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			user_name = "guest", password = <<"guest">>,
 			clean_session = 0,
 			keep_alive = 60000,
-			version = ?TEST_PROTOCOL
+			version = '5.0'
 		}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
 		[?TEST_CONN_TYPE]
@@ -464,7 +465,7 @@ session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 end};
 
 %% Subscriber: skip receive pubrel. Resend publish after reconnect and restore session.
-session_2({7, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, subscriber skips receive pubrel.", timeout, 100, fun() ->
+session_2({11, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, subscriber skips receive pubrel.", timeout, 100, fun() ->
 	register(test_result, self()),
   
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= _Msg}} = _Arg) -> 
@@ -491,7 +492,7 @@ session_2({7, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			user_name = "guest", password = <<"guest">>,
 			clean_session = 0,
 			keep_alive = 60000,
-			version = ?TEST_PROTOCOL
+			version = '5.0'
 		}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
 		[?TEST_CONN_TYPE]
@@ -510,7 +511,7 @@ session_2({7, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 end};
 
 %% Subscriber: skip send pubcomp. Resend publish after reconnect and restore session.
-session_2({8, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, subscriber skips send pubcomp.", timeout, 100, fun() ->
+session_2({12, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, subscriber skips send pubcomp.", timeout, 100, fun() ->
 	register(test_result, self()),
   
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= _Msg}} = _Arg) -> 
@@ -537,7 +538,7 @@ session_2({8, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 			user_name = "guest", password = <<"guest">>,
 			clean_session = 0,
 			keep_alive = 60000,
-			version = ?TEST_PROTOCOL
+			version = '5.0'
 		}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
 		[?TEST_CONN_TYPE]
