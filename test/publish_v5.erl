@@ -48,7 +48,7 @@ publish_0({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish wi
 
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
 					 <<QoS_m:1/bytes, _/binary>> = Msg,
-%					 ?debug_Fmt("::test:: fun callback: ~100p Q=~p",[_Arg, binary_to_list(QoS_m)]),
+					 ?debug_Fmt("::test:: fun callback: ~100p Q=~p",[_Arg, binary_to_list(QoS_m)]),
 					 ?assertEqual(QoS, Q),
 					 Msq_QoS = list_to_integer(binary_to_list(QoS_m)),
 					 Expect_QoS = if QoS > Msq_QoS -> Msq_QoS; true -> QoS end,
@@ -107,10 +107,14 @@ publish_1({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish wi
 
 	R2 = mqtt_client:subscribe(Subscriber, [{"AKTest", QoS, {?MODULE, callback}}]), 
 	?assertEqual({suback,[QoS],[]}, R2),
-	R3 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos=1}, <<"Test Payload QoS = 1.">>), 
-	?assertEqual(ok, R3),
+	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos=1}, <<"Test Payload QoS = 1.">>), 
+	?assertEqual(ok, R3_0),
+	R3_1 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos=2}, <<"Test Payload QoS = 2.">>), 
+	?assertEqual(ok, R3_1),
+	R3_2 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos=2}, <<"Test Payload QoS = 2.">>), 
+	?assertEqual(ok, R3_2),
 
-	W = wait_all(4),
+	W = wait_all(6),
 	
 	unregister(test_result),
 	?assert(W),
@@ -118,7 +122,8 @@ publish_1({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish wi
 	?PASSED
 end}.
 
-publish_2({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish with QoS = 2", timeout, 100, fun() ->
+%% Test Receive Maximum. Moscitto does not support this feature
+publish_2({QoS, publish_rec_max} = _X, [Publisher, Subscriber] = _Conns) -> {"publish with Receive Max.", timeout, 100, fun() ->
 	register(test_result, self()),
   
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
@@ -131,21 +136,28 @@ publish_2({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish wi
 					 ?assertEqual("AKtest", Topic),
 					 test_result ! done 
 			end,
-	R2_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", QoS, F}]), 
+	R2_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", #subscription_options{max_qos=QoS}, F}]), 
 	?assertEqual({suback,[QoS],[]}, R2_0),
-	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 0}, <<"0) Test Payload QoS = 2. annon. function callback. ">>), 
-	?assertEqual(ok, R3_0),
-	R4_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"1) Test Payload QoS = 2. annon. function callback. ">>), 
-	?assertEqual(ok, R4_0),
-	R5_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"2) Test Payload QoS = 2. annon. function callback. ">>), 
-	?assertEqual(ok, R5_0),
 
-	R2 = mqtt_client:subscribe(Subscriber, [{"AKTest", QoS, {?MODULE, callback}}]), 
-	?assertEqual({suback,[QoS],[]}, R2),
-	R3 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos=2}, <<"Test Payload QoS = 2.">>), 
-	?assertEqual(ok, R3),
+	gen_server:call(Publisher, {set_test_flag, skip_send_pubrel}),
 
-	W = wait_all(4),
+	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+
+	timer:sleep(2000),
+	W = wait_all(0),
 	
 	unregister(test_result),
 	?assert(W),

@@ -102,7 +102,8 @@ connect() ->
 		?TEST_SERVER_HOST_NAME, 
 		?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
-	),
+	),	
+	
 	?debug_Fmt("::test:: 1. successfully connected : ~p", [Conn]),
 	?assert(erlang:is_pid(Conn)),
 	

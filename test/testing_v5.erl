@@ -27,7 +27,7 @@
 -include_lib("mqtt_common/include/mqtt_property.hrl").
 -include("test.hrl").
 
--define(CONN_REC, (#connect{user_name = ?TEST_USER, password = ?TEST_PASSWORD, keep_alive = 60, version = '5.0'}) ).
+-define(CONN_REC, (#connect{user_name = ?TEST_USER, password = ?TEST_PASSWORD, keep_alive = 600, version = '5.0'}) ).
 
 %%
 %% API functions
@@ -74,6 +74,20 @@ connect(Name) when is_list(Name) ->
 do_setup({_, publish} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	[connect(publisher), connect(subscriber)];
+do_setup({_, publish_rec_max} = _X) ->
+%  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
+	P1 = mqtt_client:connect(
+		publisher, 
+		?CONN_REC#connect{client_id = "publisher", properties=[{?Receive_Maximum, 5}]}, 
+		?TEST_SERVER_HOST_NAME,
+		?TEST_SERVER_PORT, 
+		[?TEST_CONN_TYPE]
+	),
+	?assert(is_pid(P1)),
+	[P1, connect(subscriber)];
+do_setup({_, share} = _X) ->
+%  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
+	[connect(publisher), connect(subscriber1), connect(subscriber2), connect(subscriber3), connect(subscriber4)];
 do_setup({_, session} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	P1 = mqtt_client:connect(
@@ -103,6 +117,24 @@ do_setup({QoS, will} = _X) ->
 			will_topic = "AK_will_test"
 		}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
+		[?TEST_CONN_TYPE]
+	),
+	?assert(is_pid(P)),
+	[P, connect(subscriber)];
+do_setup({QoS, will_delay} = _X) ->
+%  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
+	P = mqtt_client:connect(
+		publisher, 
+		?CONN_REC#connect{
+			client_id = "publisher",
+			will = 1,
+			will_qos = QoS,
+			will_message = <<"Test will message">>,
+			will_topic = "AK_will_test",
+			will_properties =[{?Will_Delay_Interval, 5}]
+		}, 
+		?TEST_SERVER_HOST_NAME, 
+		?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
 	),
 	?assert(is_pid(P)),
@@ -139,6 +171,9 @@ do_setup({_, keep_alive}) ->
 	),
 	?assert(is_pid(P)),
 	P;
+do_setup({_, session_expire}) ->
+%  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
+	[];
 do_setup(_X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	connect(publisher).
@@ -149,6 +184,18 @@ do_cleanup({_, publish} = _X, [P, S] = _Pids) ->
 	(get_storage()):cleanup(client),
 	?assertEqual(ok, R1),
 	?assertEqual(ok, R2);
+do_cleanup({_, share} = _X, [P, S1, S2, S3, S4] = _Pids) ->
+	R1 = mqtt_client:disconnect(P),
+	R2 = mqtt_client:disconnect(S1),
+	R3 = mqtt_client:disconnect(S2),
+	R4 = mqtt_client:disconnect(S3),
+	R5 = mqtt_client:disconnect(S4),
+	(get_storage()):cleanup(client),
+	?assertEqual(ok, R1),
+	?assertEqual(ok, R2),
+	?assertEqual(ok, R3),
+	?assertEqual(ok, R4),
+	?assertEqual(ok, R5);
 %  ?debug_Fmt("::test:: teardown after: ~p  pids=~p  disconnect returns=~150p",[_X, _Pids, {R1, R2}]);
 do_cleanup({_, session} = _X, [P1, S1] = _Pids) ->
 	R1 = mqtt_client:disconnect(P1),

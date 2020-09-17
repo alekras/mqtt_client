@@ -32,13 +32,13 @@ mqtt_multi_process_test_() ->
 
 start_task(_, []) -> {"start task", timeout, 150, fun() ->
 	N_Pub = 1000,
-	Sub_Topics = [{"Spring/Apr/+", 1},{"Winter/#", 0}, {"Summer/+/15", 0},{"Fall/Nov/15", 2}],
+	Sub_Topics = [{"Spring/Apr/+", 1},{"Winter/#", 2}, {"Summer/+/15", 0},{"Fall/Nov/15", 2}],
 	Sub_N = 10 * N_Pub,
 	Pub_List = [
-		{[{"Winter/Jan/15", 1}, {"Summer/Jun/15", 0}], N_Pub},
-		{[{"Summer/Jun/15", 0}, {"Fall/Nov/15", 2}],   N_Pub},
+		{[{"Winter/Jan/15", 1}, {"Summer/Jun/15", 1}], N_Pub},
+		{[{"Summer/Jun/15", 1}, {"Fall/Nov/15", 2}],   N_Pub},
 		{[{"Winter/Feb/15", 1}, {"Spring/Apr/30", 1}], N_Pub},
-		{[{"Fall/Nov/15", 2}, {"Winter/Jan/15", 0}],   N_Pub},
+		{[{"Fall/Nov/15", 2}, {"Winter/Jan/15", 1}],   N_Pub},
 		{[{"Spring/Apr/15", 1}, {"Fall/Nov/15", 2}],   N_Pub}
 	],
 	Conn_1 = testing:get_connect_rec(),
@@ -98,12 +98,13 @@ do_cleanup({_, _} = _X, []) ->
 start_publisher_process(Pub_Pid, Topics, N, Parent_Pid) ->
 	spawn_link(?MODULE, publisher_process, [Pub_Pid, Topics, Parent_Pid, N]).
 
-publisher_process(Pid, _Topics, Parent_Pid, 0) ->
+publisher_process(_Pid, _Topics, Parent_Pid, 0) ->
+	?debug_Fmt("::test:: publisher send all messages for Topics = ~p.",[_Topics]),
 %	mqtt_client:disconnect(Pid),
 	Parent_Pid ! stop;
 publisher_process(Pid, Topics, Parent_Pid, N) ->
-	[mqtt_client:publish(Pid, #publish{topic = Topic, qos = QoS}, gen_payload(N, "publisher:" ++ Topic)) || {Topic, QoS} <- Topics],
-	timer:sleep(50), %% need for Mosquitto
+	[ok = mqtt_client:publish(Pid, #publish{topic = Topic, qos = QoS}, gen_payload(N, "publisher:" ++ Topic)) || {Topic, QoS} <- Topics],
+	timer:sleep(10), %% need for Mosquitto
 	publisher_process(Pid, Topics, Parent_Pid, N-1).
 
 gen_payload(N, Name) ->
@@ -121,6 +122,11 @@ subscriber_process(Pid, Topics, Parent_Pid, 0) ->
 	mqtt_client:unsubscribe(Pid, [T || {T, _} <- Topics]),
 	mqtt_client:disconnect(Pid),
 	Parent_Pid ! error;
+subscriber_process(Pid, Topics, Parent_Pid, 1) ->
+	?debug_Fmt("::test:: subscriber receive last message.",[]),
+	mqtt_client:unsubscribe(Pid, [T || {T, _} <- Topics]),
+	mqtt_client:disconnect(Pid),
+	Parent_Pid ! stop;
 subscriber_process(Pid, Topics, Parent_Pid, N) ->
 	receive
 		{Pub_Name, Mess_Number, Message} -> 
@@ -130,10 +136,7 @@ subscriber_process(Pid, Topics, Parent_Pid, N) ->
 			?debug_Fmt("::test:: subscriber catched timeout while waiting message[~p]",[N]),
 			mqtt_client:unsubscribe(Pid, [T || {T, _} <- Topics]),
 			mqtt_client:disconnect(Pid),
-			case N of
-				1 -> Parent_Pid ! stop;
-				_ -> Parent_Pid ! error
-			end
+			Parent_Pid ! error
 	end.	
 
 process_message({_Q, #publish{payload = Msg}} = _A, Dest_Pid) -> 

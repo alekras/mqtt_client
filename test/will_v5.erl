@@ -34,6 +34,7 @@
 -export([
   will_a/2,
   will_0/2,
+	will_delay/2,
 	will_retain/2
 ]).
 -import(testing, [wait_all/1]).
@@ -54,7 +55,7 @@ will_a({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", time
 	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 0, F}]), 
 	?assertEqual({suback,[0],[]}, R1_0),
 %% generate connection close:
-	R2 = mqtt_client:stop(ok),
+	R2 = mqtt_client:disconnect(Publisher),
 %	?debug_Fmt("::test:: after stop publisher: ~100p",[R2]),
 	?assertEqual(ok, R2),
 
@@ -65,19 +66,18 @@ will_a({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", time
 	?PASSED
 end}.
 
-%% .
-will_0({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", timeout, 100, fun() ->
+will_0({QoS, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
-  
+	
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
-%					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
-					 ?assertEqual(0, Q),
+%					 ?debug_Fmt("::test:: fun callback: ~100p~n",[_Arg]),
+					 ?assertEqual(QoS, Q),
 					 ?assertEqual("AK_will_test", Topic),
 					 ?assertEqual(<<"Test will message">>, Msg),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 0, F}]), 
-	?assertEqual({suback,[0],[]}, R1_0),
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_test", #subscription_options{max_qos=QoS}, F}]), 
+	?assertEqual({suback,[QoS],[]}, R1_0),
 %% generate connection lost:
 	gen_server:call(Publisher, {set_test_flag, break_connection}),
 	try
@@ -91,57 +91,28 @@ will_0({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", time
 	unregister(test_result),
 	?assert(W),
 	?PASSED
-end};
+end}.
 
-%% .
-will_0({1, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=1.", timeout, 100, fun() ->
+will_delay({QoS, will_delay} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
-  
+	T1 = erlang:timestamp(),
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
-%					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
-					 ?assertEqual(1, Q),
+					 ?debug_Fmt("::test:: fun callback: ~100p, elapsed time = ~p~n",[_Arg, timer:now_diff(erlang:timestamp(), T1) div 1000000]),
+					 ?assertEqual(QoS, Q#subscription_options.max_qos),
 					 ?assertEqual("AK_will_test", Topic),
 					 ?assertEqual(<<"Test will message">>, Msg),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 1, F}]), 
-	?assertEqual({suback,[1],[]}, R1_0),
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_test", #subscription_options{max_qos=QoS}, F}]), 
+	?assertEqual({suback,[QoS],[]}, R1_0),
 %% generate connection lost:
 	gen_server:call(Publisher, {set_test_flag, break_connection}),
 	try
-		mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"Test Payload QoS = 1. annon. function callback. ">>)	
+		mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 0}, <<"Test Payload QoS = 0.">>)
 	catch
 		_:_ -> ok
 	end,
-
-  W = wait_all(1),
-
-	unregister(test_result),
-	?assert(W),
-	?PASSED
-end};
-
-%% .
-will_0({2, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=2.", timeout, 100, fun() ->
-	register(test_result, self()),
-  
-	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
-%					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
-					 ?assertEqual(2, Q),
-					 ?assertEqual("AK_will_test", Topic),
-					 ?assertEqual(<<"Test will message">>, Msg),
-					 test_result ! done 
-			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 2, F}]), 
-	?assertEqual({suback,[2],[]}, R1_0),
-%% generate connection lost:
-	gen_server:call(Publisher, {set_test_flag, break_connection}),
-	try
-		mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"Test Payload QoS = 2. annon. function callback. ">>)
-	catch
-		_:_ -> ok
-	end,
-
+	timer:sleep(6000),
   W = wait_all(1),
 
 	unregister(test_result),
@@ -149,7 +120,6 @@ will_0({2, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=2.", time
 	?PASSED
 end}.
 
-%% .
 will_retain({QoS, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will with retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
 
