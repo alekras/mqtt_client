@@ -69,7 +69,6 @@
 %% Returns Pid of new created connection process. 
 %%
 connect(Connection_id, Conn_config, Host, Port, Socket_options) ->
-			lager:info([{endtype, client}], "**** ~p  ~p~n", [client, Socket_options]),
   connect(Connection_id, Conn_config, Host, Port, undefined, Socket_options).
 
 -spec connect(Connection_id, Conn_config, Host, Port, Default_Callback, Socket_options) -> Result when
@@ -97,7 +96,6 @@ connect(Connection_id, Conn_config, Host, Port, Default_Callback, Socket_options
 	%% @todo check input parameters
 	case mqtt_client_sup:new_connection(Connection_id, Host, Port, Socket_options) of
 		{ok, Pid} ->
-			lager:info([{endtype, client}], "**** ~p  ~p~n", [client, Default_Callback]),
 			{ok, Ref} = gen_server:call(Pid, {connect, Conn_config, Default_Callback}, ?MQTT_GEN_SERVER_TIMEOUT),
 			receive
 				{connack, Ref, _SP, 0, _Msg, _Properties} -> 
@@ -176,7 +174,9 @@ publish(Pid, Params) ->
 						#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = "pubcomp timeout"}
 					end
 			end;
-		{error, Reason} ->
+		{error, #mqtt_client_error{} = Response, Ref} ->
+				Response;
+		{error, Reason, Ref} ->
 				#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = Reason}
   end.
 
@@ -207,7 +207,7 @@ subscribe(Pid, Subscriptions, Properties) ->
 -spec unsubscribe(Pid, Topics) -> Result when
  Pid :: pid(),
  Topics :: [Topic::string()], 
- Result :: unsuback | #mqtt_client_error{}. 
+ Result :: {unsuback, ReturnCodes::list(), Properties::list()} | #mqtt_client_error{}. 
 %% 
 %% @doc The function sends a subscribe packet to MQTT server.
 %% 

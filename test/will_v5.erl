@@ -47,12 +47,12 @@ will_a({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", time
 
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
-					 ?assertEqual(0, Q),
+					 ?assertEqual(0, Q#subscription_options.max_qos),
 					 ?assertEqual("AK_will_test", Topic),
 					 ?assertEqual(<<"Test will message">>, Msg),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 0, F}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_test", #subscription_options{max_qos=0}, F}]), 
 	?assertEqual({suback,[0],[]}, R1_0),
 %% generate connection close:
 	R2 = mqtt_client:disconnect(Publisher),
@@ -71,7 +71,7 @@ will_0({QoS, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=" ++ in
 	
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p~n",[_Arg]),
-					 ?assertEqual(QoS, Q),
+					 ?assertEqual(QoS, Q#subscription_options.max_qos),
 					 ?assertEqual("AK_will_test", Topic),
 					 ?assertEqual(<<"Test will message">>, Msg),
 					 test_result ! done 

@@ -47,7 +47,7 @@ mqtt_client_test_() ->
 			fun testing_v5:do_start/0, 
 			fun testing_v5:do_stop/1, 
 			{inorder, [
-				{"connect", timeout, 15, fun connect/0},
+%%				{"connect", timeout, 15, fun connect/0},
 				{ foreachx, 
 					fun testing_v5:do_setup/1, 
 					fun testing_v5:do_cleanup/2, 
@@ -59,9 +59,10 @@ mqtt_client_test_() ->
 %% 						{{0, share}, fun share:publish_0/2},
 %% 						{{2, share}, fun share:publish_1/2},
 
-%% 						{{2, publish}, fun topic_alias:publish_0/2},
-%% 						{{2, publish}, fun topic_alias:publish_1/2},
-%% 						{{2, publish}, fun topic_alias:publish_2/2},
+						{{2, publish}, fun topic_alias:publish_0/2},
+						{{2, publish}, fun topic_alias:publish_1/2},
+						{{2, publish}, fun topic_alias:publish_2/2},
+						{{2, publish}, fun topic_alias:publish_3/2}
 
 %% 						{{0, publish}, fun publish_v5:publish_0/2},
 %% 						{{1, publish}, fun publish_v5:publish_0/2},
@@ -69,9 +70,8 @@ mqtt_client_test_() ->
 %% 						{{0, publish}, fun publish_v5:publish_1/2},
 %% 						{{1, publish}, fun publish_v5:publish_1/2},
 %% 						{{2, publish}, fun publish_v5:publish_1/2},
-
-%% 						{{1, publish}, fun publish_v5:publish_2/2},
-						{{2, publish_rec_max}, fun publish_v5:publish_2/2}
+%% 
+%% 						{{2, publish_rec_max}, fun publish_v5:publish_2/2},
 %% 
 %% 						{{1, session}, fun session_v5:session_1/2},
 %% 						{{2, session}, fun session_v5:session_1/2},
@@ -91,26 +91,26 @@ mqtt_client_test_() ->
 %% 						{{3, session_expire}, fun session_v5:session_expire/2},
 %% 						{{4, session_expire}, fun session_v5:session_expire/2},
 %% 						{{1, session}, fun session_v5:msg_expire/2},
-%% 						{{2, session}, fun session_v5:msg_expire/2}
-
-%						{{0, will}, fun will_v5:will_a/2}
+%% 						{{2, session}, fun session_v5:msg_expire/2},
+%% 
+%% 						{{0, will}, fun will_v5:will_a/2},
 %% 						{{0, will}, fun will_v5:will_0/2},
 %% 						{{1, will}, fun will_v5:will_0/2},
 %% 						{{2, will}, fun will_v5:will_0/2},
-%% 						{{2, will_delay}, fun will_v5:will_delay/2}
+%% 						{{2, will_delay}, fun will_v5:will_delay/2},
 %% 						{{1, will_retain}, fun will_v5:will_retain/2},
 %% 						{{2, will_retain}, fun will_v5:will_retain/2},
 %% 
 %% 						{{0, retain}, fun retain_v5:retain_0/2},
 %% 						{{1, retain}, fun retain_v5:retain_0/2},
-%						{{2, retain}, fun retain_v5:retain_0/2},
+%% 						{{2, retain}, fun retain_v5:retain_0/2},
 %% 						{{0, retain}, fun retain_v5:retain_1/2},
 %% 						{{1, retain}, fun retain_v5:retain_1/2},
-%						{{2, retain}, fun retain_v5:retain_1/2},
-%						{{2, retain}, fun retain_v5:retain_2/2},
-%						{{2, retain}, fun retain_v5:retain_3/2},
-%						{{2, retain}, fun retain_v5:subscription_option/2},
-%						{{2, retain}, fun retain_v5:subscription_id/2}
+%% 						{{2, retain}, fun retain_v5:retain_1/2},
+%% 						{{2, retain}, fun retain_v5:retain_2/2},
+%% 						{{2, retain}, fun retain_v5:retain_3/2},
+%% 						{{2, retain}, fun retain_v5:subscription_option/2},
+%% 						{{2, retain}, fun retain_v5:subscription_id/2}
 					]
 				}
 			]}
