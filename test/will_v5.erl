@@ -37,7 +37,7 @@
 	will_delay/2,
 	will_retain/2
 ]).
--import(testing, [wait_all/1]).
+-import(testing_v5, [wait_all/1]).
 %%
 %% API Functions
 %%

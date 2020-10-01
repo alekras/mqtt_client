@@ -38,7 +38,7 @@
 	session_expire/2,
 	msg_expire/2
 ]).
--import(testing, [wait_all/1]).
+-import(testing_v5, [wait_all/1]).
 %%
 %% API Functions
 %%

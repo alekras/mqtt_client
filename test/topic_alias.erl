@@ -39,7 +39,7 @@
   publish_3/2
 ]).
 
--import(testing, [wait_all/1]).
+-import(testing_v5, [wait_all/1]).
 %%
 %% API Functions
 %%
@@ -129,17 +129,14 @@ publish_2({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish to
 	R2_2 = mqtt_client:publish(Subscriber, #publish{topic = "", qos = 2, properties = [{?Topic_Alias, 1}]}, <<"2) Subscriber self publish Payload QoS = 0. annon. function callback. ">>), 
 	?assertEqual(ok, R2_2),
 
-	mqtt_client:publish(Subscriber, #publish{topic = "/AKTest/2", qos = 2, properties = [{?Topic_Alias, 2}]}, <<"2) Subscriber self publish Payload QoS = 2. annon. function callback. ">>), 
-	mqtt_client:publish(Subscriber, #publish{topic = "/AKTest/3", qos = 2, properties = [{?Topic_Alias, 3}]}, <<"2) Subscriber self publish Payload QoS = 2. annon. function callback. ">>), 
-	mqtt_client:publish(Subscriber, #publish{topic = "/AKTest/4", qos = 2, properties = [{?Topic_Alias, 4}]}, <<"2) Subscriber self publish Payload QoS = 2. annon. function callback. ">>), 
-	mqtt_client:publish(Subscriber, #publish{topic = "/AKTest/5", qos = 2, properties = [{?Topic_Alias, 5}]}, <<"2) Subscriber self publish Payload QoS = 2. annon. function callback. ">>), 
-	mqtt_client:publish(Subscriber, #publish{topic = "/AKTest/6", qos = 2, properties = [{?Topic_Alias, 6}]}, <<"2) Subscriber self publish Payload QoS = 2. annon. function callback. ">>), 
-	mqtt_client:publish(Subscriber, #publish{topic = "/AKTest/7", qos = 2, properties = [{?Topic_Alias, 7}]}, <<"2) Subscriber self publish Payload QoS = 2. annon. function callback. ">>), 
-	mqtt_client:publish(Subscriber, #publish{topic = "/AKTest/8", qos = 2, properties = [{?Topic_Alias, 8}]}, <<"2) Subscriber self publish Payload QoS = 2. annon. function callback. ">>), 
-	mqtt_client:publish(Subscriber, #publish{topic = "/AKTest/9", qos = 2, properties = [{?Topic_Alias, 9}]}, <<"2) Subscriber self publish Payload QoS = 2. annon. function callback. ">>), 
-	mqtt_client:publish(Subscriber, #publish{topic = "/AKTest/10", qos = 2, properties = [{?Topic_Alias, 10}]}, <<"2) Subscriber self publish Payload QoS = 2. annon. function callback. ">>), 
-	mqtt_client:publish(Subscriber, #publish{topic = "/AKTest/11", qos = 2, properties = [{?Topic_Alias, 11}]}, <<"2) Subscriber self publish Payload QoS = 2. annon. function callback. ">>), 
+	R2_3 = mqtt_client:publish(Subscriber, #publish{topic = "/AKTest/10", qos = 2, properties = [{?Topic_Alias, 10}]}, <<"2) Subscriber self publish Payload QoS = 2. annon. function callback. ">>), 
+	?assertEqual(ok, R2_3),
+	R2_4 = mqtt_client:publish(Subscriber, #publish{topic = "/AKTest/11", qos = 2, properties = [{?Topic_Alias, 11}]}, <<"2) Subscriber self publish Payload QoS = 2. annon. function callback. ">>), 
+	?assertMatch(#mqtt_client_error{type=protocol, errno=148}, R2_4),
 
+	gen_server:call(Subscriber, {set_test_flag, skip_alias_max_check}),
+	R2_5 = mqtt_client:publish(Subscriber, #publish{topic = "/AKTest/11", qos = 2, properties = [{?Topic_Alias, 11}]}, <<"2) Subscriber self publish Payload QoS = 2. annon. function callback. ">>), 
+	?assertEqual(ok, R2_3),
 	?assertEqual(disconnected, mqtt_client:status(Subscriber)),
 
 	W = wait_all(2),

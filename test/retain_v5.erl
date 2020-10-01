@@ -40,7 +40,7 @@
 	subscription_option/2,
 	subscription_id/2
 ]).
--import(testing, [wait_all/1]).
+-import(testing_v5, [wait_all/1]).
 %%
 %% API Functions
 %%
@@ -125,33 +125,33 @@ retain_2({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> 
 
 	timer:sleep(100),
 
-	R2_0 = mqtt_client:subscribe(Subscriber1, [{"AK_retain_test", #subscription_options{max_qos = QoS,retain_handling=1}, F(1)}]), 
+	R2_0 = mqtt_client:subscribe(Subscriber1, [{"AK_retain_test", #subscription_options{max_qos = QoS,retain_handling=1}, F(1)}]), %% +1
 	?assertEqual({suback,[QoS],[]}, R2_0),
 
 %% 	R2_1 = mqtt_client:disconnect(Publisher),
 %% 	?assertEqual(ok, R2_1),
 
-	R2_2 = mqtt_client:subscribe(Subscriber2, [{"AK_retain_test", #subscription_options{max_qos = QoS,retain_handling=1}, F(2)}]), 
+	R2_2 = mqtt_client:subscribe(Subscriber2, [{"AK_retain_test", #subscription_options{max_qos = QoS,retain_handling=1}, F(2)}]), %% +1
 	?assertEqual({suback,[QoS],[]}, R2_2),
 	
-	R2_3 = mqtt_client:subscribe(Subscriber2, [{"AK_retain_test", #subscription_options{max_qos = QoS,retain_handling=1}, F(3)}]), 
+	R2_3 = mqtt_client:subscribe(Subscriber2, [{"AK_retain_test", #subscription_options{max_qos = QoS,retain_handling=1}, F(3)}]), %% 0
 	?assertEqual({suback,[QoS],[]}, R2_3),
 
-	R2_4 = mqtt_client:subscribe(Subscriber2, [{"AK_retain_test", #subscription_options{max_qos = QoS,retain_handling=0}, F(4)}]), 
-	?assertEqual({suback,[QoS],[]}, R2_3),
+	R2_4 = mqtt_client:subscribe(Subscriber2, [{"AK_retain_test", #subscription_options{max_qos = QoS,retain_handling=0}, F(4)}]), %% +1
+	?assertEqual({suback,[QoS],[]}, R2_4),
 
-	R2_4 = mqtt_client:subscribe(Subscriber2, [{"AK_retain_test", #subscription_options{max_qos = QoS,retain_handling=2}, F(5)}]), 
-	?assertEqual({suback,[QoS],[]}, R2_3),
+	R2_5 = mqtt_client:subscribe(Subscriber2, [{"AK_retain_test", #subscription_options{max_qos = QoS,retain_handling=2}, F(5)}]), %% 0
+	?assertEqual({suback,[QoS],[]}, R2_5),
 
 	R2_7 = mqtt_client:unsubscribe(Subscriber1, ["AK_retain_test"]), 
 	?assertEqual({unsuback,[0],[]}, R2_7),
 	R2_8 = mqtt_client:unsubscribe(Subscriber2, ["AK_retain_test"]), 
 	?assertEqual({unsuback,[0],[]}, R2_8),
 
-	R2_5 = mqtt_client:publish(Publisher, #publish{topic = "AK_retain_test", qos = QoS, retain = 1}, <<>>),
-	?assertEqual(ok, R2_5),
+	R2_9 = mqtt_client:publish(Publisher, #publish{topic = "AK_retain_test", qos = QoS, retain = 1}, <<>>), %% delete Retain msg
+	?assertEqual(ok, R2_9),
 
-	R2_6 = mqtt_client:subscribe(Subscriber2, [{"AK_retain_test", #subscription_options{max_qos = QoS,retain_handling=0}, F(6)}]), 
+	R2_6 = mqtt_client:subscribe(Subscriber2, [{"AK_retain_test", #subscription_options{max_qos = QoS,retain_handling=0}, F(6)}]), %% 0
 	?assertEqual({suback,[QoS],[]}, R2_6),
 
 	W = wait_all(3),
