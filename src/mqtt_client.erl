@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2017 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2020 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -15,12 +15,12 @@
 %%
 
 %% @since 2015-12-25
-%% @copyright 2015-2017 Alexei Krasnopolski
+%% @copyright 2015-2020 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
 %% @doc Main module of mqtt_client application. The module implements application behaviour
 %% and application API.
-%% @ headerfile "mqtt_common/include/mqtt.hrl"
+%% @headerfile "mqtt.hrl"
 
 -module(mqtt_client).
 -behaviour(application).
@@ -36,15 +36,13 @@
 %% API functions
 %% ====================================================================
 -export([
-	connect/5,
-	connect/6,
+	connect/5, connect/6,
 	status/1,
-	publish/2,
-	publish/3,
-	subscribe/2,
-	unsubscribe/2,
+	publish/2, publish/3,
+	subscribe/2, subscribe/3,
+	unsubscribe/2, unsubscribe/3,
 	pingreq/2,
-	disconnect/1
+	disconnect/1, disconnect/3
 ]).
 
 -spec connect(Connection_id, Conn_config, Host, Port, Socket_options) -> Result when
@@ -100,9 +98,9 @@ connect(Connection_id, Conn_config, Host, Port, Default_Callback, Socket_options
 		{ok, Pid} ->
 			{ok, Ref} = gen_server:call(Pid, {connect, Conn_config, Default_Callback}, ?MQTT_GEN_SERVER_TIMEOUT),
 			receive
-				{connack, Ref, _SP, 0, _Msg} -> 
+				{connack, Ref, _SP, 0, _Msg, _Properties} -> 
 					Pid;
-				{connack, Ref, _, ErrNo, Msg} -> 
+				{connack, Ref, _, ErrNo, Msg, _Properties} -> 
 					#mqtt_client_error{type = connection, errno = ErrNo, source = "mqtt_client:conect/6", message = Msg}
 			after ?MQTT_GEN_SERVER_TIMEOUT ->
 					#mqtt_client_error{type = connection, source = "mqtt_client:conect/6", message = "timeout"}
@@ -142,7 +140,7 @@ status(_) -> disconnected.
  Pid :: pid(),
  Params :: #publish{}, 
  Payload :: binary(),
- Result :: ok | puback | pubcomp | #mqtt_client_error{}. 
+ Result :: ok | #mqtt_client_error{}. 
 %% 
 %% @doc The function sends a publish packet to MQTT server.
 %% 
@@ -163,20 +161,22 @@ publish(Pid, Params) ->
 				0 -> ok;
 				1 ->
 					receive
-						{puback, Ref} -> 
+						{puback, Ref, _ReasonCode, _Properties} ->
 							ok
 					after ?MQTT_GEN_SERVER_TIMEOUT ->
 						#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = "puback timeout"}
 					end;
 				2 ->
 					receive
-						{pubcomp, Ref} -> 
+						{pubcomp, Ref, _ReasonCode, _Properties} ->
 							ok
 					after ?MQTT_GEN_SERVER_TIMEOUT ->
 						#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = "pubcomp timeout"}
 					end
 			end;
-		{error, Reason} ->
+		{error, #mqtt_client_error{} = Response, Ref} ->
+				Response;
+		{error, Reason, Ref} ->
 				#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = Reason}
   end.
 
@@ -189,28 +189,42 @@ publish(Pid, Params) ->
 %% @doc The function sends a subscribe packet to MQTT server. Callback function will receive messages from the Topic.
 %% 
 subscribe(Pid, Subscriptions) ->
-	{ok, Ref} = gen_server:call(Pid, {subscribe, Subscriptions}, ?MQTT_GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
-	receive
-		{suback, Ref, RC} -> 
-			{suback, RC}
-	after ?MQTT_GEN_SERVER_TIMEOUT ->
-		#mqtt_client_error{type = subscribe, source = "mqtt_client:subscribe/2", message = "subscribe timeout"}
+	subscribe(Pid, Subscriptions, []).
+
+subscribe(Pid, Subscriptions, Properties) ->
+	case gen_server:call(Pid, {subscribe, Subscriptions, Properties}, ?MQTT_GEN_SERVER_TIMEOUT) of
+		{ok, Ref} ->
+			receive
+				{suback, Ref, Return_codes, Props} ->
+					{suback, Return_codes, Props}
+			after ?MQTT_GEN_SERVER_TIMEOUT ->
+				#mqtt_client_error{type = subscribe, source = "mqtt_client:subscribe/3", message = "subscribe timeout"}
+			end;
+		{error, Reason} ->
+				#mqtt_client_error{type = subscribe, source = "mqtt_client:subscribe/3", message = Reason}
 	end.
 
 -spec unsubscribe(Pid, Topics) -> Result when
  Pid :: pid(),
  Topics :: [Topic::string()], 
- Result :: unsuback | #mqtt_client_error{}. 
+ Result :: {unsuback, ReturnCodes::list(), Properties::list()} | #mqtt_client_error{}. 
 %% 
 %% @doc The function sends a subscribe packet to MQTT server.
 %% 
 unsubscribe(Pid, Topics) ->
-	{ok, Ref} = gen_server:call(Pid, {unsubscribe, Topics}, ?MQTT_GEN_SERVER_TIMEOUT), %% @todo can return {error, Reason}
-	receive
-		{unsuback, Ref} -> 
-			unsuback
-	after ?MQTT_GEN_SERVER_TIMEOUT ->
-		#mqtt_client_error{type = subscribe, source = "mqtt_client:unsubscribe/2", message = "unsubscribe timeout"}
+	unsubscribe(Pid, Topics, []).
+
+unsubscribe(Pid, Topics, Properties) ->
+	case gen_server:call(Pid, {unsubscribe, Topics, Properties}, ?MQTT_GEN_SERVER_TIMEOUT) of
+		{ok, Ref} ->
+			receive
+				{unsuback, Ref, ReturnCodes, Props} ->
+					{unsuback, ReturnCodes, Props}
+			after ?MQTT_GEN_SERVER_TIMEOUT ->
+				#mqtt_client_error{type = unsubscribe, source = "mqtt_client:unsubscribe/3", message = "unsubscribe timeout"}
+			end;
+		{error, Reason} ->
+				#mqtt_client_error{type = unsubscribe, source = "mqtt_client:unsubscribe/3", message = Reason}
 	end.
 
 -spec pingreq(Pid, Callback) -> Result when
@@ -224,29 +238,40 @@ pingreq(Pid, Callback) ->
 	gen_server:call(Pid, {pingreq, Callback}, ?MQTT_GEN_SERVER_TIMEOUT).
 
 -spec disconnect(Pid) -> Result when
- Pid :: pid(),
- Result :: none() | {error, Reason::term()}. 
+ Pid :: pid() | atom(),
+ Result :: ok | #mqtt_client_error{}.
 %% 
 %% @doc The function sends a disconnect request to MQTT server.
 %% 
-disconnect(Pid) when is_pid(Pid) ->
+disconnect(Pid) ->
+	disconnect(Pid, 0, []).
+
+-spec disconnect(Pid, ReasonCode, Properties) -> Result when
+ Pid :: pid() | atom(),
+ ReasonCode :: integer(),
+ Properties :: list(),
+ Result :: ok | #mqtt_client_error{}.
+%% 
+%% @doc The function sends a disconnect request to MQTT server.
+%% 
+disconnect(Pid, ReasonCode, Properties) when is_pid(Pid) ->
 	case is_process_alive(Pid) of
 		true ->
-			{ok, Ref} = gen_server:call(Pid, disconnect),
+			{ok, Ref} = gen_server:call(Pid, {disconnect, ReasonCode, Properties}),
 			receive
 				{disconnected, Ref} -> 
 					ok
 			after ?MQTT_GEN_SERVER_TIMEOUT ->
-				#mqtt_client_error{type = subscribe, source = "mqtt_client:disconnect/2", message = "disconnect timeout"}
+				#mqtt_client_error{type = disconnect, source = "mqtt_client:disconnect/2", message = "disconnect timeout"}
 			end;
 		false -> ok
 	end;
-disconnect(Name) when is_atom(Name) ->
+disconnect(Name, ReasonCode, Properties) when is_atom(Name) ->
 	case whereis(Name) of
 		undefined -> ok;
-		Pid -> disconnect(Pid)
+		Pid -> disconnect(Pid, ReasonCode, Properties)
 	end;
-disconnect(_) -> ok.
+disconnect(_,_,_) -> ok.
 
 %% ====================================================================
 %% Behavioural functions
