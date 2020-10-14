@@ -233,11 +233,6 @@ do_cleanup({QoS, will_retain} = _X, [P, S] = _Pids) ->
 	),
  	R1_0 = mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = QoS}, <<>>), 
 	?assertEqual(ok, R1_0),
-%%  	mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = QoS}, <<>>), 
-%%  	mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = QoS}, <<>>), 
-%%  	mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = QoS}, <<>>), 
-%% 	R1_1 = mqtt_client:publish(P1, #publish{topic = "AK_will_test", retain = 1, qos = QoS}, <<>>), 
-%% 	?assertEqual(ok, R1_1),
 	R3 = mqtt_client:disconnect(P1),
 
 	(get_storage()):cleanup(client),
