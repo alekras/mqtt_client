@@ -195,6 +195,7 @@ session_1({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	?assertEqual(ok, R3_0),
 	timer:sleep(500), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
+	timer:sleep(100), %% allow subscriber to disconnect 
 	Subscriber_2 = mqtt_client:connect(
 		subscriber, 
 		#connect{

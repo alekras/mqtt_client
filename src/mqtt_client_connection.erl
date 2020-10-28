@@ -121,6 +121,6 @@ open_socket(mqtt_ws_handler, Host, Port, Options) ->
     end
   of
     {ok, WS_handler_Pid} -> WS_handler_Pid;
-    {error, Reason} -> #mqtt_client_error{type = tcp, source="mqtt_client_connection:open_socket/4:" , message = Reason}
+    {error, Reason} -> #mqtt_client_error{type = mqtt_ws_handler, source="mqtt_client_connection:open_socket/4:" , message = Reason}
   end.  
 

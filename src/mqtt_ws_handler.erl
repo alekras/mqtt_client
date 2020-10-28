@@ -40,6 +40,7 @@
         ]).
 
 start_link(Host, Port, Options) ->
+	lager:debug([{endtype, client}], ">>> start_link: ~p:~p~n     Options:~p~n", [Host, Port, Options]),
 	ok = application:ensure_started(crypto),
 	ok = application:ensure_started(ssl),
 	{ok, HostName} = inet:gethostname(),
@@ -65,6 +66,7 @@ start_link(Host, Port, Options) ->
 		Port,
 		"/mqtt"
 	]),
+	lager:debug([{endtype, client}], "<<< start_link: url: ~p~n     Headers:~p~n", [URL, Headers]),
 	websocket_client:start_link(URL, ?MODULE, [], [{extra_headers, Headers}]).
 
 init(_Arg, _ConnState) ->

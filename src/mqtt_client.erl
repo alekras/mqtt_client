@@ -96,14 +96,17 @@ connect(Connection_id, Conn_config, Host, Port, Default_Callback, Socket_options
 	%% @todo check input parameters
 	case mqtt_client_sup:new_connection(Connection_id, Host, Port, Socket_options) of
 		{ok, Pid} ->
-			{ok, Ref} = gen_server:call(Pid, {connect, Conn_config, Default_Callback}, ?MQTT_GEN_SERVER_TIMEOUT),
-			receive
-				{connack, Ref, _SP, 0, _Msg, _Properties} -> 
-					Pid;
-				{connack, Ref, _, ErrNo, Msg, _Properties} -> 
-					#mqtt_client_error{type = connection, errno = ErrNo, source = "mqtt_client:conect/6", message = Msg}
-			after ?MQTT_GEN_SERVER_TIMEOUT ->
-					#mqtt_client_error{type = connection, source = "mqtt_client:conect/6", message = "timeout"}
+			case gen_server:call(Pid, {connect, Conn_config, Default_Callback}, ?MQTT_GEN_SERVER_TIMEOUT) of
+				{ok, Ref} ->
+					receive
+						{connack, Ref, _SP, 0, _Msg, _Properties} -> 
+							Pid;
+						{connack, Ref, _, ErrNo, Msg, _Properties} -> 
+							#mqtt_client_error{type = connection, errno = ErrNo, source = "mqtt_client:conect/6", message = Msg}
+					after ?MQTT_GEN_SERVER_TIMEOUT ->
+							#mqtt_client_error{type = connection, source = "mqtt_client:conect/6", message = "timeout"}
+					end;
+				{error, E} -> E
 			end;
 		#mqtt_client_error{} = Error -> 
 			lager:error([{endtype, client}], "client catched error: ~p, ~n", [Error]),
@@ -174,11 +177,11 @@ publish(Pid, Params) ->
 						#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = "pubcomp timeout"}
 					end
 			end;
-		{error, #mqtt_client_error{} = Response, Ref} ->
+		{error, #mqtt_client_error{} = Response, _Ref} ->
 				Response;
-		{error, Reason, Ref} ->
+		{error, Reason, _Ref} ->
 				#mqtt_client_error{type = publish, source = "mqtt_client:publish/2", message = Reason}
-  end.
+	end.
 
 -spec subscribe(Pid, Subscriptions) -> Result when
  Pid :: pid(),

@@ -150,11 +150,11 @@ will_retain({QoS, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will
 	Subscriber_2 = mqtt_client:connect(
 		subscriber_2, 
 		#connect{
-			client_id = "subscriber_2",
+			client_id = "subscriber02",
 			user_name = "guest", password = <<"guest">>,
 			clean_session = 1,
 			keep_alive = 60000,
-			version = ?TEST_PROTOCOL
+			version = '5.0'
 		}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
 		[?TEST_CONN_TYPE]

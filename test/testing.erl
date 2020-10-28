@@ -126,7 +126,7 @@ do_setup({QoS, will_retain} = _X) ->
 	[P, connect(subscriber)];
 do_setup({_QoS, retain} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
-	[connect(publisher), connect(subscriber_1), connect(subscriber_2)];
+	[connect(publisher), connect(subscriber01), connect(subscriber02)];
 do_setup({_, keep_alive}) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	P = mqtt_client:connect(
@@ -244,7 +244,7 @@ do_cleanup(_X, _Pids) ->
 	?assertEqual(ok, R).
 
 get_connect_rec() ->
-	?CONN_REC#connect{client_id = "test_client"}.
+	?CONN_REC#connect{client_id = "test0client"}.
 
 get_storage() ->
 	case application:get_env(mqtt_client, storage, dets) of

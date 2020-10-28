@@ -118,6 +118,14 @@ If we want to pass additional properties to SSL application on client side we ca
 ```erlang
 7> SubCon = mqtt_client:connect(subscriber, Conn_def_2, "localhost", 2884, [ssl, {certfile,"client.crt"}, {verify, verify_none}]).
 ```
+## Web socket Connection
+The MQTT client can establish web socket connection:
+
+```erlang
+1> SubCon = mqtt_client:connect(subscriber, Conn_def_2, "localhost", 8880, [{conn_type, web_socket}]).
+```
+In this configuration a server has to except web socket connection on 8880 port. Please, read server documentation how configure server in this way. 
+
 ## Subscribe and publish
 To finish set up of the connection we need to subscribe it to some topic for example "Test" topic. Before make subscription we
 need to define callback function. This function will act as 'application' from MQTT protocol terminology. When client receives message

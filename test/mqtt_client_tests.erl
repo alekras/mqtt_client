@@ -110,7 +110,7 @@ connect() ->
 	Conn1 = mqtt_client:connect(
 		test_client_1, 
 		ConnRec#connect{
-			client_id = "test_client_1"
+			client_id = "test0client01"
 		}, 
 		?TEST_SERVER_HOST_NAME, 
 		3883, 
@@ -122,7 +122,7 @@ connect() ->
 	Conn2 = mqtt_client:connect(
 		test_client_2, 
 		ConnRec#connect{
-			client_id = "test_client_2",
+			client_id = "test0client02",
 			user_name = "quest",
 			password = <<"guest">>
 		}, 
@@ -136,7 +136,7 @@ connect() ->
 	Conn3 = mqtt_client:connect(
 		test_client_3, 
 		ConnRec#connect{
-			client_id = "test_client_3",
+			client_id = "test0client03",
 			user_name = "guest",
 			password = <<"gueest">>
 		}, 
@@ -162,7 +162,7 @@ connect() ->
 	Conn5 = mqtt_client:connect(
 		test_client_5, 
 		ConnRec#connect{
-			client_id = binary_to_list(<<"test_",255,0,255,"client_5">>),
+			client_id = binary_to_list(<<"test0",16#d801:16,"client05">>),
 			user_name = "guest",
 			password = <<"guest">>
 		}, 
@@ -177,8 +177,8 @@ connect() ->
 	Conn6 = mqtt_client:connect(
 		test_client_6, 
 		ConnRec#connect{
-			client_id = "test_client_6",
-			user_name = binary_to_list(<<"gu", 0, "est">>),
+			client_id = "test0client06",
+			user_name = binary_to_list(<<"gu", 16#d802:16, "est">>),
 			password = <<"guest">>
 		}, 
 		?TEST_SERVER_HOST_NAME, 
@@ -191,7 +191,7 @@ connect() ->
 	Conn7 = mqtt_client:connect(
 		test_client_7, 
 		ConnRec#connect{
-			client_id = "test_client_7",
+			client_id = "test0client07",
 			user_name = "guest",
 			password = <<"gu", 0, "est">>
 %%			password = <<"guest">>

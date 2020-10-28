@@ -51,7 +51,7 @@ do_stop(_R) ->
 connect(Name) when is_atom(Name) ->
 	Pid = mqtt_client:connect(
 		Name, 
-		?CONN_REC#connect{client_id = atom_to_list(Name)}, 
+		?CONN_REC#connect{client_id = atom_to_list(Name), properties=[{?Topic_Alias_Maximum,10}]}, 
 		?TEST_SERVER_HOST_NAME, 
 		?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
@@ -62,7 +62,7 @@ connect(Name) when is_atom(Name) ->
 connect(Name) when is_list(Name) ->
 	Pid = mqtt_client:connect(
 		list_to_atom(Name), 
-		?CONN_REC#connect{client_id = Name}, 
+		?CONN_REC#connect{client_id = Name, properties=[{?Topic_Alias_Maximum,10}]}, 
 		?TEST_SERVER_HOST_NAME, 
 		?TEST_SERVER_PORT, 
 		[?TEST_CONN_TYPE]
@@ -159,7 +159,7 @@ do_setup({QoS, will_retain} = _X) ->
 	[P, connect(subscriber)];
 do_setup({_QoS, retain} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
-	[connect(publisher), connect(subscriber_1), connect(subscriber_2)];
+	[connect(publisher), connect(subscriber1), connect(subscriber2)];
 do_setup({_, keep_alive}) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
 	P = mqtt_client:connect(
@@ -271,7 +271,7 @@ do_cleanup(_X, _Pids) ->
 	?assertEqual(ok, R).
 
 get_connect_rec() ->
-	?CONN_REC#connect{client_id = "test_client", version='5.0'}.
+	?CONN_REC#connect{client_id = "test0client", version='5.0'}.
 
 get_storage() ->
 	case application:get_env(mqtt_client, storage, dets) of
