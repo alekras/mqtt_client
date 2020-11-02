@@ -38,7 +38,7 @@
 	callback/1
 ]).
 
--import(testing, [wait_all/1]).
+-import(testing_v5, [wait_all/1]).
 %%
 %% API Functions
 %%
@@ -144,11 +144,22 @@ publish_2({QoS, publish_rec_max} = _X, [Publisher, Subscriber] = _Conns) -> {"pu
 	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
 	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
 	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
-	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
-	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+
+	R2_4 = gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	?debug_Fmt("::test:: R2_4: ~100p~n",[R2_4]),
+	R2_0 = mqtt_client:status(Publisher),
+	?debug_Fmt("::test:: ~100p~n",[R2_0]),
+	?assertMatch([{session_present, 0}, _], R2_0),
+
 	R2_5 = gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
-	?assertMatch({error, #mqtt_client_error{type=protocol, errno=147, message="Receive Maximum exceeded"}, _}, R2_5),
-	?assertEqual(disconnected, mqtt_client:status(Publisher)),
+	?debug_Fmt("::test:: R2_5: ~100p~n",[R2_5]),
+	timer:sleep(1000),
+	R4_0 = mqtt_client:status(Publisher),
+	?debug_Fmt("::test:: ~100p~n",[R4_0]),
+	?assertMatch(disconnected, R4_0),
+
+%	?assertMatch({error, #mqtt_client_error{type=protocol, errno=147, message="Receive Maximum exceeded"}, _}, R2_5),
+%	?assertEqual(disconnected, mqtt_client:status(Publisher)),
 	
 
 	timer:sleep(2000),
