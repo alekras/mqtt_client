@@ -147,9 +147,9 @@ publish_2({QoS, publish_rec_max} = _X, [Publisher, Subscriber] = _Conns) -> {"pu
 
 	R2_4 = gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
 	?debug_Fmt("::test:: R2_4: ~100p~n",[R2_4]),
-	R2_0 = mqtt_client:status(Publisher),
-	?debug_Fmt("::test:: ~100p~n",[R2_0]),
-	?assertMatch([{session_present, 0}, _], R2_0),
+	R2_3 = mqtt_client:status(Publisher),
+	?debug_Fmt("::test:: ~100p~n",[R2_3]),
+	?assertMatch([{session_present, 0}, _], R2_3),
 
 	R2_5 = gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
 	?debug_Fmt("::test:: R2_5: ~100p~n",[R2_5]),

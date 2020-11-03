@@ -53,17 +53,17 @@ start_link(Connection_id, Host, Port, Options) ->
 %% 	Host = application:get_env(mqtt_client, host, "localhost"),
 %% 	Port = application:get_env(mqtt_client, port, 1883),
 
-	State =
 	case Socket = open_socket(Transport, Host, Port, Options) of
-		#mqtt_client_error{} -> Socket;
-		_ -> #connection_state{socket = Socket, transport = Transport, storage = Storage, end_type = client}
-	end,	
-	case T = gen_server:start_link({local, Connection_id}, mqtt_connection, State, [{timeout, ?MQTT_GEN_SERVER_TIMEOUT}]) of
-		{ok, Pid} ->
-			ok = Transport:controlling_process(Socket, Pid),
-			T;
-		{error, _} ->
-			T
+		#mqtt_client_error{} = Error -> {error, Error};
+		Socket ->
+			State = #connection_state{socket = Socket, transport = Transport, storage = Storage, end_type = client},
+			case T = gen_server:start_link({local, Connection_id}, mqtt_connection, State, [{timeout, ?MQTT_GEN_SERVER_TIMEOUT}]) of
+				{ok, Pid} ->
+					ok = Transport:controlling_process(Socket, Pid),
+					T;
+				{error, _} ->
+					T
+			end
 	end.
 
 open_socket(gen_tcp, Host, Port, Options) ->
