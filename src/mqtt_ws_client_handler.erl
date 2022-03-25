@@ -20,7 +20,7 @@
 %% @version {@version}
 %% @doc Handler for websocket connection.
 
--module(mqtt_ws_handler).
+-module(mqtt_ws_client_handler).
 
 -behaviour(websocket_client_handler).
 

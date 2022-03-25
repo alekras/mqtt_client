@@ -37,10 +37,10 @@ start_link(Connection_id, Host, Port, Options) ->
 	Transport =
 	case proplists:get_value(conn_type, Options) of 
 		ssl -> ssl;
-		tsl -> ssl;
+		tls -> ssl;
 		clear -> gen_tcp;
-		web_socket -> mqtt_ws_handler;
-		web_sec_socket -> mqtt_ws_handler;
+		web_socket -> mqtt_ws_client_handler;
+		web_sec_socket -> mqtt_ws_client_handler;
 		_ -> gen_tcp
 	end,
 
@@ -100,7 +100,8 @@ open_socket(ssl, Host, Port, Options) ->
           {active, true}, 
           {packet, 0}, 
           {recbuf, ?SOC_BUFFER_SIZE}, 
-          {sndbuf, ?SOC_BUFFER_SIZE}, 
+          {sndbuf, ?SOC_BUFFER_SIZE},
+					{verify, verify_none}, 
           {send_timeout, ?SOC_SEND_TIMEOUT} | proplists:delete(conn_type, Options)
         ], 
         ?SOC_CONN_TIMEOUT
@@ -110,17 +111,17 @@ open_socket(ssl, Host, Port, Options) ->
     end
   of
     {ok, Socket} -> Socket;
-    {error, Reason} -> #mqtt_client_error{type = tcp, source="mqtt_client_connection:open_socket/4:" , message = Reason}
+    {error, Reason} -> #mqtt_client_error{type = tls, source="mqtt_client_connection:open_socket/4:" , message = Reason}
   end;  
-open_socket(mqtt_ws_handler, Host, Port, Options) ->
+open_socket(mqtt_ws_client_handler, Host, Port, Options) ->
   case 
     try
-			mqtt_ws_handler:start_link(Host, Port, Options)
+			mqtt_ws_client_handler:start_link(Host, Port, Options)
     catch
       _:_Err -> {error, _Err}
     end
   of
     {ok, WS_handler_Pid} -> WS_handler_Pid;
-    {error, Reason} -> #mqtt_client_error{type = mqtt_ws_handler, source="mqtt_client_connection:open_socket/4:" , message = Reason}
+    {error, Reason} -> #mqtt_client_error{type = mqtt_ws_client_handler, source="mqtt_client_connection:open_socket/4:" , message = Reason}
   end.  
 
