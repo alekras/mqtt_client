@@ -24,9 +24,9 @@ start() ->
 
 server(Port) ->
 	{ok, LSocket} = ssl:listen(Port, 
-														 [{cacertfile, "test/certs/etc/server/cacerts.pem"},
-															{certfile, "test/certs/etc/server/cert.pem"}, 
-															{keyfile, "test/certs/etc/server/key.pem"},
+														 [{cacertfile, "test/tls_cnfg/server/cacerts.pem"},
+															{certfile, "test/tls_cnfg/server/cert.pem"}, 
+															{keyfile, "test/tls_cnfg/server/key.pem"},
 %%															{verify, verify_peer}, 
 															{verify, verify_none}, 
 															{depth, 2},
@@ -79,9 +79,9 @@ client(Msg) ->
 	{ok, Socket} = ssl:connect(Host, 
 															9999, 
 															[
-%%																{cacertfile, "test/certs/etc/client/cacerts.pem"},
-%%																{certfile, "test/certs/etc/client/cert.pem"}, 
-%%																{keyfile, "test/certs/etc/client/key.pem"},
+%%																{cacertfile, "test/tls_cnfg/client/cacerts.pem"},
+%%																{certfile, "test/tls_cnfg/client/cert.pem"}, 
+%%																{keyfile, "test/tls_cnfg/client/key.pem"},
 %%																{verify, verify_peer},
 																{verify, verify_none},
 																{depth, 2},
