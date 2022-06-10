@@ -128,7 +128,7 @@ In this configuration a server has to except web socket connection on 8880 port.
 
 ## Subscribe and publish
 To finish set up of the connection we need to subscribe it to some topic for example "Test" topic. Before make subscription we
-need to define callback function. This function will act as 'application' from MQTT protocol terminology. When client receives message
+need to define callback function (CBF). This function will act as 'application' from MQTT protocol terminology. When client receives message
 from server's topic then callback function will be invoked and the message will be passed to it.
 
 ```erlang
@@ -144,7 +144,7 @@ Now we can publish message to "Test" topic. After short moment subscriber receiv
 ok
 11> callback function: {1,{publish, 0,0,0,<<"Test Message Payload.">>}}
 ```
-Callback function argument is a tuple of five elements. First element is QoS of the topic from that the message came. Second element is a message `#publish{}` record.
+Callback function argument is a tuple of two elements. First element is QoS of the topic from that the message came. Second element is a message `#publish{}` record.
 
 ```erlang
 Arg = {Topic_QoS, Message#publish{}}
