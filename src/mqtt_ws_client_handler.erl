@@ -53,7 +53,7 @@ start_link(Host, Port, Options) ->
 		{"pragma", "no-cache"},
 		{"sec-websocket-extensions", "permessage-deflate"},
 		{"user-agent", "MQTT Erlang client. See https://sourceforge.net/projects/mqtt-client."},
-		{"sec-websocket-protocol", "mqttv3.1, mqttv3.1.1"}
+		{"sec-websocket-protocol", "mqtt, mqttv3.1, mqttv3.1.1, mqttv5.0"}
 	],
 	Protocol = case proplists:get_value(conn_type, Options, clear) of
 							 web_socket -> "ws://";
@@ -67,7 +67,9 @@ start_link(Host, Port, Options) ->
 		"/mqtt"
 	]),
 	lager:debug([{endtype, client}], "<<< start_link: url: ~p~n     Headers:~p~n", [URL, Headers]),
-	websocket_client:start_link(URL, ?MODULE, [], [{extra_headers, Headers}]).
+	R = websocket_client:start_link(URL, ?MODULE, [], [{extra_headers, Headers}]),
+	lager:debug([{endtype, client}], ">>> start_link: ~p~n", [R]),
+	R.
 
 init(_Arg, _ConnState) ->
 	lager:debug([{endtype, client}], "init with ARG: ~p~nConn State:~p~n", [_Arg, _ConnState]),

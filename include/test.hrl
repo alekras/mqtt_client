@@ -15,14 +15,16 @@
 %%
 
 %-define(TEST_SERVER_HOST_NAME, "localhost").
--define(TEST_SERVER_HOST_NAME, "MacBook-Pro").
+%-define(TEST_SERVER_HOST_NAME, "MACBOOK-PRO").
 %-define(TEST_SERVER_HOST_NAME, "lucky3p.com").
+%-define(TEST_SERVER_HOST_NAME, "192.168.1.71").
+-define(TEST_SERVER_HOST_NAME, "127.0.0.1").
 %-define(TEST_SERVER_HOST_NAME, {127,0,0,1}).
 -define(TEST_USER, "guest").
 -define(TEST_PASSWORD, <<"guest">>).
 -define(TEST_PROTOCOL, '3.1.1').
 
--define(CONN_TYPE, clear). %% clear | ssl | ws | wss
+-define(CONN_TYPE, ws). %% clear | ssl | ws | wss
 
 -if(?CONN_TYPE == clear).
 %%%%%%%%%%%%% Clear socket test %%%%%%%%%%%%%%%%% 
@@ -42,7 +44,7 @@
 -elif(?CONN_TYPE == wss).
 %%%%%%%%%%%%% SSL/TLS WEB socket test %%%%%%%%%%%%%%%%% 
 	-define(TEST_CONN_TYPE, {conn_type, web_sec_socket}). %% Web socket connection for client
-	-define(TEST_SERVER_PORT, 8443). %% Erlang WEBSocket
+	-define(TEST_SERVER_PORT, 4443). %% Erlang WEBSocket
 -endif.
 
 -define(debug_Msg(S),

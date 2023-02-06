@@ -41,6 +41,8 @@
 	wait_all/1]).
 
 do_start() ->
+	?debug_Fmt("~n=============~n Start test on server: ~p:~p, connection type:~p~n=============~n",
+						 [?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, ?TEST_CONN_TYPE]),
 	R = application:start(mqtt_client),
 	?assertEqual(ok, R).
 
