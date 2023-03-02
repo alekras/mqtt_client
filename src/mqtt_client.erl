@@ -36,84 +36,92 @@
 %% API functions
 %% ====================================================================
 -export([
-	connect/5, connect/6,
+	create/1,
+	connect/3, connect/4,
 	status/1,
 	publish/2, publish/3,
 	subscribe/2, subscribe/3,
 	unsubscribe/2, unsubscribe/3,
 	pingreq/2,
-	disconnect/1, disconnect/3
+	disconnect/1, disconnect/3,
+	dispose/1
 ]).
 
--spec connect(Connection_id, Conn_config, Host, Port, Socket_options) -> Result when
-  Connection_id :: atom(),
-  Conn_config :: #connect{},
-  Host :: string(),
-  Port :: integer(),
-  Socket_options :: list(),
-  Result :: pid() | #mqtt_client_error{}.
+-spec create(Client_name) -> Result when
+	Client_name :: atom(),
+	Result :: pid() | #mqtt_client_error{}.
 %% 
-%% @doc The function creates socket connection to MQTT server and sends connect package to the server.
+%% @doc The function creates instance of MQTT client.
+create(Client_name) ->
+	case mqtt_client_sup:new_client(Client_name) of
+		{ok, Pid} -> Pid;
+		#mqtt_client_error{} = Error -> 
+			lager:error([{endtype, client}], "client create catched error: ~p, ~n", [Error]),
+			Error;
+		Exit ->
+			lager:error([{endtype, client}], "client create catched exit: ~p, ~n", [Exit]),
+			#mqtt_client_error{type = connection, source = "mqtt_client:create/2", message = Exit}
+	end.	
+
+-spec connect(Client_name, Conn_config, Socket_options) -> Result when
+  Client_name :: atom() | pid(),
+  Conn_config :: #connect{},
+  Socket_options :: list(),
+  Result :: ok | #mqtt_client_error{}.
+%% 
+%% @doc The function open socket to MQTT server and sends connect package to the server.
 %% <dl>
-%% <dt>Connection_id</dt>
-%% <dd>Registered name of connection process.</dd>
+%% <dt>Client_name</dt>
+%% <dd>Registered name or Pid of client process.</dd>
 %% <dt>Conn_config</dt>
 %% <dd>#connect{} record defines the connection options.</dd>
-%% <dt>Host</dt>
-%% <dd>IP or host name of MQTT server.</dd>
-%% <dt>Port</dt>
-%% <dd>port number of MQTT server.</dd>
 %% <dt>Socket_options</dt>
 %% <dd>Additional socket options.</dd>
 %% </dl>
-%% Returns Pid of new created connection process. 
+%% Returns ok or error record. 
 %%
-connect(Connection_id, Conn_config, Host, Port, Socket_options) ->
-  connect(Connection_id, Conn_config, Host, Port, undefined, Socket_options).
+connect(Client_name, Conn_config, Socket_options) ->
+  connect(Client_name, Conn_config, undefined, Socket_options).
 
--spec connect(Connection_id, Conn_config, Host, Port, Default_Callback, Socket_options) -> Result when
- Connection_id :: atom(),
+-spec connect(Client_name, Conn_config, Default_Callback, Socket_options) -> Result when
+ Client_name :: atom() | pid(),
  Conn_config :: #connect{},
- Host :: string(),
- Port :: integer(),
  Default_Callback :: {atom()} | {atom(), atom()},
  Socket_options :: list(),
- Result :: pid() | #mqtt_client_error{}.
+ Result :: ok | #mqtt_client_error{}.
 %% 
 %% @doc The function creates socket connection to MQTT server and sends connect package to the server.<br/>
 %% Parameters:
 %% <ul style="list-style-type: none;">
-%% <li>Connection_id - Registered name of connection process.</li>
+%% <li>Client_name - Registered name or Pid of client process.</li>
 %% <li>Conn_config - #connect{} record defines the connection options.</li>
-%% <li>Host - IP or host name of MQTT server.</li>
-%% <li>Port - port number of MQTT server.</li>
 %% <li>Default_Callback - Definition of callback function for any subscriptions what miss callback definition.</li>
 %% <li>Socket_options - Additional socket options.</li>
 %% </ul>
-%% Returns Pid of new created connection process. 
+%% Returns ok or error record. 
 %%
-connect(Connection_id, Conn_config, Host, Port, Default_Callback, Socket_options) ->
+connect(Client_name, Conn_config, Default_Callback, Socket_options) ->
 	%% @todo check input parameters
-	case mqtt_client_sup:new_connection(Connection_id, Host, Port, Socket_options) of
-		{ok, Pid} ->
-			case gen_server:call(Pid, {connect, Conn_config, Default_Callback}, ?MQTT_GEN_SERVER_TIMEOUT) of
-				{ok, Ref} ->
-					receive
-						{connack, Ref, _SP, 0, _Msg, _Properties} -> 
-							Pid;
-						{connack, Ref, _, ErrNo, Msg, _Properties} -> 
-							#mqtt_client_error{type = connection, errno = ErrNo, source = "mqtt_client:conect/6", message = Msg}
-					after ?MQTT_GEN_SERVER_TIMEOUT ->
-							#mqtt_client_error{type = connection, source = "mqtt_client:conect/6", message = "timeout"}
-					end;
-				{error, E} -> E
+	case gen_server:call(
+				Client_name,
+				{connect, Conn_config, Default_Callback, Socket_options},
+				?MQTT_GEN_SERVER_TIMEOUT)
+	of
+		{ok, Ref} ->
+			receive
+				{connack, Ref, _SP, 0, _Msg, _Properties} -> 
+					ok;
+				{connack, Ref, _, ErrNo, Msg, _Properties} -> 
+					#mqtt_client_error{type = connection, errno = ErrNo, source = "mqtt_client:conect/4", message = Msg}
+			after ?MQTT_GEN_SERVER_TIMEOUT ->
+					#mqtt_client_error{type = connection, source = "mqtt_client:conect/4", message = "timeout"}
 			end;
 		#mqtt_client_error{} = Error -> 
-			lager:error([{endtype, client}], "client catched error: ~p, ~n", [Error]),
+			lager:error([{endtype, client}], "client catched connection error: ~p, ~n", [Error]),
 			Error;
 		Exit ->
-			lager:error([{endtype, client}], "client catched exit: ~p, ~n", [Exit]),
-			#mqtt_client_error{type = connection, source = "mqtt_client:conect/6", message = Exit}
+			lager:error([{endtype, client}], "client catched exit while connecting: ~p, ~n", [Exit]),
+			#mqtt_client_error{type = connection, source = "mqtt_client:conect/4", message = Exit}
 	end.
 
 -spec status(Pid) -> Result when
@@ -276,6 +284,14 @@ disconnect(Name, ReasonCode, Properties) when is_atom(Name) ->
 	end;
 disconnect(_,_,_) -> ok.
 
+-spec dispose(Client_name) -> Result when
+ Client_name :: pid() | atom(),
+ Result :: ok | #mqtt_client_error{}.
+%% 
+%% @doc The function deletes the client process with pid or registered name Client_name from supervisor tree.
+%% 
+dispose(Client_name) ->
+	mqtt_client_sup:dispose_client(Client_name).
 %% ====================================================================
 %% Behavioural functions
 %% ====================================================================

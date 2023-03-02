@@ -113,7 +113,6 @@ do_setup({QoS, will} = _X) ->
 		publisher, 
 		?CONN_REC#connect{
 			client_id = "publisher",
-			will = 1,
 			will_publish= #publish{qos= QoS, topic= "AK_will_test", payload= <<"Test will message">>}
 		}, 
 		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
@@ -127,7 +126,6 @@ do_setup({QoS, will_delay} = _X) ->
 		publisher, 
 		?CONN_REC#connect{
 			client_id = "publisher",
-			will = 1,
 			will_publish= #publish{qos= QoS, topic= "AK_will_test", payload= <<"Test will message">>, properties =[{?Will_Delay_Interval, 5}]}
 		}, 
 		?TEST_SERVER_HOST_NAME, 
@@ -142,7 +140,6 @@ do_setup({QoS, will_retain} = _X) ->
 		publisher, 
 		?CONN_REC#connect{
 			client_id = "publisher",
-			will = 1,
 			will_publish= #publish{qos= QoS, retain= 1, topic= "AK_will_retain_test", payload= <<"Test will retain message">>}
 		}, 
 		?TEST_SERVER_HOST_NAME, 

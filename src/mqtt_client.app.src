@@ -22,7 +22,7 @@
 {application, mqtt_client,
 	[
     {description, "The MQTT client is written in Erlang and allows to connect to MQTT server and send/receive messages according to MQTT messaging protocol versions 3.1.1 and 5.0"},
-    {vsn, "1.1.0"},
+    {vsn, "2.0.0"},
     {modules, [
       mqtt_client,
       mqtt_client_connection,

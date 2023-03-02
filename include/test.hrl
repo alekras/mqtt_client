@@ -24,26 +24,26 @@
 -define(TEST_PASSWORD, <<"guest">>).
 -define(TEST_PROTOCOL, '3.1.1').
 
--define(CONN_TYPE, ws). %% clear | ssl | ws | wss
+-define(CONN_TYPE, clear). %% clear | ssl | ws | wss
 
 -if(?CONN_TYPE == clear).
 %%%%%%%%%%%%% Clear socket test %%%%%%%%%%%%%%%%% 
-	-define(TEST_CONN_TYPE, {conn_type, clear}). %% Clear tcp for client
+	-define(TEST_CONN_TYPE, clear). %% Clear tcp for client
 	-define(TEST_SERVER_PORT, 18883). %% Erlang
 	%-define(TEST_SERVER_PORT, 2883). %% Mosquitto
 	%-define(TEST_SERVER_PORT, 1883). %% RabbitMQ
 -elif(?CONN_TYPE == ssl).
 %%%%%%%%%%%%% SSL/TSL socket test %%%%%%%%%%%%%%%%% 
-	-define(TEST_CONN_TYPE, {conn_type, ssl}). %% TSL/SSL for client
+	-define(TEST_CONN_TYPE, ssl). %% TSL/SSL for client
 	-define(TEST_SERVER_PORT, 18483). %% Erlang TSL
 	%-define(TEST_SERVER_PORT, 2884). %% Mosquitto TSL
 -elif(?CONN_TYPE == ws).
 %%%%%%%%%%%%% Clear WEB socket test %%%%%%%%%%%%%%%%% 
-	-define(TEST_CONN_TYPE, {conn_type, web_socket}). %% Web socket connection for client
+	-define(TEST_CONN_TYPE, web_socket). %% Web socket connection for client
 	-define(TEST_SERVER_PORT, 8880). %% Erlang WEBSocket
 -elif(?CONN_TYPE == wss).
 %%%%%%%%%%%%% SSL/TLS WEB socket test %%%%%%%%%%%%%%%%% 
-	-define(TEST_CONN_TYPE, {conn_type, web_sec_socket}). %% Web socket connection for client
+	-define(TEST_CONN_TYPE, web_sec_socket). %% Web socket connection for client
 	-define(TEST_SERVER_PORT, 4443). %% Erlang WEBSocket
 -endif.
 

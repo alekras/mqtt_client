@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2022 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2023 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 %%
 
 %% @since 2015-12-25
-%% @copyright 2015-2022 Alexei Krasnopolski
+%% @copyright 2015-2023 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
 %% @doc @todo Add description to mqtt_client_sup.
@@ -34,8 +34,9 @@
 %% API functions
 %% ====================================================================
 -export([
-	new_connection/4
-%	close_connection/1
+	new_client/1,
+	create_client_process/1,
+	dispose_client/1
 ]).
 
 %% ====================================================================
@@ -67,48 +68,72 @@ init(_) ->
     }
   }.
 
-%% Connection_id::atom()
-new_connection(Connection_id, Host, Port, Options) ->
-  Child_spec = {
-    Connection_id,
-    {mqtt_client_connection, start_link,
-      [Connection_id, Host, Port, Options]
-    },
-    temporary,
-    brutal_kill,
-    worker,
-    [mqtt_connection]
-  },
+new_client(Client_id) ->
+	Child_spec = {
+		Client_id,
+		{?MODULE, create_client_process, [Client_id]},
+		permanent,
+		brutal_kill,
+		worker,
+		[mqtt_connection]
+	},
 
-  R = try 
+	R = try 
 				supervisor:start_child(?MODULE, Child_spec) 
 			catch
-				exit:{noproc,_R1} -> 
-					{error, {#mqtt_client_error{type=connection, source = "mqtt_client_sup:new_connection/4:", message="unexpected server connection drop"}, undef}}
+				exit:{noproc, R1} -> 
+					{error, #mqtt_client_error{
+						type=create, 
+						source = "mqtt_client_sup:new_client/1:(line 81)", 
+						message= lists:concat("unexpected supervisor:start_child error", R1)
+					}}
 			end,
-  case R of
-    {ok, _Pid} -> R;
-    {ok, Pid, _Info} -> {ok, Pid};
-    {error, {#mqtt_client_error{} = Reason, _}} -> Reason;
-    {error, Reason} -> #mqtt_client_error{
-                                    type = connection,
-																		source = "mqtt_client_sup:new_connection/4:",
-                                    message = Reason}
-  end.
 
-%% close_connection(Connection_id) when is_atom(Connection_id) -> 
-%%   io:format(user, " >>> close_connection (id:~p)~n", [Connection_id]),
-%%   case supervisor:terminate_child(?MODULE, Connection_id) of
-%%     ok -> supervisor:delete_child(?MODULE, Connection_id);
-%%     {error, R} -> #mqtt_client_error{type = connection, message = atom_to_list(R)}
-%%   end;
-%% 
-%% close_connection(Connection_pid) when is_pid(Connection_pid) -> 
-%%   io:format(user, " >>> close_connection (pid:~p)~n", [Connection_pid]),
-%%   case [ Id || {Id, Pid, _, _} <- supervisor:which_children(?MODULE), Pid == Connection_pid] of
-%%     [Connection_id] -> close_connection(Connection_id);
-%%     [] -> ok
-%%   end.
+	case R of
+		{ok, Pid} -> {ok, Pid};
+		{ok, Pid, _Info} -> {ok, Pid};
+		{error, #mqtt_client_error{} = Reason} -> Reason;
+		{error, Reason} -> #mqtt_client_error{
+			type = create,
+			source = "mqtt_client_sup:new_client/1:(line 81)",
+			message = Reason}
+	end.
+
+create_client_process(Client_id) ->
+	Storage =
+	case application:get_env(mqtt_client, storage, dets) of
+		mysql -> mqtt_mysql_dao;
+		dets -> mqtt_dets_dao
+	end,
+
+	State = #connection_state{storage = Storage, end_type = client},
+	case T = gen_server:start_link({local, Client_id}, mqtt_connection, State, [{timeout, ?MQTT_GEN_SERVER_TIMEOUT}]) of
+		{ok, _Pid} -> T;
+		{error, {already_started, OtherPid}} -> 
+			{error , #mqtt_client_error{
+				type = create, 
+				source="mqtt_client_sup:create_client_process/1:(line 102)", 
+				message = "Already started with PID: " ++ erlang:pid_to_list(OtherPid)
+			}};
+		{error, Reason} ->
+			{error , #mqtt_client_error{
+				type = create, 
+				source="mqtt_client_connection:start_link/2:(line 54)", 
+				message = Reason
+			}};
+		ignore -> ignore
+	end.
+
+dispose_client(Client_id) when is_atom(Client_id) -> 
+  case supervisor:terminate_child(?MODULE, Client_id) of
+    ok -> supervisor:delete_child(?MODULE, Client_id);
+    {error, R} -> #mqtt_client_error{type = dispose, message = R}
+  end;
+dispose_client(Client_id) when is_pid(Client_id) -> 
+  case [ Id || {Id, Pid, _, _} <- supervisor:which_children(?MODULE), Pid == Client_id] of
+    [Client_atom_id] -> dispose_client(Client_atom_id);
+    [] -> ok
+  end.
 
 %% ====================================================================
 %% Internal functions

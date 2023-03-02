@@ -108,7 +108,7 @@ publish_1({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish to
 	?PASSED
 end}.
 
-publish_2({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish to Topic Alias with QoS = " ++ integer_to_list(QoS) ++ ".\n", timeout, 100, fun() ->
+publish_2({QoS, publish} = _X, [_Publisher, Subscriber] = _Conns) -> {"publish to Topic Alias with QoS = " ++ integer_to_list(QoS) ++ ".\n", timeout, 100, fun() ->
 	register(test_result, self()),
 
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 

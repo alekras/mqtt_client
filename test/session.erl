@@ -61,22 +61,25 @@ session_1({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 %	?debug_Fmt("::test:: publish (QoS = 1) returns: ~120p",[R3_0]),
 	?assertEqual({mqtt_client_error,publish,none,"mqtt_client:publish/2","puback timeout"}, R3_0),
 	mqtt_client:disconnect(Publisher),
-	Publisher_2 = mqtt_client:connect(
-		publisher,
+	ok = mqtt_client:connect(
+		Publisher,
 		#connect{
-			client_id = "publisher",
-			user_name = "guest", password = <<"guest">>,
+			client_id = publisher,
+			user_name = "guest",
+			password = <<"guest">>,
+			host = ?TEST_SERVER_HOST_NAME,
+			port = ?TEST_SERVER_PORT,
 			clean_session = 0,
 			keep_alive = 1000,
-			version = ?TEST_PROTOCOL
-		}, 
-		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
-		[?TEST_CONN_TYPE]
+			version = ?TEST_PROTOCOL,
+			conn_type = ?TEST_CONN_TYPE
+		},
+		[]
 	),
 	
   W = wait_all(2),
 	unregister(test_result),
-	mqtt_client:disconnect(Publisher_2),
+	mqtt_client:disconnect(Publisher),
 	?assert(W),
 	?PASSED
 end};
@@ -103,23 +106,26 @@ session_1({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 %	?debug_Fmt("::test:: publish (QoS = 1) returns: ~120p",[R3_0]),
 	?assertEqual({mqtt_client_error,publish,none,"mqtt_client:publish/2","puback timeout"}, R3_0),
 	mqtt_client:disconnect(Publisher),
-	Publisher_2 = mqtt_client:connect(
-		publisher, 
+	ok = mqtt_client:connect(
+		Publisher, 
 		#connect{
-			client_id = "publisher",
-			user_name = "guest", password = <<"guest">>,
+			client_id = publisher,
+			user_name = "guest",
+			password = <<"guest">>,
+			host = ?TEST_SERVER_HOST_NAME,
+			port = ?TEST_SERVER_PORT,
 			clean_session = 0,
 			keep_alive = 1000,
-			version = ?TEST_PROTOCOL
+			version = ?TEST_PROTOCOL,
+			conn_type = ?TEST_CONN_TYPE
 		}, 
-		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
-		[?TEST_CONN_TYPE]
+		[]
 	),
 	
-  W = wait_all(3),
+	W = wait_all(3),
 	
 	unregister(test_result),
-	mqtt_client:disconnect(Publisher_2),
+	mqtt_client:disconnect(Publisher),
 	?assert(W),
 	?PASSED
 end};
@@ -148,29 +154,32 @@ session_1({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	?assertEqual(ok, R3_0),
 	timer:sleep(1000), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
-	Subscriber_2 = mqtt_client:connect(
-		subscriber, 
+	ok = mqtt_client:connect(
+		Subscriber, 
 		#connect{
-			client_id = "subscriber",
-			user_name = "guest", password = <<"guest">>,
+			client_id = subscriber,
+			user_name = "guest",
+			password = <<"guest">>,
+			host = ?TEST_SERVER_HOST_NAME,
+			port = ?TEST_SERVER_PORT,
 			clean_session = 0,
 			keep_alive = 60000,
-			version = ?TEST_PROTOCOL
+			version = ?TEST_PROTOCOL,
+			conn_type = ?TEST_CONN_TYPE
 		}, 
-		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
 		{F}, 
-		[?TEST_CONN_TYPE]
+		[]
 	),
-	?debug_Fmt("::test:: Subscriber with saved session : ~p", [Subscriber_2]),
-	?assert(is_pid(Subscriber_2)),
+	?debug_Fmt("::test:: Subscriber with saved session : ~p", [Subscriber]),
+	?assert(is_pid(Subscriber)),
 	R3_1 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::3 Test Payload QoS = 1. function callback. ">>), 
 %	?debug_Fmt("::test:: publish (QoS = 1) returns: ~120p",[R3_1]),
 	?assertEqual(ok, R3_1),
 	
-  W = wait_all(3),
+	W = wait_all(3),
 	
 	unregister(test_result),
-	mqtt_client:disconnect(Subscriber_2),
+	mqtt_client:disconnect(Subscriber),
 	?assert(W),
 	?PASSED
 end};
@@ -196,26 +205,29 @@ session_1({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
 	timer:sleep(100), %% allow subscriber to disconnect 
-	Subscriber_2 = mqtt_client:connect(
-		subscriber, 
+	ok = mqtt_client:connect(
+		Subscriber, 
 		#connect{
-			client_id = "subscriber",
-			user_name = "guest", password = <<"guest">>,
+			client_id = subscriber,
+			user_name = "guest",
+			password = <<"guest">>,
+			host = ?TEST_SERVER_HOST_NAME,
+			port = ?TEST_SERVER_PORT,
 			clean_session = 0,
 			keep_alive = 60000,
-			version = ?TEST_PROTOCOL
+			version = ?TEST_PROTOCOL,
+			conn_type = ?TEST_CONN_TYPE
 		}, 
-		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
-		[?TEST_CONN_TYPE]
+		[]
 	),
-	?assert(is_pid(Subscriber_2)),
+	?assert(is_pid(Subscriber)),
 	R3_1 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::3 Test Payload QoS = 1. function callback. ">>), 
 	?assertEqual(ok, R3_1),
 	
   W = wait_all(4),
 	
 	unregister(test_result),
-	mqtt_client:disconnect(Subscriber_2),
+	mqtt_client:disconnect(Subscriber),
 	?assert(W),
 	?PASSED
 end}.
@@ -237,23 +249,26 @@ session_2({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"Test Payload QoS = 2. annon. function callback. ">>), 
 	?assertEqual({mqtt_client_error,publish,none,"mqtt_client:publish/2","pubcomp timeout"}, R3_0),
 	mqtt_client:disconnect(Publisher),
-	Publisher_2 = mqtt_client:connect(
-		publisher,
+	ok = mqtt_client:connect(
+		Publisher,
 		#connect{
-			client_id = "publisher",
-			user_name = "guest", password = <<"guest">>,
+			client_id = publisher,
+			user_name = "guest",
+			password = <<"guest">>,
+			host = ?TEST_SERVER_HOST_NAME,
+			port = ?TEST_SERVER_PORT,
 			clean_session = 0,
 			keep_alive = 1000,
-			version = ?TEST_PROTOCOL
+			version = ?TEST_PROTOCOL,
+			conn_type = ?TEST_CONN_TYPE
 		}, 
-		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
-		[?TEST_CONN_TYPE]
+		[]
 	),
 	
-  W = wait_all(2),
+	W = wait_all(2),
 	
 	unregister(test_result),
-	mqtt_client:disconnect(Publisher_2),
+	mqtt_client:disconnect(Publisher),
 	?assert(W),
 	?PASSED
 end};
@@ -275,23 +290,26 @@ session_2({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"Test Payload QoS = 2. annon. function callback.">>), 
 	?assertEqual({mqtt_client_error,publish,none,"mqtt_client:publish/2","pubcomp timeout"}, R3_0),
 	mqtt_client:disconnect(Publisher),
-	Publisher_2 = mqtt_client:connect(
-		publisher,
+	ok = mqtt_client:connect(
+		Publisher,
 		#connect{
-			client_id = "publisher",
-			user_name = "guest", password = <<"guest">>,
+			client_id = publisher,
+			user_name = "guest",
+			password = <<"guest">>,
+			host = ?TEST_SERVER_HOST_NAME,
+			port = ?TEST_SERVER_PORT,
 			clean_session = 0,
 			keep_alive = 1000,
-			version = ?TEST_PROTOCOL
+			version = ?TEST_PROTOCOL,
+			conn_type = ?TEST_CONN_TYPE
 		}, 
-		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
-		[?TEST_CONN_TYPE]
+		[]
 	),
 	
-  W = wait_all(2),
+	W = wait_all(2),
 	
 	unregister(test_result),
-	mqtt_client:disconnect(Publisher_2),
+	mqtt_client:disconnect(Publisher),
 	?assert(W),
 	?PASSED
 end};
@@ -299,7 +317,7 @@ end};
 %% Publisher: skip send pubrel. Resend pubrel after reconnect and restore session.
 session_2({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, publisher skips send pubrel.", timeout, 100, fun() ->
 	register(test_result, self()),
-  
+
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= _Msg}} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(2, Q),
@@ -314,23 +332,26 @@ session_2({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"2) Test Payload QoS = 2. annon. function callback. ">>), 
 	?assertEqual({mqtt_client_error,publish,none,"mqtt_client:publish/2","pubcomp timeout"}, R3_0),
 	mqtt_client:disconnect(Publisher),
-	Publisher_2 = mqtt_client:connect(
+	ok = mqtt_client:connect(
 		publisher,
 		#connect{
-			client_id = "publisher",
-			user_name = "guest", password = <<"guest">>,
+			client_id = publisher,
+			user_name = "guest",
+			password = <<"guest">>,
+			host = ?TEST_SERVER_HOST_NAME,
+			port = ?TEST_SERVER_PORT,
 			clean_session = 0,
 			keep_alive = 1000,
-			version = ?TEST_PROTOCOL
+			version = ?TEST_PROTOCOL,
+			conn_type = ?TEST_CONN_TYPE
 		}, 
-		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
-		[?TEST_CONN_TYPE]
+		[]
 	),
 	
   W = wait_all(2),
 	
 	unregister(test_result),
-	mqtt_client:disconnect(Publisher_2),
+	mqtt_client:disconnect(Publisher),
 	?assert(W),
 	?PASSED
 end};
@@ -353,23 +374,26 @@ session_2({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"2) Test Payload QoS = 2. annon. function callback. ">>), 
 	?assertEqual({mqtt_client_error,publish,none,"mqtt_client:publish/2","pubcomp timeout"}, R3_0),
 	mqtt_client:disconnect(Publisher),
-	Publisher_2 = mqtt_client:connect(
+	ok = mqtt_client:connect(
 		publisher,
 		#connect{
-			client_id = "publisher",
-			user_name = "guest", password = <<"guest">>,
+			client_id = publisher,
+			user_name = "guest",
+			password = <<"guest">>,
+			host = ?TEST_SERVER_HOST_NAME,
+			port = ?TEST_SERVER_PORT,
 			clean_session = 0,
 			keep_alive = 1000,
-			version = ?TEST_PROTOCOL
+			version = ?TEST_PROTOCOL,
+			conn_type = ?TEST_CONN_TYPE
 		}, 
-		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, 
-		[?TEST_CONN_TYPE]
+		[]
 	),
 	
-  W = wait_all(2),
+	W = wait_all(2),
 	
 	unregister(test_result),
-	mqtt_client:disconnect(Publisher_2),
+	mqtt_client:disconnect(Publisher),
 	?assert(W),
 	?PASSED
 end};
@@ -377,7 +401,7 @@ end};
 %% Subscriber: skip receive publish. Resend publish after reconnect and restore session.
 session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, subscriber skips receive publish.", timeout, 100, fun() ->
 	register(test_result, self()),
-  
+
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= _Msg}} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(2, Q),
@@ -395,27 +419,30 @@ session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
 	timer:sleep(50),
-	Subscriber_2 = mqtt_client:connect(
-		subscriber, 
+	ok = mqtt_client:connect(
+		Subscriber, 
 		#connect{
-			client_id = "subscriber",
-			user_name = "guest", password = <<"guest">>,
+			client_id = subscriber,
+			user_name = "guest",
+			password = <<"guest">>,
+			host = ?TEST_SERVER_HOST_NAME,
+			port = ?TEST_SERVER_PORT,
 			clean_session = 0,
 			keep_alive = 60000,
-			version = ?TEST_PROTOCOL
+			version = ?TEST_PROTOCOL,
+			conn_type = ?TEST_CONN_TYPE
 		}, 
-		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
-		[?TEST_CONN_TYPE]
+		[]
 	),
 %	?debug_Fmt("::test:: after connection: ~100p",[Subscriber_2]),
-	?assert(is_pid(Subscriber_2)),
+	?assert(is_pid(Subscriber)),
 	R3_1 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::3 Test Payload QoS = 2. function callback. ">>), 
 	?assertEqual(ok, R3_1),
 	
-  W = wait_all(3),
+	W = wait_all(3),
 	
 	unregister(test_result),
-	mqtt_client:disconnect(Subscriber_2),
+	mqtt_client:disconnect(Subscriber),
 	?assert(W),
 	?PASSED
 end};
@@ -423,7 +450,7 @@ end};
 %% Subscriber: skip send pubrec. Resend publish after reconnect and restore session.
 session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, subscriber skips send pubrec.", timeout, 100, fun() ->
 	register(test_result, self()),
-  
+
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= _Msg}} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(2, Q),
@@ -440,26 +467,29 @@ session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	?assertEqual(ok, R3_0),
 	timer:sleep(500), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
-	Subscriber_2 = mqtt_client:connect(
+	ok = mqtt_client:connect(
 		subscriber, 
 		#connect{
-			client_id = "subscriber",
-			user_name = "guest", password = <<"guest">>,
+			client_id = subscriber,
+			user_name = "guest",
+			password = <<"guest">>,
+			host = ?TEST_SERVER_HOST_NAME,
+			port = ?TEST_SERVER_PORT,
 			clean_session = 0,
 			keep_alive = 60000,
-			version = ?TEST_PROTOCOL
+			version = ?TEST_PROTOCOL,
+			conn_type = ?TEST_CONN_TYPE
 		}, 
-		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
-		[?TEST_CONN_TYPE]
+		[]
 	),
-	?assert(is_pid(Subscriber_2)),
+	?assert(is_pid(Subscriber)),
 	R3_1 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::3 Test Payload QoS = 2. function callback. ">>), 
 	?assertEqual(ok, R3_1),
 	
   W = wait_all(4),
 	
 	unregister(test_result),
-	mqtt_client:disconnect(Subscriber_2),
+	mqtt_client:disconnect(Subscriber),
 	?assert(W),
 	?PASSED
 end};
@@ -485,27 +515,30 @@ session_2({7, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
 	timer:sleep(500),
-	Subscriber_2 = mqtt_client:connect(
-		subscriber, 
+	ok = mqtt_client:connect(
+		Subscriber, 
 		#connect{
-			client_id = "subscriber",
-			user_name = "guest", password = <<"guest">>,
+			client_id = subscriber,
+			user_name = "guest",
+			password = <<"guest">>,
+			host = ?TEST_SERVER_HOST_NAME,
+			port = ?TEST_SERVER_PORT,
 			clean_session = 0,
 			keep_alive = 60000,
-			version = ?TEST_PROTOCOL
+			version = ?TEST_PROTOCOL,
+			conn_type = ?TEST_CONN_TYPE
 		}, 
-		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
-		[?TEST_CONN_TYPE]
+		[]
 	),
 %	?debug_Fmt("::test:: after connection: ~100p",[Subscriber_2]),
-	?assert(is_pid(Subscriber_2)),
+	?assert(is_pid(Subscriber)),
 	R3_1 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::3 Test Payload QoS = 2. function callback. ">>), 
 	?assertEqual(ok, R3_1),
 	
   W = wait_all(3),
 	
 	unregister(test_result),
-	mqtt_client:disconnect(Subscriber_2),
+	mqtt_client:disconnect(Subscriber),
 	?assert(W),
 	?PASSED
 end};
@@ -513,7 +546,7 @@ end};
 %% Subscriber: skip send pubcomp. Resend publish after reconnect and restore session.
 session_2({8, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, subscriber skips send pubcomp.", timeout, 100, fun() ->
 	register(test_result, self()),
-  
+
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= _Msg}} = _Arg) -> 
 %					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
 					 ?assertEqual(2, Q),
@@ -531,26 +564,29 @@ session_2({8, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
 	timer:sleep(500), %%  
-	Subscriber_2 = mqtt_client:connect(
-		subscriber, 
+	ok = mqtt_client:connect(
+		Subscriber, 
 		#connect{
-			client_id = "subscriber",
-			user_name = "guest", password = <<"guest">>,
+			client_id = subscriber,
+			user_name = "guest",
+			password = <<"guest">>,
+			host = ?TEST_SERVER_HOST_NAME,
+			port = ?TEST_SERVER_PORT,
 			clean_session = 0,
 			keep_alive = 60000,
-			version = ?TEST_PROTOCOL
+			version = ?TEST_PROTOCOL,
+			conn_type = ?TEST_CONN_TYPE
 		}, 
-		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
-		[?TEST_CONN_TYPE]
+		[]
 	),
-	?assert(is_pid(Subscriber_2)),
+	?assert(is_pid(Subscriber)),
 	R3_1 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::3 Test Payload QoS = 2. function callback. ">>), 
 	?assertEqual(ok, R3_1),
 	
-  W = wait_all(3),
+	W = wait_all(3),
 	
 	unregister(test_result),
-	mqtt_client:disconnect(Subscriber_2),
+	mqtt_client:disconnect(Subscriber),
 	?assert(W),
 	?PASSED
 end}.

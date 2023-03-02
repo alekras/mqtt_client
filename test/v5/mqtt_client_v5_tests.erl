@@ -37,7 +37,7 @@
 	spring_callback/1, 
 	summer_callback/1, 
 	winter_callback/1]).
--import(testing_v5, [wait_all/1, do_start/0, do_stop/1, do_setup/1, do_cleanup/2, get_connect_rec/0]).
+-import(testing_v5, [wait_all/1, get_connect_rec/0]).
 %%
 %% API Functions
 %%
@@ -120,7 +120,6 @@ mqtt_client_test_() ->
 connect() ->
 	ConnRec = (get_connect_rec())#connect{
 			properties=[{?Topic_Alias_Maximum,3},{?Request_Problem_Information, 1},{?Request_Response_Information, 1},{?User_Property, {"Key", "Value"}}],
-			will = 1,
 			will_publish= #publish{qos= 1, retain= 0, topic= "Will_Topic", payload= <<"Msg">>,
 														 properties = [{?Payload_Format_Indicator, 1},{?User_Property, {"Key", "Value"}}]}
 																			 },
