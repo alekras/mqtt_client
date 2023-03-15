@@ -19,54 +19,49 @@
 %% @copyright 2015-2022 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
-%% @doc This module implements a testing of MQTT retain meaasages.
+%% @doc This module implements a testing of MQTT publish meaasages.
 
 -module(publish).
 
 %%
 %% Include files
 %%
-%% -include_lib("eunit/include/eunit.hrl").
 -include_lib("stdlib/include/assert.hrl").
 -include_lib("mqtt_common/include/mqtt.hrl").
 -include("test.hrl").
 
 -export([
   publish_0/2,
-  publish_1/2,
-	publish_2/2
+  publish_1/2
 ]).
 
 -import(testing, [wait_all/1]).
-%%
-%% API Functions
-%%
 
-publish_0({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish with QoS = " ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
+run_test(QoS_subsc, Publisher, Subscriber) ->
 	register(test_result, self()),
 
-	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
-					 <<QoS_m:1/bytes, _/binary>> = Msg,
-%					 ?debug_Fmt("::test:: fun callback: ~100p Q=~p",[_Arg, binary_to_list(QoS_m)]),
-					 ?assertEqual(QoS, Q),
-					 Msq_QoS = list_to_integer(binary_to_list(QoS_m)),
-					 Expect_QoS = if QoS > Msq_QoS -> Msq_QoS; true -> QoS end,
-					 ?assertEqual(Expect_QoS, _QoS),
+	F = fun({QoS_recv, #publish{topic= Topic, qos=QoS_pub, dup=_Dup, payload= Msg}} = _Arg) -> 
+					 <<QoS_msg:8/integer, _/binary>> = Msg,
+%					 ?debug_Fmt("::test:: fun callback: ~100p Q=~p",[_Arg, QoS_msg]),
+					 ?assertEqual(QoS_subsc, QoS_recv),
+					 Expect_QoS = if QoS_subsc > QoS_msg -> QoS_msg; true -> QoS_subsc end,
+					 ?assertEqual(Expect_QoS, QoS_pub),
 					 ?assertEqual("AKTest", Topic),
 					 test_result ! done 
 			end,
 
-	R2_0 = mqtt_client:subscribe(Subscriber, [{"AKTest", QoS, F}]), 
-	?assertEqual({suback,[QoS],[]}, R2_0),
-	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 0}, <<"0) Test Payload QoS = 0. annon. function callback. ">>), 
-	?assertEqual(ok, R3_0),
-	R4_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 1}, <<"1) Test Payload QoS = 0. annon. function callback. ">>), 
-	?assertEqual(ok, R4_0),
-	R5_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"2) Test Payload QoS = 0. annon. function callback. ">>), 
-	?assertEqual(ok, R5_0),
+	?assertEqual(
+		{suback,[QoS_subsc],[]}, 
+		mqtt_client:subscribe(Subscriber, [{"AKTest", QoS_subsc, F}])
+	),
+	Payload = <<") Test Payload QoS = 0. annon. function callback. ">>,
+	[ begin 
+			Msg = <<Q:8, Payload/binary>>,
+			ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = Q}, Msg) 
+		end || Q <- [0,1,2]],
 
-	R2 = mqtt_client:subscribe(Subscriber, [{"AKTest", QoS, {mqtt_client_tests, callback}}]), 
-	?assertEqual({suback,[QoS],[]}, R2),
+	R2 = mqtt_client:subscribe(Subscriber, [{"AKTest", QoS_subsc, {testing, callback}}]), 
+	?assertEqual({suback,[QoS_subsc],[]}, R2),
 	R3 = mqtt_client:publish(Publisher, #publish{topic = "AKTest"}, <<"Test Payload QoS = 0.">>), 
 	?assertEqual(ok, R3),
 %% errors:
@@ -79,59 +74,40 @@ publish_0({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish wi
 	?assert(W),
 
 	?PASSED
-end}.
+.
 
-publish_1({_QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish with QoS = 1", timeout, 100, fun() ->
+publish_0({_, publish}, [Publisher, Subscriber]) -> 
+	{"\npublish with QoS = 0,1,2.", 
+		timeout, 100, 
+		fun() -> 
+			[run_test(QoS, Publisher, Subscriber) || QoS <- [0,1,2]]
+		end
+	}.
+
+publish_1({_QoS, publish}, [Publisher, Subscriber]) -> {"\npublish with QoS = 1", timeout, 100, fun() ->
 	register(test_result, self()),
 
-	R2_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 1, 
-																						 fun(Arg) -> ?assertMatch({1,#publish{topic= "AKtest", payload= <<"Test Payload QoS = 1. annon. function callback. ">>}}, Arg), test_result ! done end}
-																					 ]), 
+	Payload = <<"Test Payload QoS = 1. annon. function callback. ">>,
+	R2_0 = mqtt_client:subscribe(
+					Subscriber, 
+					[{"AKtest", 
+						1, 
+						fun(Arg) -> 
+							?assertMatch(
+								{1,#publish{topic= "AKtest", payload= <<QoS_exp:8, Payload/binary>>, qos= QoS_exp}},
+								Arg), 
+							test_result ! done
+						end
+					}]), 
 	?assertEqual({suback,[1],[]}, R2_0),
-	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 0}, <<"Test Payload QoS = 1. annon. function callback. ">>), 
-	?assertEqual(ok, R3_0),
-	R4_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"Test Payload QoS = 1. annon. function callback. ">>), 
-	?assertEqual(ok, R4_0),
-	R5_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"Test Payload QoS = 1. annon. function callback. ">>), 
-	?assertEqual(ok, R5_0),
 
-	R2 = mqtt_client:subscribe(Subscriber, [{"AKTest", 1, {mqtt_client_tests, callback}}]), 
+	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 0}, <<0:8, Payload/binary>>), 
+	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<1:8, Payload/binary>>), 
+	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<1:8, Payload/binary>>), 
+
+	R2 = mqtt_client:subscribe(Subscriber, [{"AKTest", 1, {testing, callback}}]), 
 	?assertEqual({suback,[1],[]}, R2),
-	R3 = mqtt_client:publish(Publisher, #publish{topic = "AKTest"}, <<"Test Payload QoS = 0.">>), 
-	?assertEqual(ok, R3),
-
-	W = wait_all(4),
-	
-	unregister(test_result),
-	?assert(W),
-
-	?PASSED
-end}.
-
-publish_2({_QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish with QoS = 2", timeout, 100, fun() ->
-	register(test_result, self()),
-  
-	F = fun({Q, #publish{topic= Topic, qos=QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
-					 <<QoS_m:1/bytes, _/binary>> = Msg,
-%					 ?debug_Fmt("::test:: fun callback: ~100p Q=~p",[_Arg, binary_to_list(QoS_m)]),
-					 ?assertEqual(2, Q),
-					 ?assertEqual(list_to_integer(binary_to_list(QoS_m)), QoS),
-					 ?assertEqual("AKtest", Topic),
-					 test_result ! done 
-			end,
-	R2_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", 2, F}]), 
-	?assertEqual({suback,[2],[]}, R2_0),
-	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 0}, <<"0) Test Payload QoS = 2. annon. function callback. ">>), 
-	?assertEqual(ok, R3_0),
-	R4_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"1) Test Payload QoS = 2. annon. function callback. ">>), 
-	?assertEqual(ok, R4_0),
-	R5_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"2) Test Payload QoS = 2. annon. function callback. ">>), 
-	?assertEqual(ok, R5_0),
-
-	R2 = mqtt_client:subscribe(Subscriber, [{"AKTest", 2, {mqtt_client_tests, callback}}]), 
-	?assertEqual({suback,[2],[]}, R2),
-	R3 = mqtt_client:publish(Publisher, #publish{topic = "AKTest"}, <<"Test Payload QoS = 0.">>), 
-	?assertEqual(ok, R3),
+	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest"}, <<"Test Payload QoS = 0.">>), 
 
 	W = wait_all(4),
 	

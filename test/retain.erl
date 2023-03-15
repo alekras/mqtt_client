@@ -19,7 +19,7 @@
 %% @copyright 2015-2022 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
-%% @doc This module implements a tesing of MQTT retain meaasages.
+%% @doc This module implements a tesing of MQTT retain messages.
 
 -module(retain).
 
@@ -43,7 +43,7 @@
 %% .
 retain_0({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {"retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
-  
+
 	F = fun(_SubN) ->
 			fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
 %					 ?debug_Fmt("::test:: Subs:~p fun callback: ~100p",[_SubN, _Arg]),

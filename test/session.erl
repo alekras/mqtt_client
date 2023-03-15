@@ -61,6 +61,7 @@ session_1({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 %	?debug_Fmt("::test:: publish (QoS = 1) returns: ~120p",[R3_0]),
 	?assertEqual({mqtt_client_error,publish,none,"mqtt_client:publish/2","puback timeout"}, R3_0),
 	mqtt_client:disconnect(Publisher),
+	gen_server:call(Publisher, {set_test_flag, undefined}),
 	ok = mqtt_client:connect(
 		Publisher,
 		#connect{
@@ -106,6 +107,7 @@ session_1({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 %	?debug_Fmt("::test:: publish (QoS = 1) returns: ~120p",[R3_0]),
 	?assertEqual({mqtt_client_error,publish,none,"mqtt_client:publish/2","puback timeout"}, R3_0),
 	mqtt_client:disconnect(Publisher),
+	gen_server:call(Publisher, {set_test_flag, undefined}),
 	ok = mqtt_client:connect(
 		Publisher, 
 		#connect{
@@ -136,7 +138,7 @@ session_1({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	register(test_result, self()),
 
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= _Msg}} = _Arg) -> 
-%					 ?debug_Fmt("::test:: fun callback: ~100p",[_Arg]),
+					 ?debug_Fmt("~n::test:: fun callback: ~100p~n",[_Arg]),
 					 ?assertEqual(1, Q),
 					 ?assertEqual("AKtest", Topic),
 					 test_result ! done 
@@ -154,6 +156,7 @@ session_1({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	?assertEqual(ok, R3_0),
 	timer:sleep(1000), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
+	gen_server:call(Subscriber, {set_test_flag, undefined}),
 	ok = mqtt_client:connect(
 		Subscriber, 
 		#connect{
@@ -204,6 +207,7 @@ session_1({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	?assertEqual(ok, R3_0),
 	timer:sleep(500), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
+	gen_server:call(Subscriber, {set_test_flag, undefined}),
 	timer:sleep(100), %% allow subscriber to disconnect 
 	ok = mqtt_client:connect(
 		Subscriber, 
@@ -249,6 +253,7 @@ session_2({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"Test Payload QoS = 2. annon. function callback. ">>), 
 	?assertEqual({mqtt_client_error,publish,none,"mqtt_client:publish/2","pubcomp timeout"}, R3_0),
 	mqtt_client:disconnect(Publisher),
+	gen_server:call(Publisher, {set_test_flag, undefined}),
 	ok = mqtt_client:connect(
 		Publisher,
 		#connect{
@@ -290,6 +295,7 @@ session_2({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"Test Payload QoS = 2. annon. function callback.">>), 
 	?assertEqual({mqtt_client_error,publish,none,"mqtt_client:publish/2","pubcomp timeout"}, R3_0),
 	mqtt_client:disconnect(Publisher),
+	gen_server:call(Publisher, {set_test_flag, undefined}),
 	ok = mqtt_client:connect(
 		Publisher,
 		#connect{
@@ -332,6 +338,7 @@ session_2({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"2) Test Payload QoS = 2. annon. function callback. ">>), 
 	?assertEqual({mqtt_client_error,publish,none,"mqtt_client:publish/2","pubcomp timeout"}, R3_0),
 	mqtt_client:disconnect(Publisher),
+	gen_server:call(Publisher, {set_test_flag, undefined}),
 	ok = mqtt_client:connect(
 		publisher,
 		#connect{
@@ -374,6 +381,7 @@ session_2({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"2) Test Payload QoS = 2. annon. function callback. ">>), 
 	?assertEqual({mqtt_client_error,publish,none,"mqtt_client:publish/2","pubcomp timeout"}, R3_0),
 	mqtt_client:disconnect(Publisher),
+	gen_server:call(Publisher, {set_test_flag, undefined}),
 	ok = mqtt_client:connect(
 		publisher,
 		#connect{
@@ -419,6 +427,7 @@ session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
 	timer:sleep(50),
+	gen_server:call(Subscriber, {set_test_flag, undefined}),
 	ok = mqtt_client:connect(
 		Subscriber, 
 		#connect{
@@ -467,6 +476,7 @@ session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	?assertEqual(ok, R3_0),
 	timer:sleep(500), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
+	gen_server:call(Subscriber, {set_test_flag, undefined}),
 	ok = mqtt_client:connect(
 		subscriber, 
 		#connect{
@@ -515,6 +525,7 @@ session_2({7, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
 	timer:sleep(500),
+	gen_server:call(Subscriber, {set_test_flag, undefined}),
 	ok = mqtt_client:connect(
 		Subscriber, 
 		#connect{
@@ -564,6 +575,7 @@ session_2({8, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500), %% allow subscriber to receive second message 
 	mqtt_client:disconnect(Subscriber),
 	timer:sleep(500), %%  
+	gen_server:call(Subscriber, {set_test_flag, undefined}),
 	ok = mqtt_client:connect(
 		Subscriber, 
 		#connect{

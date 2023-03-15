@@ -54,5 +54,5 @@
 %		io:fwrite(<<"~s\n">>, [S])
 	 end)).
 -define(debug_Fmt(S, As), (?debug_Msg(io_lib:format((S), (As))))).
--define(PASSED, (?debug_Msg("    +++ Passed "))).
+-define(PASSED, (?debug_Msg("\e[1;32;40m    +++ Passed  \e[0m"))).
 -define(passed, (?debug_Msg("    +++ Passed with "))).

@@ -38,7 +38,8 @@
 	connect_3/2,
 	connect_4/2,
 	connect_5/2,
-	connect_6/2
+	connect_6/2,
+	keep_alive/2
 ]).
 
 %-import(testing, [wait_all/1]).
@@ -144,5 +145,20 @@ connect_6({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_6 = " ++ atom_t
 	?debug_Fmt("::test:: 7. wrong utf-8 : ~p", [ConnResp]),
 	?assertMatch(#mqtt_client_error{}, ConnResp),
 
+	?PASSED
+end}.
+
+keep_alive(_, Conn) -> {"\n\e[1;34mkeep alive test\e[0m", timeout, 15, fun() ->	
+	register(test_result, self()),
+	R1 = mqtt_client:pingreq(Conn, {testing, ping_callback}), 
+	?assertEqual(ok, R1),
+	timer:sleep(4900),
+	R2 = mqtt_client:status(Conn), 
+	?assertEqual([{connected,1},{session_present,0},{subscriptions,[]}], R2),
+	timer:sleep(3000),
+	R3 = mqtt_client:status(Conn), 
+	?assertEqual([{connected,0},{session_present,0},{subscriptions,[]}], R3),
+
+	unregister(test_result),
 	?PASSED
 end}.

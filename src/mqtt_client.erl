@@ -126,8 +126,7 @@ connect(Client_name, Conn_config, Default_Callback, Socket_options) ->
 
 -spec status(Pid) -> Result when
  Pid :: pid(),
- Result :: disconnected | [{session_present, SP:: 0 | 1} | 
-                         {subscriptions, #{Topic::string() => {QoS::integer(), Callback::{fun()} | {module(), fun()}}}}].
+ Result :: disconnected | [{connected, boolean()} | {session_present, SP:: 0 | 1} | {subscriptions, #{Topic::string() => {QoS::integer(), Callback::{fun()} | {module(), fun()}}}}].
 %% @doc The function returns status of connection with pid = Pid.
 %% 
 status(Pid) when is_pid(Pid) ->
@@ -268,12 +267,15 @@ disconnect(Pid) ->
 disconnect(Pid, ReasonCode, Properties) when is_pid(Pid) ->
 	case is_process_alive(Pid) of
 		true ->
-			{ok, Ref} = gen_server:call(Pid, {disconnect, ReasonCode, Properties}),
-			receive
-				{disconnected, Ref} -> 
-					ok
-			after ?MQTT_GEN_SERVER_TIMEOUT ->
-				#mqtt_client_error{type = disconnect, source = "mqtt_client:disconnect/2", message = "disconnect timeout"}
+			case gen_server:call(Pid, {disconnect, ReasonCode, Properties}) of
+				{ok, Ref} -> 
+					receive
+						{disconnected, Ref} -> 
+							ok
+					after ?MQTT_GEN_SERVER_TIMEOUT ->
+						#mqtt_client_error{type = disconnect, source = "mqtt_client:disconnect/2", message = "disconnect timeout"}
+					end;
+				_ -> ok
 			end;
 		false -> ok
 	end;
@@ -291,6 +293,7 @@ disconnect(_,_,_) -> ok.
 %% @doc The function deletes the client process with pid or registered name Client_name from supervisor tree.
 %% 
 dispose(Client_name) ->
+	disconnect(Client_name),
 	mqtt_client_sup:dispose_client(Client_name).
 %% ====================================================================
 %% Behavioural functions
