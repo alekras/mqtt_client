@@ -98,21 +98,15 @@ publish_1({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish wi
 	R2_0 = mqtt_client:subscribe(Subscriber, [{"AKtest", QoS, F}]), 
 	?assertEqual({suback,[QoS],[]}, R2_0),
 
-	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 0}, <<"0) Test Payload QoS = 0. annon. function callback.">>), 
-	?assertEqual(ok, R3_0),
-	R4_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"1) Test Payload QoS = 0. annon. function callback.">>), 
-	?assertEqual(ok, R4_0),
-	R5_0 = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"2) Test Payload QoS = 0. annon. function callback.">>), 
-	?assertEqual(ok, R5_0),
+	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 0}, <<"0) Test Payload QoS = 0. annon. function callback.">>), 
+	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"1) Test Payload QoS = 0. annon. function callback.">>), 
+	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"2) Test Payload QoS = 0. annon. function callback.">>), 
 
 	R2 = mqtt_client:subscribe(Subscriber, [{"AKTest", QoS, {?MODULE, callback}}]), 
 	?assertEqual({suback,[QoS],[]}, R2),
-	R3_0 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos=1}, <<"Test Payload QoS = 1.">>), 
-	?assertEqual(ok, R3_0),
-	R3_1 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos=2}, <<"Test Payload QoS = 2.">>), 
-	?assertEqual(ok, R3_1),
-	R3_2 = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos=2}, <<"Test Payload QoS = 2.">>), 
-	?assertEqual(ok, R3_2),
+	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos=1}, <<"Test Payload QoS = 1.">>), 
+	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos=2}, <<"Test Payload QoS = 2.">>), 
+	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos=2}, <<"Test Payload QoS = 2.">>), 
 
 	W = wait_all(6),
 	
@@ -141,22 +135,23 @@ publish_2({QoS, publish_rec_max} = _X, [Publisher, Subscriber] = _Conns) -> {"pu
 
 	gen_server:call(Publisher, {set_test_flag, skip_send_pubrel}),
 
-	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
-	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
-	gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	Message = #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2},
+	gen_server:call(Publisher, {publish, Message}, ?MQTT_GEN_SERVER_TIMEOUT),
+	gen_server:call(Publisher, {publish, Message}, ?MQTT_GEN_SERVER_TIMEOUT),
+	gen_server:call(Publisher, {publish, Message}, ?MQTT_GEN_SERVER_TIMEOUT),
 
-	R2_4 = gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	R2_4 = gen_server:call(Publisher, {publish, Message}, ?MQTT_GEN_SERVER_TIMEOUT),
 	?debug_Fmt("::test:: R2_4: ~100p~n",[R2_4]),
 	R2_3 = mqtt_client:status(Publisher),
 	?debug_Fmt("::test:: ~100p~n",[R2_3]),
-	?assertMatch([{session_present, 0}, _], R2_3),
+	?assertMatch([{connected,1},{session_present, 0}, _], R2_3),
 
-	R2_5 = gen_server:call(Publisher, {publish, #publish{topic = "AKtest", payload = <<"2) Test Payload QoS = 2. annon. function callback. ">>, qos = 2}}, ?MQTT_GEN_SERVER_TIMEOUT),
+	R2_5 = gen_server:call(Publisher, {publish, Message}, ?MQTT_GEN_SERVER_TIMEOUT),
 	?debug_Fmt("::test:: R2_5: ~100p~n",[R2_5]),
 	timer:sleep(1000),
 	R4_0 = mqtt_client:status(Publisher),
 	?debug_Fmt("::test:: ~100p~n",[R4_0]),
-	?assertMatch(disconnected, R4_0),
+	?assertMatch([{connected,0},_,_], R4_0),
 
 %	?assertMatch({error, #mqtt_client_error{type=protocol, errno=147, message="Receive Maximum exceeded"}, _}, R2_5),
 %	?assertEqual(disconnected, mqtt_client:status(Publisher)),

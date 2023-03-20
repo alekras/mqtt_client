@@ -55,8 +55,7 @@
 ]).
 
 do_start() ->
-	R = application:start(mqtt_client),
-	?assertEqual(ok, R).
+	?assertEqual(ok, application:start(mqtt_client)).
 
 do_stop(_R) ->
 	R = application:stop(mqtt_client),
@@ -84,7 +83,7 @@ do_setup({Client_Id, connect} = _X) ->
 	[create(Client_Id)];
 do_setup({_, publish} = _X) ->
 	[connect(publisher), connect(subscriber)];
-do_setup({_, session} = _X) ->
+do_setup({_, session}) ->
 	P1 = create(publisher),
 	ok = mqtt_client:connect(
 		P1, 
@@ -100,7 +99,7 @@ do_setup({_, session} = _X) ->
 	),
 	?assert(is_pid(S1)),
 	[P1, S1];
-do_setup({QoS, will} = _X) ->
+do_setup({QoS, will}) ->
 	P = create(publisher),
 	ok = mqtt_client:connect(
 		P, 
@@ -179,11 +178,11 @@ do_cleanup({QoS, retain}, [P1, S1, S2]) ->
 				?CONN_REC(publisher)#connect{clean_session = 0},
 				[]
 			),
-			mqtt_client:publish(P2, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), 
-			mqtt_client:dispose(P2);
+			ok = mqtt_client:publish(P2, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), 
+			ok = mqtt_client:dispose(P2);
 		[{connected, true}, _, _] ->
-			mqtt_client:publish(P1, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), 
-			mqtt_client:dispose(P1);
+			ok = mqtt_client:publish(P1, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), 
+			ok = mqtt_client:dispose(P1);
 		_ ->
 			ok = mqtt_client:connect(
 				P1, 

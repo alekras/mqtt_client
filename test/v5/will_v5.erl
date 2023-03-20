@@ -120,7 +120,7 @@ will_delay({QoS, will_delay} = _X, [Publisher, Subscriber] = _Conns) -> {"will Q
 	?PASSED
 end}.
 
-will_retain({QoS, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will with retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
+will_retain({QoS, will_retain}, [Publisher, Subscriber1, Subscriber2]) -> {"will with retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
 
 	F = fun({Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = _Arg) -> 
@@ -137,7 +137,7 @@ will_retain({QoS, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will
 					 ?assertEqual(<<"Test will retain message">>, Msg),
 					 test_result ! done 
 			end,
-	R1_0 = mqtt_client:subscribe(Subscriber, [{"AK_will_retain_test", QoS, F}]), 
+	R1_0 = mqtt_client:subscribe(Subscriber1, [{"AK_will_retain_test", QoS, F}]), 
 	?assertEqual({suback,[QoS],[]}, R1_0),
 %% generate connection lost:
 	gen_server:call(Publisher, {set_test_flag, break_connection}),
@@ -147,26 +147,19 @@ will_retain({QoS, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will
 		_:_ -> ok
 	end,
 
-	Subscriber_2 = mqtt_client:connect(
-		subscriber_2, 
-		#connect{
-			client_id = "subscriber02",
-			user_name = "guest", password = <<"guest">>,
-			clean_session = 1,
-			keep_alive = 60000,
-			version = '5.0'
-		}, 
-		?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT,
-		[?TEST_CONN_TYPE]
+	ok = mqtt_client:connect(
+		Subscriber2, 
+		(testing_v5:get_connect_rec(subscriber2))#connect{clean_session = 1, keep_alive = 60000}, 
+		[]
 	),
-	?assert(is_pid(Subscriber_2)),
-	R2_0 = mqtt_client:subscribe(Subscriber_2, [{"AK_will_retain_test", QoS, F1}]), 
+	?assert(is_pid(Subscriber2)),
+	R2_0 = mqtt_client:subscribe(Subscriber2, [{"AK_will_retain_test", QoS, F1}]), 
 	?assertEqual({suback,[QoS],[]}, R2_0),
 
   W = wait_all(2),
 
 	unregister(test_result),
-	mqtt_client:disconnect(Subscriber_2),
+	mqtt_client:disconnect(Subscriber2),
 	?assert(W),
 	?PASSED
 end}.

@@ -24,7 +24,7 @@
 -define(TEST_PASSWORD, <<"guest">>).
 -define(TEST_PROTOCOL, '3.1.1').
 
--define(CONN_TYPE, clear). %% clear | ssl | ws | wss
+-define(CONN_TYPE, ssl). %% clear | ssl | ws | wss
 
 -if(?CONN_TYPE == clear).
 %%%%%%%%%%%%% Clear socket test %%%%%%%%%%%%%%%%% 
