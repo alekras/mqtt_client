@@ -44,7 +44,8 @@ mqtt_client_test_() ->
 					fun testing:do_setup/1, 
 					fun testing:do_cleanup/2, 
 					[
-						{{testClient0, connect}, fun connect:connect_0/2}
+						{{0, will}, fun will:will_a/2},
+						{{0, will}, fun will:will_0/2}
 					]
 				}
 			]}

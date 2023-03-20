@@ -28,16 +28,16 @@
 %% API functions
 %% ====================================================================
 -export([
-         start_link/3,
-         init/2,
-         websocket_handle/3,
-         websocket_info/3,
-         websocket_terminate/3,
-				 send/2,
-				 close/1,
-				 controlling_process/2,
-				 peername/1
-        ]).
+	start_link/3,
+	init/2,
+	websocket_handle/3,
+	websocket_info/3,
+	websocket_terminate/3,
+	send/2,
+	close/1,
+	controlling_process/2,
+	peername/1
+]).
 
 start_link(Host, Port, Options) ->
 	lager:debug([{endtype, client}], ">>> start_link: ~p:~p~n     Options:~p~n", [Host, Port, Options]),
@@ -55,7 +55,7 @@ start_link(Host, Port, Options) ->
 		{"user-agent", "MQTT Erlang client. See https://sourceforge.net/projects/mqtt-client."},
 		{"sec-websocket-protocol", "mqtt, mqttv3.1, mqttv3.1.1, mqttv5.0"}
 	],
-	Protocol = case proplists:get_value(conn_type, Options, clear) of
+	Protocol = case proplists:get_value(conn_type, Options, web_socket) of
 							 web_socket -> "ws://";
 							 web_sec_socket -> "wss://"
 						 end,
@@ -68,11 +68,11 @@ start_link(Host, Port, Options) ->
 	]),
 	lager:debug([{endtype, client}], "<<< start_link: url: ~p~n     Headers:~p~n", [URL, Headers]),
 	R = websocket_client:start_link(URL, ?MODULE, [], [{extra_headers, Headers}]),
-	lager:debug([{endtype, client}], ">>> start_link: ~p~n", [R]),
+	lager:debug([{endtype, client}], ">>> start_link, ws_client pid ~p~n", [R]),
 	R.
 
 init(_Arg, _ConnState) ->
-	lager:debug([{endtype, client}], "init with ARG: ~p~nConn State:~p~n", [_Arg, _ConnState]),
+	lager:debug([{endtype, client}], "ws_handler init with ARG: ~p~nConn State:~p~n", [_Arg, _ConnState]),
 	{ok, #{}}.
 
 websocket_handle({binary, Binary} = _Info, _ConnState, State) ->
@@ -92,17 +92,18 @@ websocket_handle(_Info, _ConnState, State) ->
 %%     {reply, {text, <<"hello, this is message #", BinInt/binary >>}, State + 1}.
 
 websocket_info({start, Conn_Process_Pid} = _Info, _ConnState, State) ->
+	lager:debug([{endtype, client}], "websocket_info get start msg, Conn_Process_Pid: ~p~nConn state: ~p~nState: ~p~n", [Conn_Process_Pid, _ConnState, State]),
 	State1 = maps:put(conn_pid, Conn_Process_Pid, State),
 	{ok, State1};
 websocket_info({out, Packet} = _Info, _ConnState, State) ->
 	{reply, {binary, Packet}, State};
 websocket_info({'EXIT', Pid, Reason}, ConnState, State) ->
 	lager:info([{endtype, client}], "get EXIT from pid: ~p reason: ~p conn state: ~p~n state: ~p~n", [Pid, Reason, ConnState, State]),
-	{close, {binary, <<>>}, State};
+	{close, <<>>, State};
 websocket_info(close_ws, ConnState, State) ->
 	lager:info([{endtype, client}], "get close socket from connection, conn state: ~p~n state: ~p~n", [ConnState, State]),
 	State1 = maps:put(conn_pid, undefined, State),
-	{close, {binary, <<>>}, State1};
+	{close, <<>>, State1};
 websocket_info(_Info, _ConnState, State) ->
 	lager:debug([{endtype, client}], "_Info: ~120p~n~p~n~p~n", [_Info, _ConnState, State]),
 	{ok, State}.
@@ -120,6 +121,7 @@ send(WS_Handler_Pid, Packet) ->
 	ok.
 	
 close(WS_Handler_Pid) ->
+	lager:debug([{endtype, client}], "close web-socket pid: ~p~n", [WS_Handler_Pid]),
 	WS_Handler_Pid ! close_ws,
 	ok.
 
@@ -127,7 +129,7 @@ controlling_process(WS_Handler_Pid, Conn_Process_Pid) ->
 	WS_Handler_Pid ! {start, Conn_Process_Pid},
 	ok.
 
-peername(_WS_Handler_Pid) -> ok.
+peername(_WS_Handler_Pid) -> ok. %% TODO: get Socket peername from Pid
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
