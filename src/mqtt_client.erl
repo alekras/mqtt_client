@@ -37,8 +37,10 @@
 %% ====================================================================
 -export([
 	create/1,
-	connect/3, connect/4,
+	connect/2, connect/3, connect/4,
+	reconnect/1, reconnect/2,
 	status/1,
+	is_connected/1,
 	publish/2, publish/3,
 	subscribe/2, subscribe/3,
 	unsubscribe/2, unsubscribe/3,
@@ -83,6 +85,13 @@ create(Client_name) ->
 connect(Client_name, Conn_config, Socket_options) ->
   connect(Client_name, Conn_config, undefined, Socket_options).
 
+-spec connect(Client_name, Conn_config) -> Result when
+  Client_name :: atom() | pid(),
+  Conn_config :: #connect{},
+  Result :: ok | #mqtt_client_error{}.
+connect(Client_name, Conn_config) ->
+  connect(Client_name, Conn_config, undefined, []).
+
 -spec connect(Client_name, Conn_config, Default_Callback, Socket_options) -> Result when
  Client_name :: atom() | pid(),
  Conn_config :: #connect{},
@@ -112,17 +121,55 @@ connect(Client_name, Conn_config, Default_Callback, Socket_options) ->
 				{connack, Ref, _SP, 0, _Msg, _Properties} -> 
 					ok;
 				{connack, Ref, _, ErrNo, Msg, _Properties} -> 
-					#mqtt_client_error{type = connection, errno = ErrNo, source = "mqtt_client:conect/4", message = Msg}
+					#mqtt_client_error{type = connection, errno = ErrNo, source = "mqtt_client:connect/4", message = Msg}
 			after ?MQTT_GEN_SERVER_TIMEOUT ->
-					#mqtt_client_error{type = connection, source = "mqtt_client:conect/4", message = "timeout"}
+					#mqtt_client_error{type = connection, source = "mqtt_client:connect/4", message = "timeout"}
 			end;
 		#mqtt_client_error{} = Error -> 
 			lager:error([{endtype, client}], "client catched connection error: ~p, ~n", [Error]),
 			Error;
 		Exit ->
 			lager:error([{endtype, client}], "client catched exit while connecting: ~p, ~n", [Exit]),
-			#mqtt_client_error{type = connection, source = "mqtt_client:conect/4", message = Exit}
+			#mqtt_client_error{type = connection, source = "mqtt_client:connect/4", message = Exit}
 	end.
+
+-spec reconnect(Client_name, Socket_options) -> Result when
+ Client_name :: atom() | pid(),
+ Socket_options :: list(),
+ Result :: ok | #mqtt_client_error{}.
+%% 
+%% @doc The function creates socket connection to MQTT server and sends connect package to the server.<br/>
+%% Parameters:
+%% <ul style="list-style-type: none;">
+%% <li>Client_name - Registered name or Pid of client process.</li>
+%% <li>Socket_options - Additional socket options.</li>
+%% </ul>
+%% Returns ok or error record. 
+%%
+reconnect(Client_name, Socket_options) ->
+	case gen_server:call(Client_name, {reconnect, Socket_options}, ?MQTT_GEN_SERVER_TIMEOUT) of
+		{ok, Ref} ->
+			receive
+				{connack, Ref, _SP, 0, _Msg, _Properties} -> 
+					ok;
+				{connack, Ref, _, ErrNo, Msg, _Properties} -> 
+					#mqtt_client_error{type = connection, errno = ErrNo, source = "mqtt_client:reconnect/1", message = Msg}
+			after ?MQTT_GEN_SERVER_TIMEOUT ->
+					#mqtt_client_error{type = connection, source = "mqtt_client:reconnect/1", message = "timeout"}
+			end;
+		#mqtt_client_error{} = Error -> 
+			lager:error([{endtype, client}], "client catched reconnection error: ~p, ~n", [Error]),
+			Error;
+		Exit ->
+			lager:error([{endtype, client}], "client catched exit while reconnecting: ~p, ~n", [Exit]),
+			#mqtt_client_error{type = connection, source = "mqtt_client:reconnect/1", message = Exit}
+	end.
+
+-spec reconnect(Client_name) -> Result when
+ Client_name :: atom() | pid(),
+ Result :: ok | #mqtt_client_error{}.
+reconnect(Client_name) ->
+	reconnect(Client_name, []).
 
 -spec status(Pid) -> Result when
  Pid :: pid(),
@@ -145,6 +192,12 @@ status(Name) when is_atom(Name) ->
 		Pid -> status(Pid)
 	end;
 status(_) -> disconnected.
+
+is_connected(Client_name) ->
+	case status(Client_name) of
+		disconnected -> false;
+		[{connected, CS}, _, _] -> (CS == 1)
+	end.
 
 -spec publish(Pid, Params, Payload) -> Result when
  Pid :: pid(),

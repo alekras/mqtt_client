@@ -68,7 +68,11 @@ init(_) ->
     }
   }.
 
-new_client(Client_id) ->
+new_client(Client_id) when is_binary(Client_id) ->
+	new_client(binary_to_list(Client_id));
+new_client(Client_id) when is_list(Client_id) ->
+	new_client(list_to_atom(Client_id));
+new_client(Client_id) when is_atom(Client_id)->
 	Child_spec = {
 		Client_id,
 		{?MODULE, create_client_process, [Client_id]},
@@ -83,8 +87,8 @@ new_client(Client_id) ->
 			catch
 				exit:{noproc, R1} -> 
 					{error, #mqtt_client_error{
-						type=create, 
-						source = "mqtt_client_sup:new_client/1:(line 81)", 
+						type = create, 
+						source = "mqtt_client_sup:new_client/1:(line 75)", 
 						message= lists:concat("unexpected supervisor:start_child error", R1)
 					}}
 			end,
@@ -95,7 +99,7 @@ new_client(Client_id) ->
 		{error, #mqtt_client_error{} = Reason} -> Reason;
 		{error, Reason} -> #mqtt_client_error{
 			type = create,
-			source = "mqtt_client_sup:new_client/1:(line 81)",
+			source = "mqtt_client_sup:new_client/1:(line 75)",
 			message = Reason}
 	end.
 
@@ -112,13 +116,13 @@ create_client_process(Client_id) ->
 		{error, {already_started, OtherPid}} -> 
 			{error , #mqtt_client_error{
 				type = create, 
-				source="mqtt_client_sup:create_client_process/1:(line 102)", 
+				source="mqtt_client_sup:create_client_process/1:(line 106)", 
 				message = "Already started with PID: " ++ erlang:pid_to_list(OtherPid)
 			}};
 		{error, Reason} ->
 			{error , #mqtt_client_error{
 				type = create, 
-				source="mqtt_client_sup:create_client_process/1:(line 102)", 
+				source="mqtt_client_sup:create_client_process/1:(line 106)", 
 				message = Reason
 			}};
 		ignore -> ignore

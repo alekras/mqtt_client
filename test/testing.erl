@@ -180,7 +180,7 @@ do_cleanup({QoS, retain}, [P1, S1, S2]) ->
 			),
 			ok = mqtt_client:publish(P2, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), 
 			ok = mqtt_client:dispose(P2);
-		[{connected, true}, _, _] ->
+		[{connected, 1}, _, _] ->
 			ok = mqtt_client:publish(P1, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), 
 			ok = mqtt_client:dispose(P1);
 		_ ->

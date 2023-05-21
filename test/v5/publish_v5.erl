@@ -149,13 +149,12 @@ publish_2({QoS, publish_rec_max} = _X, [Publisher, Subscriber] = _Conns) -> {"pu
 	R2_5 = gen_server:call(Publisher, {publish, Message}, ?MQTT_GEN_SERVER_TIMEOUT),
 	?debug_Fmt("::test:: R2_5: ~100p~n",[R2_5]),
 	timer:sleep(1000),
-	R4_0 = mqtt_client:status(Publisher),
-	?debug_Fmt("::test:: ~100p~n",[R4_0]),
-	?assertMatch([{connected,0},_,_], R4_0),
+	R4_0 = mqtt_client:is_connected(Publisher),
+	?debug_Fmt("::test:: is connected=~100p~n",[R4_0]),
+	?assertEqual(false, R4_0),
 
 %	?assertMatch({error, #mqtt_client_error{type=protocol, errno=147, message="Receive Maximum exceeded"}, _}, R2_5),
 %	?assertEqual(disconnected, mqtt_client:status(Publisher)),
-	
 
 	timer:sleep(2000),
 	W = wait_all(0),

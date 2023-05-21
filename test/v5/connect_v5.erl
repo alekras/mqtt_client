@@ -40,6 +40,7 @@
 	connect_4/2,
 	connect_5/2,
 	connect_6/2,
+	reconnect/2,
 	keep_alive/2
 ]).
 -import(testing_v5, [get_connect_rec/1]).
@@ -49,8 +50,13 @@
 %%
 
 connect_0({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_0 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
-	ConnRec = (get_connect_rec(publisher))#connect{
-			properties=[{?Topic_Alias_Maximum,3},{?Request_Problem_Information, 1},{?Request_Response_Information, 1},{?User_Property, {"Key", "Value"}}],
+	ConnRec = (get_connect_rec(Id))#connect{
+			properties=[
+				{?Topic_Alias_Maximum,3},
+				{?Request_Problem_Information, 1},
+				{?Request_Response_Information, 1},
+				{?User_Property, {"Key", "Value"}}
+			],
 			will_publish = #publish{
 					qos= 1,
 					retain= 0,
@@ -62,20 +68,19 @@ connect_0({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_0 = " ++ atom_t
 					]
 			}
 	},
-	Conn = mqtt_client:connect(
+	ok = mqtt_client:connect(
 		Publisher, 
 		ConnRec, 
 		[]
 	),
-	?debug_Fmt("::test:: 1. successfully connected : ~p", [Conn]),
+	?debug_Fmt("::test:: 1. successfully connected : ~p", [ok]),
 	?assert(erlang:is_pid(Publisher)),
-	?assert(Conn =:= ok),
 
 	?PASSED
 end}.
 
 connect_1({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_1 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
-	ConnRec = get_connect_rec(publisher),	
+	ConnRec = get_connect_rec(Id),	
 	ConnResp = mqtt_client:connect(
 		Publisher, 
 		ConnRec#connect{port = 3883}, 
@@ -89,7 +94,7 @@ connect_1({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_1 = " ++ atom_t
 end}.
 
 connect_2({Id, connect}, [Publisher]) -> {"connect_2 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
-	ConnRec = get_connect_rec(publisher),	
+	ConnRec = get_connect_rec(Id),	
 	ConnResp = mqtt_client:connect(
 		Publisher, 
 		ConnRec#connect{
@@ -105,7 +110,7 @@ connect_2({Id, connect}, [Publisher]) -> {"connect_2 = " ++ atom_to_list(Id) ++ 
 end}.
 
 connect_3({Id, connect}, [Publisher]) -> {"connect_3 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
-	ConnRec = get_connect_rec(publisher),	
+	ConnRec = get_connect_rec(Id),	
 	ConnResp = mqtt_client:connect(
 		Publisher, 
 		ConnRec#connect{
@@ -121,7 +126,7 @@ connect_3({Id, connect}, [Publisher]) -> {"connect_3 = " ++ atom_to_list(Id) ++ 
 end}.
 
 connect_4({Id, connect}, [Publisher]) -> {"connect_4 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
-	ConnRec = get_connect_rec(publisher),	
+	ConnRec = get_connect_rec(testClient0),	
 	ConnResp = mqtt_client:connect(
 		Publisher, 
 		ConnRec, 
@@ -132,13 +137,13 @@ connect_4({Id, connect}, [Publisher]) -> {"connect_4 = " ++ atom_to_list(Id) ++ 
 	?assert(erlang:is_pid(Publisher)),
 	Conn = whereis(testClient0),
 	?debug_Fmt("::test:: 5. duplicate client id: ~p", [Conn]),
-	?assertMatch([{connected, 0},_,_], mqtt_client:status(Conn)),
+	?assertMatch(false, mqtt_client:is_connected(Conn)),
 
 	?PASSED
 end}.
 
 connect_5({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_5 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
-	ConnRec = get_connect_rec(publisher),
+	ConnRec = get_connect_rec(Id),
 	ConnResp = mqtt_client:connect(
 		Publisher, 
 		ConnRec#connect{user_name = binary_to_list(<<"gu", 16#d802:16, "est">>)},
@@ -152,7 +157,7 @@ connect_5({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_5 = " ++ atom_t
 end}.
 
 connect_6({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_6 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
-	ConnRec = testing:get_connect_rec(publisher),	
+	ConnRec = testing:get_connect_rec(Id),	
 	ConnResp = mqtt_client:connect(
 		Publisher, 
 		ConnRec#connect{password = <<"gu", 0, "est">>},
@@ -161,6 +166,25 @@ connect_6({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_6 = " ++ atom_t
 	
 	?debug_Fmt("::test:: 7. wrong utf-8 : ~p", [ConnResp]),
 	?assertMatch(#mqtt_client_error{}, ConnResp),
+
+	?PASSED
+end}.
+
+reconnect({Id, connect}, [Publisher]) -> {"reconnect = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
+	ConnRec = testing:get_connect_rec(Id),	
+	ok = mqtt_client:connect(
+		Publisher, 
+		ConnRec, 
+		[]
+	),	
+	
+	?debug_Fmt("::test:: 1. successfully connected : ~p", [mqtt_client:is_connected(Publisher)]),
+	ok = mqtt_client:disconnect(Publisher),
+	false = mqtt_client:is_connected(Publisher),
+	
+	ok = mqtt_client:reconnect(Publisher),
+	true = mqtt_client:is_connected(Publisher),
+	?debug_Fmt("::test:: 2. successfully reconnected.", []),
 
 	?PASSED
 end}.

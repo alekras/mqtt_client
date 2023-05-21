@@ -137,7 +137,7 @@ publish_2({QoS, publish} = _X, [_Publisher, Subscriber] = _Conns) -> {"publish t
 	gen_server:call(Subscriber, {set_test_flag, skip_alias_max_check}),
 	R2_5 = mqtt_client:publish(Subscriber, #publish{topic = "/AKTest/11", qos = 2, properties = [{?Topic_Alias, 11}]}, <<"2) Subscriber self publish Payload QoS = 2. annon. function callback. ">>), 
 	?assertMatch(#mqtt_client_error{message="pubcomp timeout"}, R2_5),
-	?assertMatch([{connected,0},_,_], mqtt_client:status(Subscriber)),
+	?assertEqual(false, mqtt_client:is_connected(Subscriber)),
 
 	W = wait_all(2),
 	unregister(test_result),

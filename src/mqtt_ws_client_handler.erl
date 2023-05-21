@@ -15,7 +15,7 @@
 %%
 
 %% @since 2015-12-25
-%% @copyright 2015-2022 Alexei Krasnopolski
+%% @copyright 2015-2023 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
 %% @doc Handler for websocket connection.
@@ -23,6 +23,7 @@
 -module(mqtt_ws_client_handler).
 
 -behaviour(websocket_client_handler).
+-record(sslsocket, {fd = nil, pid = nil}).
 
 %% ====================================================================
 %% API functions
@@ -40,7 +41,7 @@
 ]).
 
 start_link(Host, Port, Options) ->
-	lager:debug([{endtype, client}], ">>> start_link: ~p:~p~n     Options:~p~n", [Host, Port, Options]),
+	lager:debug([{endtype, client}], ">>> start_link, host:port= ~p:~p Options=~p~n", [Host, Port, Options]),
 	ok = application:ensure_started(crypto),
 	ok = application:ensure_started(ssl),
 	{ok, HostName} = inet:gethostname(),
@@ -55,24 +56,16 @@ start_link(Host, Port, Options) ->
 		{"user-agent", "MQTT Erlang client. See https://sourceforge.net/projects/mqtt-client."},
 		{"sec-websocket-protocol", "mqtt, mqttv3.1, mqttv3.1.1, mqttv5.0"}
 	],
-	Protocol = case proplists:get_value(conn_type, Options, web_socket) of
+	Protocol = case proplists:get_value(conn_type, Options, undefined) of
 							 web_socket -> "ws://";
 							 web_sec_socket -> "wss://"
 						 end,
-	URL = lists:concat([
-		Protocol,
-		Host,
-		":",
-		Port,
-		"/mqtt"
-	]),
-	lager:debug([{endtype, client}], "<<< start_link: url: ~p~n     Headers:~p~n", [URL, Headers]),
+	URL = lists:concat([Protocol, Host, ":", Port, "/mqtt"]),
 	R = websocket_client:start_link(URL, ?MODULE, [], [{extra_headers, Headers}]),
-	lager:debug([{endtype, client}], ">>> start_link, ws_client pid ~p~n", [R]),
+	lager:debug([{endtype, client}], "<<< start_link, websocket_client PID: ~p~n", [R]),
 	R.
 
 init(_Arg, _ConnState) ->
-	lager:debug([{endtype, client}], "ws_handler init with ARG: ~p~nConn State:~p~n", [_Arg, _ConnState]),
 	{ok, #{}}.
 
 websocket_handle({binary, Binary} = _Info, _ConnState, State) ->
@@ -82,17 +75,8 @@ websocket_handle({binary, Binary} = _Info, _ConnState, State) ->
 websocket_handle(_Info, _ConnState, State) ->
 	lager:debug([{endtype, client}], "unknown message: ~p~nConn state: ~p~nState: ~p~n", [_Info, _ConnState, State]),
 	{ok, State}.
-%% websocket_handle({text, Msg}, _ConnState, 5) ->
-%%     io:format("Received msg ~p~n", [Msg]),
-%%     {close, <<>>, "done"};
-%% websocket_handle({text, Msg}, _ConnState, State) ->
-%%     io:format("Received msg ~p~n", [Msg]),
-%%     timer:sleep(1000),
-%%     BinInt = list_to_binary(integer_to_list(State)),
-%%     {reply, {text, <<"hello, this is message #", BinInt/binary >>}, State + 1}.
 
 websocket_info({start, Conn_Process_Pid} = _Info, _ConnState, State) ->
-	lager:debug([{endtype, client}], "websocket_info get start msg, Conn_Process_Pid: ~p~nConn state: ~p~nState: ~p~n", [Conn_Process_Pid, _ConnState, State]),
 	State1 = maps:put(conn_pid, Conn_Process_Pid, State),
 	{ok, State1};
 websocket_info({out, Packet} = _Info, _ConnState, State) ->
@@ -101,11 +85,14 @@ websocket_info({'EXIT', Pid, Reason}, ConnState, State) ->
 	lager:info([{endtype, client}], "get EXIT from pid: ~p reason: ~p conn state: ~p~n state: ~p~n", [Pid, Reason, ConnState, State]),
 	{close, <<>>, State};
 websocket_info(close_ws, ConnState, State) ->
-	lager:info([{endtype, client}], "get close socket from connection, conn state: ~p~n state: ~p~n", [ConnState, State]),
+	lager:info([{endtype, client}], "get close socket from mqtt connection process, conn state: ~p~n state: ~p~n", [ConnState, State]),
 	State1 = maps:put(conn_pid, undefined, State),
 	{close, <<>>, State1};
-websocket_info(_Info, _ConnState, State) ->
-	lager:debug([{endtype, client}], "_Info: ~120p~n~p~n~p~n", [_Info, _ConnState, State]),
+websocket_info({socket, Pid}, ConnState, State) ->
+	Pid ! websocket_req:get(socket, ConnState),
+	{ok, State};
+websocket_info(Info, ConnState, State) ->
+	lager:debug([{endtype, client}], "_Info: ~120p~n~p~n~p~n", [Info, ConnState, State]),
 	{ok, State}.
 
 websocket_terminate(Reason, _ConnState, State) ->
@@ -129,7 +116,13 @@ controlling_process(WS_Handler_Pid, Conn_Process_Pid) ->
 	WS_Handler_Pid ! {start, Conn_Process_Pid},
 	ok.
 
-peername(_WS_Handler_Pid) -> ok. %% TODO: get Socket peername from Pid
+peername(WS_Handler_Pid) -> 
+	WS_Handler_Pid ! {socket, self()},
+	receive
+		Socket when is_port(Socket)-> inet:peername(Socket);
+		Socket when is_record(Socket, sslsocket)-> ssl:peername(Socket)
+	after 500 -> ok
+	end.
 %% ====================================================================
 %% Internal functions
 %% ====================================================================

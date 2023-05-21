@@ -51,6 +51,7 @@ mqtt_client_test_() ->
 						{{testClient4, connect}, fun connect:connect_4/2},
 						{{testClient5, connect}, fun connect:connect_5/2},
 						{{testClient6, connect}, fun connect:connect_6/2},
+						{{testClient7, connect}, fun connect:reconnect/2},
 						{{1, keep_alive},        fun connect:keep_alive/2},
 
 						{{1, combined},    fun subscribe:combined/2},
