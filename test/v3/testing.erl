@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2022 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2023 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 %%
 
 %% @since 2015-12-25
-%% @copyright 2015-2022 Alexei Krasnopolski
+%% @copyright 2015-2023 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
 %% @doc @todo Add description to testing.
@@ -26,17 +26,6 @@
 -include_lib("mqtt_common/include/mqtt.hrl").
 -include("test.hrl").
 
--define(CONN_REC(X), (#connect{
-		client_id = X,
-		host = ?TEST_SERVER_HOST_NAME,
-		port = ?TEST_SERVER_PORT,
-		user_name = ?TEST_USER,
-		password = ?TEST_PASSWORD,
-		conn_type = ?TEST_CONN_TYPE,
-		keep_alive = 60000,
-		version = ?TEST_PROTOCOL})
-).
-
 %%
 %% API functions
 %%
@@ -46,20 +35,18 @@
 	do_start/0, 
 	do_stop/1,
 	get_connect_rec/1, 
-	wait_all/1,
-	callback/1, 
-	ping_callback/1, 
-	spring_callback/1, 
-	summer_callback/1, 
-	winter_callback/1
+	wait_all/1
 ]).
 
 do_start() ->
+	?debug_Fmt("~n=============~n Start test on server: ~p:~p, connection type:~p~n=============~n",
+						 [?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, ?TEST_CONN_TYPE]),
+	callback:start(),
 	?assertEqual(ok, application:start(mqtt_client)).
 
 do_stop(_R) ->
-	R = application:stop(mqtt_client),
-	?assertEqual(ok, R).
+	callback:stop(),
+	?assertEqual(ok, application:stop(mqtt_client)).
 
 create(Name) when is_atom(Name) -> mqtt_client:create(Name);
 create(Name) when is_list(Name) -> mqtt_client:create(list_to_atom(Name)).
@@ -72,7 +59,8 @@ connect(Name, CID) ->
 	?assert(is_pid(Pid)),
 	ok = mqtt_client:connect(
 		Pid, 
-		?CONN_REC(CID), 
+		?CONN_REC(CID),
+		{callback, call},
 		[]
 	),
 %	?debug_Fmt("~n::test:: connect: ~p",[Pid]),
@@ -88,6 +76,7 @@ do_setup({_, session}) ->
 	ok = mqtt_client:connect(
 		P1, 
 		?CONN_REC(publisher)#connect{clean_session = 0}, 
+		{callback, call},
 		[]
 	),
 	?assert(is_pid(P1)),
@@ -95,6 +84,7 @@ do_setup({_, session}) ->
 	ok = mqtt_client:connect(
 		S1, 
 		?CONN_REC(subscriber)#connect{clean_session = 1}, 
+		{callback, call},
 		[]
 	),
 	?assert(is_pid(S1)),
@@ -120,6 +110,7 @@ do_setup({QoS, will_retain} = _X) ->
 		[]
 	),
 	?assert(is_pid(P)),
+	ok = mqtt_client:publish(P, #publish{topic = "AK_will_retain_test", retain = 1, qos = QoS}, <<>>), %% in case if previous clean up failed
 	[P, connect(subscriber)];
 do_setup({_QoS, retain} = _X) ->
 	[connect(publisher), connect(subscriber01), connect(subscriber02)];
@@ -127,7 +118,8 @@ do_setup({_, keep_alive}) ->
 	P = create(publisher),
 	ok = mqtt_client:connect(
 		P, 
-		?CONN_REC(publisher)#connect{keep_alive = 5}, 
+		?CONN_REC(publisher)#connect{keep_alive = 5},
+		{callback, call}, 
 		[]
 	),
 	?assert(is_pid(P)),
@@ -136,8 +128,9 @@ do_setup(_X) ->
 	connect(publisher).
 
 do_cleanup({testClient0, connect}, [_P]) ->
-	ok;
+	callback:reset();
 do_cleanup({_, connect}, [P]) ->
+	callback:reset(),
 	ok = mqtt_client:dispose(P);
 do_cleanup({_, publish}, [P, S]) ->
 	ok = mqtt_client:dispose(P),
@@ -194,6 +187,7 @@ do_cleanup({QoS, retain}, [P1, S1, S2]) ->
 	end,
 	(get_storage()):cleanup(client);
 do_cleanup(_X, _Pids) ->
+	callback:reset(),
 	ok = mqtt_client:dispose(publisher),
 	(get_storage()):cleanup(client).
 
@@ -202,8 +196,8 @@ get_connect_rec(Cl_Id) ->
 
 get_storage() ->
 	case application:get_env(mqtt_client, storage, dets) of
-		mysql -> mqtt_mysql_dao;
-		dets -> mqtt_dets_dao
+		mysql -> mqtt_mysql_storage;
+		dets -> mqtt_dets_storage
 	end.
 	
 wait_all(N) ->
@@ -234,69 +228,5 @@ wait_all(0, M) -> {ok, M};
 wait_all(N, M) ->
 	receive
 		done -> wait_all(N - 1, M + 1)
-	after 500 -> {fail, M}
+	after 1500 -> {fail, M}
 	end.
-
-callback({0, #publish{topic= "AKTest", qos= QoS}} = Arg) ->
-	case QoS of
-		0 -> ?assertMatch({0, #publish{topic= "AKTest", qos= 0, payload= <<"Test Payload QoS = 0.">>}}, Arg)
-	end,
-%	?debug_Fmt("::test:: ~p:callback<0>: ~p",[?MODULE, Arg]),
-	test_result ! done;
-callback({1, #publish{topic= "AKTest", qos= QoS}} = Arg) ->
-	case QoS of
-		0 -> ?assertMatch({1, #publish{topic= "AKTest", qos= 0, payload= <<"Test Payload QoS = 0.">>}}, Arg);
-		1 -> ?assertMatch({1, #publish{topic= "AKTest", qos= 1, payload= <<"Test Payload QoS = 1.">>}}, Arg)
-	end,
-%	?debug_Fmt("::test:: ~p:callback<1>: ~p",[?MODULE, Arg]),
-	test_result ! done;
-callback({2, #publish{topic= "AKTest", qos= QoS}} = Arg) ->
-	case QoS of
-		0 -> ?assertMatch({2, #publish{topic= "AKTest", qos= 0, payload= <<"Test Payload QoS = 0.">>}}, Arg);
-		1 -> ?assertMatch({2, #publish{topic= "AKTest", qos= 1, payload= <<"Test Payload QoS = 2.">>}}, Arg)
-	end,
-%	?debug_Fmt("::test:: ~p:callback<2>: ~p",[?MODULE, Arg]),
-	test_result ! done;
-callback({_, #publish{qos= QoS}} = Arg) ->
-	case QoS of
-		0 -> ?assertMatch({2, #publish{topic= "AKtest", qos= 0, payload= <<"Test Payload QoS = 0.">>}}, Arg);
-		1 -> ?assertMatch({2, #publish{topic= "AKtest", qos= 1, payload= <<"Test Payload QoS = 1.">>}}, Arg);
-		2 -> ?assertMatch({2, #publish{topic= "AKtest", qos= 2, payload= <<"Test Payload QoS = 2.">>}}, Arg)
-	end,
-%	?debug_Fmt("::test:: ~p:callback<_>: ~p",[?MODULE, Arg]),
-	test_result ! done.
-
-ping_callback(Arg) ->
-%	?debug_Fmt("::test:: ping callback: ~p",[Arg]),
-	?assertEqual(pong, Arg),
-	test_result ! done.
-
-summer_callback({_, #publish{topic= "Summer/Jul", qos= QoS}} = Arg) ->
-	?assertMatch({2,#publish{topic= "Summer/Jul", qos= QoS, payload= <<"Sent to Summer/Jul.">>}}, Arg),
-	test_result ! done;
-summer_callback({_, #publish{qos= QoS}} = Arg) ->
-	?assertMatch({2,#publish{topic= "Summer", qos= QoS, payload= <<"Sent to summer.">>}}, Arg),
-	test_result ! done.
-
-winter_callback({ _, #publish{topic= "Winter/Jan", qos= QoS}} = Arg) ->
-	?assertMatch({1,#publish{topic= "Winter/Jan", qos= QoS, payload= <<"Sent to Winter/Jan.">>}}, Arg),
-	test_result ! done;
-winter_callback({_, #publish{topic= "Winter/Feb/23", qos= QoS}} = Arg) ->
-	?assertMatch({1,#publish{topic= "Winter/Feb/23", qos= QoS, payload= <<"Sent to Winter/Feb/23. QoS = 2.">>}}, Arg),
-	test_result ! done;
-winter_callback({_, #publish{qos= QoS}} = Arg) ->
-	?assertMatch({1,#publish{topic= "Winter", qos= QoS, payload= <<"Sent to winter. QoS = ", _/binary>>}}, Arg),
-	test_result ! done.
-
-spring_callback({_, #publish{topic= "Spring/March/Month/08", qos= QoS}} = Arg) ->
-%	?debug_Fmt("::test:: spring_callback: ~p",[Arg]),
-	?assertMatch({0,#publish{topic= "Spring/March/Month/08", qos= QoS, payload= <<"Sent to Spring/March/Month/08. QoS = 2.">>}}, Arg),
-	test_result ! done;
-spring_callback({_, #publish{topic= "Spring/April/Month/01", qos= QoS}} = Arg) ->
-%	?debug_Fmt("::test:: spring_callback: ~p",[Arg]),
-	?assertMatch({0, #publish{topic= "Spring/April/Month/01", qos= QoS, payload= <<"Sent to Spring/April/Month/01. QoS = 1.">>}}, Arg),
-	test_result ! done;
-spring_callback({_, #publish{topic= "Spring/May/Month/09", qos= QoS}} = Arg) ->
-%	?debug_Fmt("::test:: spring_callback: ~p",[Arg]),
-	?assertMatch({0, #publish{topic= "Spring/May/Month/09", qos= QoS, payload= <<"Sent to Spring/May/Month/09. QoS = 0.">>}}, Arg),
-	test_result ! done.

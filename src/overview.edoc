@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2022 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2023 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -16,18 +16,18 @@
 
 @title MQTT client for Erlang.
 @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org]
-@copyright 2015-2022 Alexei Krasnopolski
+@copyright 2015-2023 Alexei Krasnopolski
 @since 2016-10-05
 @version {@version}
 @doc 
 <h3>Introduction</h3>
-The client allows to connect to MQTT server and send/receive messages according to MQTT messaging protokol version 3.1.1.
+The client allows to connect to MQTT server and send/receive messages according to MQTT messaging protocol versions 3.1, 3.1.1 and 5.0.
 The client is written in Erlang. 
 The client was tested with RabbitMQ and Mosquitto server on Windows/Linux/MacOSX boxes.
 
 <h3>Architecture</h3>
 MQTT client is an OTP application. Top level component is supervisor
-that is monitoring a child connection processes. Session state data are storing in database (DETS and MySQL in current version)
+that is monitoring a child connection processes. Session state data are storing in database (DETS or MySQL storage in current version)
 
 <h3>Getting started</h3>
 <h4>Installation</h4>
@@ -133,7 +133,7 @@ from server's topic then callback function will be invoked and the message will 
 9> <span>mqtt_client:subscribe(SubCon, [{"Test", 1, CBF}]).</span>
 {suback,[1]}
 </pre>
-Now we can publish message to "Test" topic. After short moment subscriber recieves this message and fire callback function:
+Now we can publish message to "Test" topic. After short moment subscriber receives this message and fire callback function:
 <pre>
 10> <span>mqtt_client:publish(PubCon, #publish{topic = "Test"}, &lt;&lt;"Test Message Payload."&gt;&gt;).</span>
 ok

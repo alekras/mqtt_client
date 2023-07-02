@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2022 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2023 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 %%
 
 %% @since 2015-12-25
-%% @copyright 2015-2022 Alexei Krasnopolski
+%% @copyright 2015-2023 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
 %% @doc @todo Add description to testing.
@@ -27,17 +27,6 @@
 -include_lib("mqtt_common/include/mqtt_property.hrl").
 -include("test.hrl").
 
--define(CONN_REC(X), (#connect{
-		client_id = X,
-		host = ?TEST_SERVER_HOST_NAME,
-		port = ?TEST_SERVER_PORT,
-		user_name = ?TEST_USER, 
-		password = ?TEST_PASSWORD, 
-		conn_type = ?TEST_CONN_TYPE,
-		keep_alive = 600, 
-		version = '5.0'})
-).
-
 %%
 %% API functions
 %%
@@ -48,33 +37,36 @@
 	do_stop/1,
 	get_connect_rec/1, 
 	wait_all/1,
-	callback/1, 
-	ping_callback/1, 
-	spring_callback/1, 
-	summer_callback/1, 
-	winter_callback/1
+	wait/4,
+	wait/5
 ]).
 
 do_start() ->
 	?debug_Fmt("~n=============~n Start test on server: ~p:~p, connection type:~p~n=============~n",
 						 [?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, ?TEST_CONN_TYPE]),
+	callback:start(),
 	?assertEqual(ok, application:start(mqtt_client)).
 
 do_stop(_R) ->
+	callback:stop(),
 	?assertEqual(ok, application:stop(mqtt_client)).
 
 create(Name) when is_atom(Name) -> mqtt_client:create(Name);
 create(Name) when is_list(Name) -> mqtt_client:create(list_to_atom(Name)).
 
 connect(Name) ->
-	connect(Name, Name).
+	connect(Name, Name, call).
 
-connect(Name, CID) ->
+connect(Name, Callback_fun) ->
+	connect(Name, Name, Callback_fun).
+
+connect(Name, CID, Callback_fun) ->
 	Pid = create(Name),
 	?assert(is_pid(Pid)),
 	ok = mqtt_client:connect(
 		Pid, 
-		?CONN_REC(CID)#connect{properties=[{?Topic_Alias_Maximum,10}]}, 
+		?CONN_REC_5(CID)#connect{properties=[{?Topic_Alias_Maximum,10}]}, 
+		{callback, Callback_fun},
 		[]
 	),
 %	?debug_Fmt("~n::test:: connect: ~p",[Pid]),
@@ -82,6 +74,7 @@ connect(Name, CID) ->
 
 do_setup({Client_Id, connect} = _X) ->
 %  ?debug_Fmt("~n::test:: setup before: ~p",[_X]),
+	callback:reset(),
 	[create(Client_Id)];
 do_setup({_, publish}) ->
 	[connect(publisher), connect(subscriber)];
@@ -90,25 +83,34 @@ do_setup({_, publish_rec_max} = _X) ->
 	P1 = create(publisher),
 	ok = mqtt_client:connect(
 		P1, 
-		?CONN_REC(publisher)#connect{properties=[{?Receive_Maximum, 5}]}, 
+		?CONN_REC_5(publisher)#connect{properties=[{?Receive_Maximum, 5}]}, 
+		{callback, call},
 		[]
 	),
 	?assert(is_pid(P1)),
 	[P1, connect(subscriber)];
 do_setup({_, share}) ->
-	[connect(publisher), connect(subscriber1), connect(subscriber2), connect(subscriber3), connect(subscriber4)];
+	[
+		connect(publisher),
+		connect(subscriber1),
+		connect(subscriber2, call_1),
+		connect(subscriber3, call_2),
+		connect(subscriber4, call_3)
+	];
 do_setup({_, session}) ->
 	P1 = create(publisher),
 	ok = mqtt_client:connect(
 		P1, 
-		?CONN_REC(publisher)#connect{clean_session = 0, properties=[{?Session_Expiry_Interval, 16#FFFFFFFF}]}, 
+		?CONN_REC_5(publisher)#connect{clean_session = 0, properties=[{?Session_Expiry_Interval, 16#FFFFFFFF}]}, 
+		{callback, call},
 		[]
 	),
 	?assert(is_pid(P1)),
 	S1 = create(subscriber),
 	ok = mqtt_client:connect(
 		S1, 
-		?CONN_REC(subscriber)#connect{clean_session = 0, properties=[{?Session_Expiry_Interval, 16#FFFFFFFF}]}, 
+		?CONN_REC_5(subscriber)#connect{clean_session = 0, properties=[{?Session_Expiry_Interval, 16#FFFFFFFF}]}, 
+		{callback, call},
 		[]
 	),
 	?assert(is_pid(S1)),
@@ -119,13 +121,14 @@ do_setup({QoS, will}) ->
 	P = create(publisher),
 	ok = mqtt_client:connect(
 		P, 
-		?CONN_REC(publisher)#connect{
+		?CONN_REC_5(publisher)#connect{
 			will_publish= #publish{
 				qos= QoS,
 				topic= "AK_will_test",
 				payload= <<"Test will message">>
 			}
 		}, 
+		{callback, call},
 		[]
 	),
 	?assert(is_pid(P)),
@@ -134,13 +137,14 @@ do_setup({QoS, will_delay}) ->
 	P = create(publisher),
 	ok = mqtt_client:connect(
 		P, 
-		?CONN_REC(publisher)#connect{
+		?CONN_REC_5(publisher)#connect{
 			will_publish= #publish{
 				qos= QoS,
 				topic= "AK_will_test",
 				payload= <<"Test will message">>,
 				properties =[{?Will_Delay_Interval, 5}]}
 		}, 
+		{callback, call},
 		[]
 	),
 	?assert(is_pid(P)),
@@ -149,7 +153,7 @@ do_setup({QoS, will_retain}) ->
 	P = create(publisher),
 	ok = mqtt_client:connect(
 		P, 
-		?CONN_REC(publisher)#connect{
+		?CONN_REC_5(publisher)#connect{
 			will_publish= #publish{
 				qos= QoS,
 				retain= 1,
@@ -157,17 +161,24 @@ do_setup({QoS, will_retain}) ->
 				payload= <<"Test will retain message">>
 			}
 		}, 
+		{callback, call},
 		[]
 	),
+	ok = mqtt_client:publish(P, #publish{topic = "AK_will_retain_test", retain = 1, qos = 0}, <<>>), 
 	?assert(is_pid(P)),
 	[P, connect(subscriber), create(subscriber2)];
 do_setup({_QoS, retain}) ->
-	[connect(publisher), connect(subscriber1), connect(subscriber2)];
+	callback:reset(),
+	P1 = connect(publisher),
+	ok = mqtt_client:publish(P1, #publish{topic = "AK_retain_test", retain = 1, qos = 0}, <<>>), 
+	[P1, connect(subscriber1), connect(subscriber2, call_1)];
 do_setup({_, keep_alive}) ->
+	callback:reset(),
 	P = create(publisher),
 	ok = mqtt_client:connect(
 		P, 
-		?CONN_REC(publisher)#connect{keep_alive = 5}, 
+		?CONN_REC_5(publisher)#connect{keep_alive = 5}, 
+		{callback, call},
 		[]
 	),
 	?assert(is_pid(P)),
@@ -210,9 +221,10 @@ do_cleanup({QoS, will_retain}, [P, S1, S2]) ->
 	P1 = create(publisher),
 	ok = mqtt_client:connect(
 		P1, 
-		?CONN_REC(publisher)#connect{
+		?CONN_REC_5(publisher)#connect{
 			clean_session = 1
 		}, 
+		{callback, call},
 		[]
 	),
 	ok = mqtt_client:publish(P1, #publish{topic = "AK_will_retain_test", retain = 1, qos = QoS}, <<>>), 
@@ -227,7 +239,8 @@ do_cleanup({QoS, retain}, [P1, S1, S2]) ->
 			P2 = create(publisher),
 			ok = mqtt_client:connect(
 				P2, 
-				?CONN_REC(publisher)#connect{clean_session = 0}, 
+				?CONN_REC_5(publisher)#connect{clean_session = 0}, 
+				{callback, call},
 				[]
 			),
 			ok = mqtt_client:publish(P2, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), 
@@ -238,7 +251,8 @@ do_cleanup({QoS, retain}, [P1, S1, S2]) ->
 		_ ->
 			ok = mqtt_client:connect(
 				P1, 
-				?CONN_REC(publisher)#connect{clean_session = 0},
+				?CONN_REC_5(publisher)#connect{clean_session = 0},
+				{callback, call},
 				[]
 			),
 			ok = mqtt_client:publish(P1, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), 
@@ -250,12 +264,12 @@ do_cleanup(_X, _Pids) ->
 	(get_storage()):cleanup(client).
 
 get_connect_rec(Cl_Id) ->
-	?CONN_REC(Cl_Id).
+	?CONN_REC_5(Cl_Id).
 
 get_storage() ->
 	case application:get_env(mqtt_client, storage, dets) of
-		mysql -> mqtt_mysql_dao;
-		dets -> mqtt_dets_dao
+		mysql -> mqtt_mysql_storage;
+		dets -> mqtt_dets_storage
 	end.
 	
 wait_all(N) ->
@@ -264,11 +278,11 @@ wait_all(N) ->
 %			?debug_Fmt("::test:: all ~p done received.", [_M]),
 			true;
 		{fail, _T} -> 
-			?debug_Fmt("::test:: ~p done have not received.", [N - _T]), 
+			?debug_Fmt("::test:: ~p done has not received.", [N - _T]), 
 			false
 %			?assert(true)
 	end
-	and
+	andalso
 	case wait_all(100, 0) of
 		{fail, 0} -> 
 %			?debug_Fmt("::test:: ~p unexpected done received.", [0]),
@@ -286,69 +300,37 @@ wait_all(0, M) -> {ok, M};
 wait_all(N, M) ->
 	receive
 		done -> wait_all(N - 1, M + 1)
-	after 500 -> {fail, M}
+	after ?MQTT_GEN_SERVER_TIMEOUT + 100 -> {fail, M}
 	end.
 
-callback({0, #publish{topic= "AKTest", qos= QoS}} = Arg) ->
-	case QoS of
-		0 -> ?assertMatch({0, #publish{topic= "AKTest", qos= 0, payload= <<"Test Payload QoS = 0.">>}}, Arg)
-	end,
-%	?debug_Fmt("::test:: ~p:callback<0>: ~p",[?MODULE, Arg]),
-	test_result ! done;
-callback({1, #publish{topic= "AKTest", qos= QoS}} = Arg) ->
-	case QoS of
-		0 -> ?assertMatch({1, #publish{topic= "AKTest", qos= 0, payload= <<"Test Payload QoS = 0.">>}}, Arg);
-		1 -> ?assertMatch({1, #publish{topic= "AKTest", qos= 1, payload= <<"Test Payload QoS = 1.">>}}, Arg)
-	end,
-%	?debug_Fmt("::test:: ~p:callback<1>: ~p",[?MODULE, Arg]),
-	test_result ! done;
-callback({2, #publish{topic= "AKTest", qos= QoS}} = Arg) ->
-	case QoS of
-		0 -> ?assertMatch({2, #publish{topic= "AKTest", qos= 0, payload= <<"Test Payload QoS = 0.">>}}, Arg);
-		1 -> ?assertMatch({2, #publish{topic= "AKTest", qos= 1, payload= <<"Test Payload QoS = 2.">>}}, Arg)
-	end,
-%	?debug_Fmt("::test:: ~p:callback<2>: ~p",[?MODULE, Arg]),
-	test_result ! done;
-callback({_, #publish{qos= QoS}} = Arg) ->
-	case QoS of
-		0 -> ?assertMatch({2, #publish{topic= "AKtest", qos= 0, payload= <<"Test Payload QoS = 0.">>}}, Arg);
-		1 -> ?assertMatch({2, #publish{topic= "AKtest", qos= 1, payload= <<"Test Payload QoS = 1.">>}}, Arg);
-		2 -> ?assertMatch({2, #publish{topic= "AKtest", qos= 2, payload= <<"Test Payload QoS = 2.">>}}, Arg)
-	end,
-%	?debug_Fmt("::test:: ~p:callback<_>: ~p",[?MODULE, Arg]),
-	test_result ! done.
+wait(N0,N1,N2,N3) ->
+	wait("",N0,N1,N2,N3).
 
-ping_callback(Arg) ->
-%	?debug_Fmt("::test:: ping callback: ~p",[Arg]),
-	?assertEqual(pong, Arg),
-	test_result ! done.
+wait(Title,N0,N1,N2,N3) ->
+	case wait({N0,N1,N2,N3}, {0,0,0,0}) of
+		{ok, T} -> 
+			case wait({100,100,100,100}, {0,0,0,0}) of
+				{fail, {0,0,0,0}} -> 
+					?debug_Fmt("::wait::=>'~s' [~p:~p:~p:~p]=~p ok.~n", [Title,N0,N1,N2,N3,T]), 
+					true;
+				{fail, Z} -> 
+					?debug_Fmt("::wait::=>'~s' [~p:~p:~p:~p]=/=~p unexpected done received.~n", [Title,N0,N1,N2,N3,Z]),
+					false;
+				{ok, R} -> 
+					?debug_Fmt("::wait::=>'~s' [~p:~p:~p:~p]=/=~p unexpected done received.~n", [Title,N0,N1,N2,N3,R]), 
+					false
+			end;
+		{fail, T} ->
+			?debug_Fmt("::wait::=>'~s' [~p:~p:~p:~p]=/=~p done has not received.~n", [Title,N0,N1,N2,N3,T]), 
+			false
+	end.
 
-summer_callback({_, #publish{topic= "Summer/Jul", qos= QoS}} = Arg) ->
-	?assertMatch({2,#publish{topic= "Summer/Jul", qos= QoS, payload= <<"Sent to Summer/Jul.">>}}, Arg),
-	test_result ! done;
-summer_callback({_, #publish{qos= QoS}} = Arg) ->
-	?assertMatch({2,#publish{topic= "Summer", qos= QoS, payload= <<"Sent to summer.">>}}, Arg),
-	test_result ! done.
-
-winter_callback({ _, #publish{topic= "Winter/Jan", qos= QoS}} = Arg) ->
-	?assertMatch({1,#publish{topic= "Winter/Jan", qos= QoS, payload= <<"Sent to Winter/Jan.">>}}, Arg),
-	test_result ! done;
-winter_callback({_, #publish{topic= "Winter/Feb/23", qos= QoS}} = Arg) ->
-	?assertMatch({1,#publish{topic= "Winter/Feb/23", qos= QoS, payload= <<"Sent to Winter/Feb/23. QoS = 2.">>}}, Arg),
-	test_result ! done;
-winter_callback({_, #publish{qos= QoS}} = Arg) ->
-	?assertMatch({1,#publish{topic= "Winter", qos= QoS, payload= <<"Sent to winter. QoS = ", _/binary>>}}, Arg),
-	test_result ! done.
-
-spring_callback({_, #publish{topic= "Spring/March/Month/08", qos= QoS}} = Arg) ->
-%	?debug_Fmt("::test:: spring_callback: ~p",[Arg]),
-	?assertMatch({0,#publish{topic= "Spring/March/Month/08", qos= QoS, payload= <<"Sent to Spring/March/Month/08. QoS = 2.">>}}, Arg),
-	test_result ! done;
-spring_callback({_, #publish{topic= "Spring/April/Month/01", qos= QoS}} = Arg) ->
-%	?debug_Fmt("::test:: spring_callback: ~p",[Arg]),
-	?assertMatch({0, #publish{topic= "Spring/April/Month/01", qos= QoS, payload= <<"Sent to Spring/April/Month/01. QoS = 1.">>}}, Arg),
-	test_result ! done;
-spring_callback({_, #publish{topic= "Spring/May/Month/09", qos= QoS}} = Arg) ->
-%	?debug_Fmt("::test:: spring_callback: ~p",[Arg]),
-	?assertMatch({0, #publish{topic= "Spring/May/Month/09", qos= QoS, payload= <<"Sent to Spring/May/Month/09. QoS = 0.">>}}, Arg),
-	test_result ! done.
+wait({0,0,0,0}, M) -> {ok, M};
+wait({N0,N1,N2,N3}, {M0,M1,M2,M3}) ->
+	receive
+		done0 -> wait({N0-1,N1,N2,N3}, {M0+1,M1,M2,M3});
+		done1 -> wait({N0,N1-1,N2,N3}, {M0,M1+1,M2,M3});
+		done2 -> wait({N0,N1,N2-1,N3}, {M0,M1,M2+1,M3});
+		done3 -> wait({N0,N1,N2,N3-1}, {M0,M1,M2,M3+1})
+	after ?MQTT_GEN_SERVER_TIMEOUT + 100 -> {fail, {M0,M1,M2,M3}}
+	end.

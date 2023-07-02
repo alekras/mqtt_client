@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2022 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2023 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 %% @hidden
 %% @since 2016-01-03
-%% @copyright 2015-2022 Alexei Krasnopolski
+%% @copyright 2015-2023 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
 %% @doc This module is running erlang unit tests.
 
--module(mqtt_client_debug_tests).
+-module(mqtt_client_tests).
 
 %%
 %% Include files
@@ -52,7 +52,43 @@ mqtt_client_test_() ->
 						{{testClient5, connect}, fun connect:connect_5/2},
 						{{testClient6, connect}, fun connect:connect_6/2},
 						{{testClient7, connect}, fun connect:reconnect/2},
-						{{1, keep_alive},        fun connect:keep_alive/2}
+						{{1, keep_alive},        fun connect:keep_alive/2},
+
+						{{1, combined},    fun subscribe:combined/2},
+						{{1, subs_list},   fun subscribe:subs_list/2},
+						{{1, subs_filter}, fun subscribe:subs_filter/2},
+
+						{{0, publish}, fun publish:publish_0/2},
+						{{0, publish}, fun publish:publish_1/2},
+
+						{{1, session}, fun session:session_1/2},
+						{{2, session}, fun session:session_1/2},
+						{{3, session}, fun session:session_1/2},
+						{{4, session}, fun session:session_1/2},
+
+						{{1, session}, fun session:session_2/2},
+						{{2, session}, fun session:session_2/2},
+						{{3, session}, fun session:session_2/2},
+						{{4, session}, fun session:session_2/2},
+						{{5, session}, fun session:session_2/2},
+						{{6, session}, fun session:session_2/2},
+						{{7, session}, fun session:session_2/2},
+						{{8, session}, fun session:session_2/2},
+
+						{{0, will}, fun will:will_a/2},
+						{{0, will}, fun will:will_0/2},
+						{{1, will}, fun will:will_0/2},
+						{{2, will}, fun will:will_0/2},
+						{{0, will_retain}, fun will:will_retain/2},
+						{{1, will_retain}, fun will:will_retain/2},
+						{{2, will_retain}, fun will:will_retain/2},
+
+						{{0, retain}, fun retain:retain_0/2},
+						{{1, retain}, fun retain:retain_0/2},
+						{{2, retain}, fun retain:retain_0/2},
+						{{0, retain}, fun retain:retain_1/2},
+						{{1, retain}, fun retain:retain_1/2},
+						{{2, retain}, fun retain:retain_1/2}
 					]
 				}
 			]}

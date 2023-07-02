@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2022 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2023 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -47,6 +47,28 @@
 	-define(TEST_CONN_TYPE, web_sec_socket). %% Web socket connection for client
 	-define(TEST_SERVER_PORT, 4443). %% Erlang WEBSocket
 -endif.
+
+-define(CONN_REC(X), (#connect{
+		client_id = X,
+		host = ?TEST_SERVER_HOST_NAME,
+		port = ?TEST_SERVER_PORT,
+		user_name = ?TEST_USER,
+		password = ?TEST_PASSWORD,
+		conn_type = ?TEST_CONN_TYPE,
+		keep_alive = 60000,
+		version = '3.1.1'})
+).
+
+-define(CONN_REC_5(X), (#connect{
+		client_id = X,
+		host = ?TEST_SERVER_HOST_NAME,
+		port = ?TEST_SERVER_PORT,
+		user_name = ?TEST_USER, 
+		password = ?TEST_PASSWORD, 
+		conn_type = ?TEST_CONN_TYPE,
+		keep_alive = 600, 
+		version = '5.0'})
+).
 
 -define(debug_Msg(S),
 	(begin

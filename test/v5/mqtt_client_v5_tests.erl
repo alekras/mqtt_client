@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2022 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2023 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 %% @hidden
 %% @since 2016-01-03
-%% @copyright 2015-2022 Alexei Krasnopolski
+%% @copyright 2015-2023 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
 %% @doc This module is running erlang unit tests.
@@ -57,7 +57,12 @@ mqtt_client_test_() ->
 						{{1, combined},    fun subscribe_v5:combined/2},
 						{{1, subs_list},   fun subscribe_v5:subs_list/2},
 						{{1, subs_filter}, fun subscribe_v5:subs_filter/2},
+
 						{{0, share}, fun share:publish_0/2},
+						{{1, share}, fun share:publish_0/2},
+						{{2, share}, fun share:publish_0/2},
+						{{0, share}, fun share:publish_1/2},
+						{{1, share}, fun share:publish_1/2},
 						{{2, share}, fun share:publish_1/2},
 
 						{{2, publish}, fun topic_alias:publish_0/2},
@@ -99,6 +104,7 @@ mqtt_client_test_() ->
 						{{1, will}, fun will_v5:will_0/2},
 						{{2, will}, fun will_v5:will_0/2},
 						{{2, will_delay}, fun will_v5:will_delay/2},
+						{{0, will_retain}, fun will_v5:will_retain/2},
 						{{1, will_retain}, fun will_v5:will_retain/2},
 						{{2, will_retain}, fun will_v5:will_retain/2},
 
@@ -108,6 +114,8 @@ mqtt_client_test_() ->
 						{{0, retain}, fun retain_v5:retain_1/2},
 						{{1, retain}, fun retain_v5:retain_1/2},
 						{{2, retain}, fun retain_v5:retain_1/2},
+						{{0, retain}, fun retain_v5:retain_2/2},
+						{{1, retain}, fun retain_v5:retain_2/2},
 						{{2, retain}, fun retain_v5:retain_2/2},
 						{{2, retain}, fun retain_v5:retain_3/2},
 						{{2, retain}, fun retain_v5:subscription_option/2},

@@ -1,5 +1,5 @@
 %%
-%% Copyright (C) 2015-2022 by krasnop@bellsouth.net (Alexei Krasnopolski)
+%% Copyright (C) 2015-2023 by krasnop@bellsouth.net (Alexei Krasnopolski)
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
 %%
 
 %% @since 2015-12-25
-%% @copyright 2015-2022 Alexei Krasnopolski
+%% @copyright 2015-2023 Alexei Krasnopolski
 %% @author Alexei Krasnopolski <krasnop@bellsouth.net> [http://krasnopolski.org/]
 %% @version {@version}
 
 {application, mqtt_client,
 	[
     {description, "The MQTT client is written in Erlang and allows to connect to MQTT server and send/receive messages according to MQTT messaging protocol versions 3.1.1 and 5.0"},
-    {vsn, "2.0.0"},
+    {vsn, "2.1.0"},
     {modules, [
       mqtt_client,
       mqtt_client_connection,
@@ -36,7 +36,7 @@
     },
     {registered, []},
     {applications, [kernel, stdlib]},
-    {mod, {mqtt_client, [{vsn, "1.1.0"}]}},
+    {mod, {mqtt_client, [{vsn, "2.1.0"}]}},
     {env, [
 %			{storage, mysql}
 			{storage, dets}

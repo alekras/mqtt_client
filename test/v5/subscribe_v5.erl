@@ -44,93 +44,151 @@
 
 combined(_, Conn) -> {"combined", timeout, 100, fun() ->
 	register(test_result, self()),
-	ok = mqtt_client:pingreq(Conn, {testing_v5, ping_callback}), 
-	
-	R2_0 = mqtt_client:subscribe(Conn,
-			[{"AKtest", 2, 
-				fun(Arg) ->
-					?assertMatch({2,
-							#publish{
-								topic = "AKtest", 
-								properties= [
-									{?User_Property, {<<"Key">>, <<"Value">>}},
-									{?Subscription_Identifier, 21}
-								], 
-								payload= <<"Test Payload QoS = 0. annon. function callback. ">>}}, 
-							Arg
-					), 
-					test_result ! done 
-				end
-			}],
-			[
-				{?Subscription_Identifier, 21},
-				{?User_Property, {"Key", "Value"}}
-			]
-	), 
-	?debug_Fmt("::test:: combined->suback : ~p", [R2_0]),
-	?assertMatch({suback,[2], _}, R2_0),
-	R3_0 = mqtt_client:publish(Conn, #publish{topic = "AKtest", properties = [{?User_Property, {"Key", "Value"}}]},
-														 <<"Test Payload QoS = 0. annon. function callback. ">>), 
-	?assertEqual(ok, R3_0),
+	callback:set_event_handler(onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe : ~p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onPong, fun(onPong, A) -> ?debug_Fmt("::test:: onPong : ~p~n", [A]), test_result ! done end),
 
-	timer:sleep(100),
-	R2 = mqtt_client:subscribe(Conn, [{"AKtest", 2, {testing_v5, callback}}], []), 
-	?assertEqual({suback,[2], []}, R2),
-	ok = mqtt_client:publish(Conn, #publish{topic = "AKtest"}, <<"Test Payload QoS = 0.">>), 
-	ok = mqtt_client:pingreq(Conn, {testing_v5, ping_callback}), 
-	ok = mqtt_client:publish(Conn, #publish{topic = "AKtest", qos = 1}, <<"Test Payload QoS = 1.">>), 
-	ok = mqtt_client:pingreq(Conn, {testing_v5, ping_callback}), 
-	ok = mqtt_client:publish(Conn, #publish{topic = "AKtest", qos = 2}, <<"Test Payload QoS = 2.">>), 
-	ok = mqtt_client:pingreq(Conn, {testing_v5, ping_callback}), 
-	timer:sleep(500),
-	R9 = mqtt_client:unsubscribe(Conn, ["AKtest"], []), 
-	?assertEqual({unsuback, [0], []}, R9),
-	ok = mqtt_client:pingreq(Conn, {testing_v5, ping_callback}), 
+	ok = mqtt_client:pingreq(Conn), 
+	?assert(wait_all(1)),
+
+	callback:set_event_handler(onReceive, 
+		fun(onReceive, {#subscription_options{max_qos= _QOpt}, #publish{qos=Q, topic=T, payload=P, properties=Props}} = A) -> 
+			?debug_Fmt("::test:: onReceive : ~p~n", [A]),
+			case T of
+				"AKtest" -> 
+					?assertMatch(Props, [
+						{?User_Property, {<<"Key1">>, <<"Value1">>}},
+						{?Subscription_Identifier, 21}
+					]);
+				"AKTst" ->
+					?assertMatch(Props, [
+						{?User_Property, {<<"Key1">>, <<"Value1">>}}
+					]);
+				_ -> ?assert(false)
+			end,
+			case Q of
+				0 -> ?assertMatch(P, <<"Test Payload QoS = 0.">>);
+				1 -> ?assertMatch(P, <<"Test Payload QoS = 1.">>);
+				2 -> ?assertMatch(P, <<"Test Payload QoS = 2.">>)
+			end,
+			test_result ! done 
+		end),
+	ok = mqtt_client:subscribe(Conn, [{"AKTst", #subscription_options{max_qos= 0}}]),
+	?assert(wait_all(1)),
+
+	ok = mqtt_client:publish(Conn, #publish{topic = "AKTst", properties = [{?User_Property, {"Key1", "Value1"}}]},
+														 <<"Test Payload QoS = 0.">>), 
+	?assert(wait_all(1)),
+
+	ok = mqtt_client:subscribe(
+		Conn, 
+		[{"AKtest", #subscription_options{max_qos= 2}}],
+		[
+			{?Subscription_Identifier, 21},
+			{?User_Property, {"Key", "Value"}}
+		]
+	),
+	?assert(wait_all(1)),
+
+	ok = mqtt_client:publish(Conn, #publish{topic = "AKtest", properties = [{?User_Property, {"Key1", "Value1"}}]}, <<"Test Payload QoS = 0.">>), 
+	?assert(wait_all(1)),
+	ok = mqtt_client:pingreq(Conn), 
+	?assert(wait_all(1)),
+	ok = mqtt_client:publish(Conn, #publish{topic = "AKtest", properties = [{?User_Property, {"Key1", "Value1"}}], qos = 1}, <<"Test Payload QoS = 1.">>), 
+	?assert(wait_all(1)),
+	ok = mqtt_client:pingreq(Conn), 
+	?assert(wait_all(1)),
+	ok = mqtt_client:publish(Conn, #publish{topic = "AKtest", properties = [{?User_Property, {"Key1", "Value1"}}], qos = 2}, <<"Test Payload QoS = 2.">>), 
+	?assert(wait_all(1)),
+	ok = mqtt_client:pingreq(Conn), 
+	?assert(wait_all(1)),
+
+	callback:set_event_handler(onUnsubscribe, fun(onUnsubscribe, A) -> ?debug_Fmt("::test:: onUnsubscribe : ~p~n", [A]), test_result ! done end),
+	ok = mqtt_client:unsubscribe(Conn, ["AKtest"], []), 
+	?assert(wait_all(1)),
+
+	ok = mqtt_client:pingreq(Conn), 
+	?assert(wait_all(1)),
 % does not come
-	ok = mqtt_client:publish(Conn, #publish{topic = "AKtest", qos = 2}, <<"Test Payload QoS = 2.">>), 
+	ok = mqtt_client:publish(Conn, #publish{topic = "AKtest", properties = [{?User_Property, {"Key1", "Value1"}}], qos = 2}, <<"Test Payload QoS = 2.">>), 
+	?assert(wait_all(0)),
 
-	W = wait_all(9),
-	
 	unregister(test_result),
-	?assert(W),
-
 	?passed
 end}.
 
 subs_list(_, Conn) -> {"subscribtion list", timeout, 100, fun() ->	
 	register(test_result, self()),
-	R2 = mqtt_client:subscribe(Conn, [{"Summer", 2, {testing_v5, summer_callback}}, {"Winter", 1, {testing_v5, winter_callback}}]), 
-	?assertEqual({suback,[2,1],[]}, R2),
-	timer:sleep(100),
-	ok = mqtt_client:publish(Conn, #publish{topic = "Winter"}, <<"Sent to winter. QoS = 0.">>), 
-	ok = mqtt_client:publish(Conn, #publish{topic = "Summer", qos = 1}, <<"Sent to summer.">>), 
-	ok = mqtt_client:publish(Conn, #publish{topic = "Winter", qos = 1}, <<"Sent to winter. QoS = 1.">>), 
-	ok = mqtt_client:publish(Conn, #publish{topic = "Winter", qos = 2}, <<"Sent to winter. QoS = 2.">>), 
+	callback:set_event_handler(onSubscribe, fun(onSubscribe, {[1,2],[]} = A) -> ?debug_Fmt("::test:: onSubscribe : ~p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onReceive, 
+		fun(onReceive, {#subscription_options{max_qos= _QOpt}, #publish{qos=Q, topic=T, payload=P}} = A) -> 
+			?debug_Fmt("::test:: onReceive : ~p~n", [A]),
+			?assert(lists:member(T, ["Summer", "Winter"])),
+			case T of
+				"Winter" -> 
+					case Q of
+						0 -> ?assertMatch(P, <<"Sent to Winter. QoS = 0.">>);
+						1 -> ?assertMatch(P, <<"Sent to Winter. QoS = 1.">>);
+						2 -> ?assertMatch(P, <<"Sent to Winter. QoS = 2.">>)
+					end;
+				"Summer" -> 
+					?assertEqual(Q, 1),
+					?assertMatch(P, <<"Sent to Summer.">>)
+			end,
+			test_result ! done
+		end),
+	callback:set_event_handler(onUnsubscribe, fun(onUnsubscribe, {[0,0],[]} = A) -> ?debug_Fmt("::test:: onUnsubscribe : ~p~n", [A]), test_result ! done end),
 
-	W = wait_all(4),
+	ok = mqtt_client:subscribe(Conn, [{"Summer", #subscription_options{max_qos= 1}}, {"Winter", #subscription_options{max_qos= 2}}]),
 
-	R8 = mqtt_client:unsubscribe(Conn, ["Summer", "Winter"]), 
-	?assertEqual({unsuback, [0,0],[]}, R8),
-	timer:sleep(100),
-	ok = mqtt_client:publish(Conn, #publish{topic = "Winter", qos = 2}, <<"Sent to winter. QoS = 2.">>), 
-	
-	W1 = wait_all(1),
-	
+	ok = mqtt_client:publish(Conn, #publish{topic = "Winter"}, <<"Sent to Winter. QoS = 0.">>),
+	ok = mqtt_client:publish(Conn, #publish{topic = "Summer", qos = 1}, <<"Sent to Summer.">>),
+	ok = mqtt_client:publish(Conn, #publish{topic = "Winter", qos = 1}, <<"Sent to Winter. QoS = 1.">>),
+	ok = mqtt_client:publish(Conn, #publish{topic = "Winter", qos = 2}, <<"Sent to Winter. QoS = 2.">>),
+
+	?assert(wait_all(5)),
+
+	ok = mqtt_client:unsubscribe(Conn, ["Summer", "Winter"]), 
+	?assert(wait_all(1)),
+	ok = mqtt_client:publish(Conn, #publish{topic = "Winter", qos = 2}, <<"Sent to Winter. QoS = 2.">>), 
+	?assert(wait_all(0)),
+
 	unregister(test_result),
-	?assert(W),
-	?assertNot(W1),
-
 	?PASSED
 end}.
 
 subs_filter(_, Conn) -> {"subscription filter", fun() ->	
 	register(test_result, self()),
-	R2 = mqtt_client:subscribe(Conn, [{"Summer/+", 2, {testing_v5, summer_callback}}, 
-																		{"Winter/#", 1, {testing_v5, winter_callback}},
-																		{"Spring/+/Month/+", 0, {testing_v5, spring_callback}}
+	callback:set_event_handler(onSubscribe, fun(onSubscribe, {[2,1,0],[]} = A) -> ?debug_Fmt("::test:: onSubscribe : ~p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onReceive, 
+		fun(onReceive, {#subscription_options{max_qos= _QOpt}, #publish{qos=Q, topic=T, payload=P}} = A) -> 
+			?debug_Fmt("    ::test:: onReceive : ~100p~n", [A]),
+			case T of
+				"Winter/Jan" -> ?assertMatch(P, <<"Sent to Winter/Jan.">>);
+				"Summer/Jul" -> 
+					?assertEqual(Q, 1),
+					?assertMatch(P, <<"Sent to Summer/Jul.">>);
+				"Winter/Feb/23" -> 
+					?assertEqual(Q, 1),
+					?assertMatch(P, <<"Sent to Winter/Feb/23. QoS = 2.">>);
+				"Spring/March/Month/08" ->
+					?assertEqual(Q, 0),
+					?assertMatch(P, <<"Sent to Spring/March/Month/08. QoS = 2.">>);
+				"Spring/April/Month/01" ->
+					?assertEqual(Q, 0),
+					?assertMatch(P, <<"Sent to Spring/April/Month/01. QoS = 1.">>);
+				"Spring/May/Month/09" ->
+					?assertEqual(Q, 0),
+					?assertMatch(P, <<"Sent to Spring/May/Month/09. QoS = 0.">>)
+			end,
+			test_result ! done
+		end),
+	callback:set_event_handler(onUnsubscribe, fun(onUnsubscribe, {[0,0,0],[]} = A) -> ?debug_Fmt("::test:: onUnsubscribe : ~p~n", [A]), test_result ! done end),
+
+	ok = mqtt_client:subscribe(Conn, [{"Summer/+", #subscription_options{max_qos= 2}}, 
+																		{"Winter/#", #subscription_options{max_qos= 1}},
+																		{"Spring/+/Month/+", #subscription_options{max_qos= 0}}
 																	 ]), 
-	?assertEqual({suback,[2,1,0],[]}, R2),
-	timer:sleep(100),
+
 	ok = mqtt_client:publish(Conn, #publish{topic = "Winter/Jan"}, <<"Sent to Winter/Jan.">>), 
 	ok = mqtt_client:publish(Conn, #publish{topic = "Summer/Jul/01"}, <<"Sent to Summer/Jul/01.">>), %% not delivered 
 	ok = mqtt_client:publish(Conn, #publish{topic = "Summer/Jul", qos = 1}, <<"Sent to Summer/Jul.">>), 
@@ -140,12 +198,13 @@ subs_filter(_, Conn) -> {"subscription filter", fun() ->
 	ok = mqtt_client:publish(Conn, #publish{topic = "Spring/April/Month/01", qos = 1}, <<"Sent to Spring/April/Month/01. QoS = 1.">>),
 	ok = mqtt_client:publish(Conn, #publish{topic = "Spring/May/Month/09", qos = 0}, <<"Sent to Spring/May/Month/09. QoS = 0.">>),
 
-	W = wait_all(6),
+	?assert(wait_all(7)),
 
-	R12 = mqtt_client:unsubscribe(Conn, ["Summer/+", "Winter/#", "Spring/+/Month/+"]),
-	?assertEqual({unsuback, [0,0,0], []}, R12),
+	ok = mqtt_client:unsubscribe(Conn, ["Summer/+", "Winter/#", "Spring/+/Month/+"]),
+	?assert(wait_all(1)),
+	ok = mqtt_client:publish(Conn, #publish{topic = "Spring/May/Month/09", qos = 0}, <<"Sent to Spring/May/Month/09. QoS = 0.">>),
+	?assert(wait_all(0)),
 	
 	unregister(test_result),
-	?assert(W),
 	?PASSED
 end}.
