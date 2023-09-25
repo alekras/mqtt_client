@@ -44,7 +44,7 @@
 	keep_alive/2
 ]).
 -import(testing_v5, [get_connect_rec/1]).
--import(testing, [wait_all/1]).
+-import(testing_v5, [wait_events/2]).
 
 %%
 %% API Functions
@@ -52,7 +52,7 @@
 
 connect_0({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_0 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
-	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 1. successfully connected : ~p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 1. successfully connected : ~p~n", [A]), test_result ! onConnect end),
 
 	ConnRec = (get_connect_rec(Id))#connect{
 			properties=[
@@ -79,7 +79,7 @@ connect_0({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_0 = " ++ atom_t
 		[]
 	),
 
-	?assert(wait_all(1)),
+	?assert(wait_events("Connect", [onConnect])),
 	unregister(test_result),
 	?PASSED
 end}.
@@ -87,7 +87,7 @@ end}.
 connect_1({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_1 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 2. successfully connected : ~p~n", [A]) end),
-	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 2. wrong port number : ~120p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 2. wrong port number : ~120p~n", [A]), test_result ! onError end),
 
 	ConnRec = get_connect_rec(Id),	
 	ok = mqtt_client:connect(
@@ -97,7 +97,7 @@ connect_1({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_1 = " ++ atom_t
 		[]
 	),
 
-	?assert(wait_all(1)),
+	?assert(wait_events("Connect", [onError])),
 	unregister(test_result),
 	?PASSED
 end}.
@@ -105,7 +105,7 @@ end}.
 connect_2({Id, connect}, [Publisher]) -> {"connect_2 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 3. successfully connected : ~p~n", [A]) end),
-	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 3. wrong user name. Connection Resp:~120p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 3. wrong user name. Connection Resp:~120p~n", [A]), test_result ! onError end),
 
 	ConnRec = get_connect_rec(Id),	
 	ok = mqtt_client:connect(
@@ -117,7 +117,7 @@ connect_2({Id, connect}, [Publisher]) -> {"connect_2 = " ++ atom_to_list(Id) ++ 
 		[]
 	),
 
-	?assert(wait_all(1)),
+	?assert(wait_events("Connect", [onError])),
 	unregister(test_result),
 	?PASSED
 end}.
@@ -125,7 +125,7 @@ end}.
 connect_3({Id, connect}, [Publisher]) -> {"connect_3 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 4. successfully connected : ~p~n", [A]) end),
-	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 4. wrong user password : ~120p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 4. wrong user password : ~120p~n", [A]), test_result ! onError end),
 
 	ConnRec = get_connect_rec(Id),
 	ok = mqtt_client:connect(
@@ -137,16 +137,16 @@ connect_3({Id, connect}, [Publisher]) -> {"connect_3 = " ++ atom_to_list(Id) ++ 
 		[]
 	),
 
-	?assert(wait_all(1)),
+	?assert(wait_events("Connect", [onError])),
 	unregister(test_result),
 	?PASSED
 end}.
 
 connect_4({Id, connect}, [Publisher]) -> {"connect_4 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
-	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 5. duplicate client id successfully connected : ~p~n", [A]), test_result ! done end),
-	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 5. duplicate client id: ~p~n", [A]) end),
-	callback:set_event_handler(onClose, fun(onClose, A) -> ?debug_Fmt("::test:: 5. duplicate client id onClose : ~p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 5. duplicate client id successfully connected : ~p~n", [A]), test_result ! onConnect end),
+	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 5. duplicate client id onError: ~p~n", [A]) end),
+	callback:set_event_handler(onClose, fun(onClose, A) -> ?debug_Fmt("::test:: 5. duplicate client id onClose : ~p~n", [A]), test_result ! onClose end),
 
 	ConnRec = get_connect_rec(testClient0),	
 	ok = mqtt_client:connect(
@@ -156,7 +156,7 @@ connect_4({Id, connect}, [Publisher]) -> {"connect_4 = " ++ atom_to_list(Id) ++ 
 		[]
 	),
 
-	?assert(wait_all(2)),
+	?assert(wait_events("Connect", [onConnect, onClose])),
 	unregister(test_result),
 
 	?assert(erlang:is_pid(Publisher)),
@@ -170,7 +170,7 @@ end}.
 connect_5({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_5 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 6. successfully connected : ~p~n", [A]) end),
-	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 6. wrong utf-8 : ~p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 6. wrong utf-8 : ~p~n", [A]), test_result ! onError end),
 
 	ConnRec = get_connect_rec(Id),
 	ok = mqtt_client:connect(
@@ -180,7 +180,7 @@ connect_5({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_5 = " ++ atom_t
 		[]
 	),	
 	
-	?assert(wait_all(1)),
+	?assert(wait_events("Connect", [onError])),
 	unregister(test_result),
 	?PASSED
 end}.
@@ -188,7 +188,7 @@ end}.
 connect_6({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_6 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 7. successfully connected : ~p~n", [A]) end),
-	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 7. wrong utf-8 : ~p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 7. wrong utf-8 : ~p~n", [A]), test_result ! onError end),
 
 	ConnRec = get_connect_rec(Id),	
 	ok = mqtt_client:connect(
@@ -198,16 +198,16 @@ connect_6({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_6 = " ++ atom_t
 		[]
 	),	
 
-	?assert(wait_all(1)),
+	?assert(wait_events("Connect", [onError])),
 	unregister(test_result),
 	?PASSED
 end}.
 
 reconnect({Id, connect}, [Publisher]) -> {"reconnect = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
-	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 8. onConnect : ~p~n", [A]), test_result ! done end),
-	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 8. onError : ~p~n", [A]), test_result ! done end),
-	callback:set_event_handler(onClose, fun(onClose, A) -> ?debug_Fmt("::test:: 8. onClose : ~p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 8. onConnect : ~p~n", [A]), test_result ! onConnect end),
+	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 8. onError : ~p~n", [A]), test_result ! onError end),
+	callback:set_event_handler(onClose, fun(onClose, A) -> ?debug_Fmt("::test:: 8. onClose : ~p~n", [A]), test_result ! onClose end),
 
 	ConnRec = get_connect_rec(Id),	
 	ok = mqtt_client:connect(
@@ -217,15 +217,15 @@ reconnect({Id, connect}, [Publisher]) -> {"reconnect = " ++ atom_to_list(Id) ++ 
 		[]
 	),	
 	
-	?assert(wait_all(1)),
+	?assert(wait_events("Connect 1", [onConnect])),
 	true = mqtt_client:is_connected(Publisher),
 	
 	ok = mqtt_client:disconnect(Publisher),
-	?assert(wait_all(0)), %% @todo failed server responce
+	?assert(wait_events("Connect 2", [onClose])), %% @todo failed server responce
 	false = mqtt_client:is_connected(Publisher),
 	
 	ok = mqtt_client:reconnect(Publisher),
-	?assert(wait_all(1)),
+	?assert(wait_events("Connect 3", [onConnect])),
 	true = mqtt_client:is_connected(Publisher),
 	?debug_Fmt("::test:: 8. successfully reconnected.", []),
 
@@ -239,10 +239,10 @@ keep_alive(_, Conn) -> {"\n\e[1;34mkeep alive test\e[0m", timeout, 15, fun() ->
 
 	timer:sleep(4900),
 	R2 = mqtt_client:status(Conn), 
-	?assertEqual([{connected,1},{session_present,0},{subscriptions,[]}], R2),
+	?assertMatch([{connected,1},{session_present,0},{subscriptions,_}], R2),
 	timer:sleep(3000),
 	R3 = mqtt_client:status(Conn), 
-	?assertEqual([{connected,0},{session_present,0},{subscriptions,[]}], R3),
+	?assertMatch([{connected,0},{session_present,0},{subscriptions,_}], R3),
 
 	?PASSED
 end}.

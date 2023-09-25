@@ -38,7 +38,7 @@ mqtt_client_test_() ->
 	[ 
 		{ setup, 
 			fun testing_v5:do_start/0, 
-			fun testing_v5:do_stop/1, 
+			fun testing_v5:do_stop/1,
 			{inorder, [
 				{ foreachx, 
 					fun testing_v5:do_setup/1, 

@@ -35,63 +35,61 @@
   retain_0/2,
   retain_1/2
 ]).
--import(testing, [wait_all/1]).
+-import(testing_v5, [wait_events/2]).
 %%
 %% API Functions
 %%
 set_handlers(QoS_expected, Topic_expected, Msg_expected) ->
-	callback:set_event_handler(onSubscribe, fun(onSubscribe, _A) -> test_result ! done end),
-	callback:set_event_handler(onPublish, fun(onPublish, A) -> ?debug_Fmt("::test:: onPublish : ~p~n", [A]), test_result ! done end),
-	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: onError : ~p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onSubscribe, fun(onSubscribe, _A) -> test_result ! onSubscribe end),
+	callback:set_event_handler(onPublish, fun(onPublish, A) -> ?debug_Fmt("::test:: onPublish : ~p~n", [A]), test_result ! onPublish end),
+	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: onError : ~p~n", [A]), test_result ! onError end),
 	callback:set_event_handler(onReceive, 
 				fun(onReceive, {Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = Arg) -> 
 					?debug_Fmt("::test:: onReceive : ~p~n", [Arg]),
-%%					?assertEqual(QoS_expected, Q),
-					?assertEqual(undefined, Q),
+					?assertEqual(QoS_expected, Q),
 					?assertEqual(Topic_expected, Topic),
 					?assertEqual(<<Msg_expected/binary, (list_to_binary((integer_to_list(QoS_expected))))/binary>>, Msg),
-					test_result ! done 
+					test_result ! onReceive 
 				end).
 
 retain_0({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {"retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(QoS, "AK_retain_test", <<"Test 0 retain message QoS=">>),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), %% in case if previous clean up failed
-	?assert(wait_all(if QoS == 0 -> 0; ?ELSE -> 1 end)),
+	?assert(wait_events("", if QoS == 0 -> []; ?ELSE -> [onPublish] end)),
 
 	ok = mqtt_client:subscribe(Subscriber1, [{"AK_retain_test", QoS}]), 
-	?assert(wait_all(1)),
+	?assert(wait_events("", [onSubscribe])),
 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AK_retain_test", qos = QoS, retain = 1},
 													 <<"Test 0 retain message QoS=", (list_to_binary((integer_to_list(QoS))))/binary>>),
-	?assert(wait_all(if QoS == 0 -> 1; ?ELSE -> 2 end)),
+	?assert(wait_events("", if QoS == 0 -> [onReceive]; ?ELSE -> [onPublish, onReceive] end)),
 	
 	ok = mqtt_client:subscribe(Subscriber2, [{"AK_retain_test", QoS}]), 
-	?assert(wait_all(2)),
+	?assert(wait_events("", [onSubscribe, onReceive])),
 
 	unregister(test_result),
 	?PASSED
 end}.
 
-%% .
 retain_1({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {"retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(QoS, "AK_retain_test", <<"Test 1 retain message QoS=">>),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), %% in case if previous clean up failed
-	?assert(wait_all(if QoS == 0 -> 0; ?ELSE -> 1 end)),
+	?assert(wait_events("", if QoS == 0 -> []; ?ELSE -> [onPublish] end)),
 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AK_retain_test", qos = QoS, retain = 1},
 													 <<"Test 1 retain message QoS=", (list_to_binary((integer_to_list(QoS))))/binary>>),
-	?assert(wait_all(if QoS == 0 -> 0; ?ELSE -> 1 end)),
+	?assert(wait_events("", if QoS == 0 -> []; ?ELSE -> [onPublish] end)),
 
 	ok = mqtt_client:subscribe(Subscriber1, [{"AK_retain_test", QoS}]), 
-	?assert(wait_all(2)),
+	?assert(wait_events("", [onSubscribe, onReceive])),
 
 	ok = mqtt_client:disconnect(Publisher),
 	timer:sleep(100),
 
 	ok = mqtt_client:subscribe(Subscriber2, [{"AK_retain_test", QoS}]), 
-	?assert(wait_all(2)),
+	?assert(wait_events("", [onSubscribe, onReceive])),
 
 	unregister(test_result),
 	?PASSED

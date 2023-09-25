@@ -36,33 +36,33 @@
   will_0/2,
 	will_retain/2
 ]).
--import(testing, [wait_all/1]).
+-import(testing_v5, [wait_events/2]).
 %%
 %% API Functions
 %%
 set_handlers(QoS_expected, Topic_expected, Msg_expected) ->
-	callback:set_event_handler(onSubscribe, fun(onSubscribe, _A) -> test_result ! done end),
-	callback:set_event_handler(onPublish, fun(onPublish, A) -> ?debug_Fmt("::test:: onPublish : ~p~n", [A]), test_result ! done end),
-	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: onError : ~p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onSubscribe, fun(onSubscribe, _A) -> test_result ! onSubscribe end),
+	callback:set_event_handler(onPublish, fun(onPublish, A) -> ?debug_Fmt("::test:: onPublish : ~p~n", [A]), test_result ! onPublish end),
+	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: onError : ~p~n", [A]), test_result ! onError end),
 	callback:set_event_handler(onReceive, 
 				fun(onReceive, {Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= Msg}} = Arg) -> 
 					?debug_Fmt("::test:: onReceive : ~p~n", [Arg]),
 					 ?assertEqual(QoS_expected, Q),
 					 ?assertEqual(Topic_expected, Topic),
 					?assertEqual(Msg_expected, Msg),
-					 test_result ! done 
+					 test_result ! onReceive 
 				end).
 
 will_a({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", timeout, 100, fun() ->
 	register(test_result, self()),
-	set_handlers(undefined, "AK_will_test", <<"Test will message">>),
+	set_handlers(0, "AK_will_test", <<"Test will message">>),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 0}]), 
-	?assert(wait_all(1)),
+	?assert(wait_events("", [onSubscribe])),
 %% generate connection close:
 	ok = mqtt_client:disconnect(Publisher),
 
-	?assert(wait_all(0)),
+	?assert(wait_events("", [])),
 
 	unregister(test_result),
 
@@ -71,10 +71,10 @@ end}.
 
 will_0({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", timeout, 100, fun() ->
 	register(test_result, self()),
-	set_handlers(undefined, "AK_will_test", <<"Test will message">>),
+	set_handlers(0, "AK_will_test", <<"Test will message">>),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 0}]), 
-	?assert(wait_all(1)),
+	?assert(wait_events("", [onSubscribe])),
 %% generate connection lost:
 	gen_server:call(Publisher, {set_test_flag, break_connection}),
 	try
@@ -83,7 +83,7 @@ will_0({0, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", time
 		_:_ -> ok
 	end,
 
-	?assert(wait_all(1)),
+	?assert(wait_events("", [onReceive])),
 
 	unregister(test_result),
 	?PASSED
@@ -91,10 +91,10 @@ end};
 
 will_0({1, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=1.", timeout, 100, fun() ->
 	register(test_result, self()),
-	set_handlers(undefined, "AK_will_test", <<"Test will message">>),
+	set_handlers(1, "AK_will_test", <<"Test will message">>),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 1}]), 
-	?assert(wait_all(1)),
+	?assert(wait_events("", [onSubscribe])),
 % generate connection lost:
 	gen_server:call(Publisher, {set_test_flag, break_connection}),
 	try
@@ -103,7 +103,7 @@ will_0({1, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=1.", time
 		_:_ -> ok
 	end,
 
-	?assert(wait_all(1)),
+	?assert(wait_events("", [onReceive])),
 
 	unregister(test_result),
 	?PASSED
@@ -111,10 +111,10 @@ end};
 
 will_0({2, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=2.", timeout, 100, fun() ->
 	register(test_result, self()),
-	set_handlers(undefined, "AK_will_test", <<"Test will message">>),
+	set_handlers(2, "AK_will_test", <<"Test will message">>),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AK_will_test", 2}]), 
-	?assert(wait_all(1)),
+	?assert(wait_events("", [onSubscribe])),
 %% generate connection lost:
 	gen_server:call(Publisher, {set_test_flag, break_connection}),
 	try
@@ -123,7 +123,7 @@ will_0({2, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=2.", time
 		_:_ -> ok
 	end,
 
-	?assert(wait_all(1)),
+	?assert(wait_events("", [onReceive])),
 
 	unregister(test_result),
 	?PASSED
@@ -131,10 +131,10 @@ end}.
 
 will_retain({QoS, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will with retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
-	set_handlers(undefined, "AK_will_retain_test", <<"Test will retain message">>),
+	set_handlers(QoS, "AK_will_retain_test", <<"Test will retain message">>),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AK_will_retain_test", QoS}]), 
-	?assert(wait_all(1)),
+	?assert(wait_events("", [onSubscribe])),
 %% generate connection lost:
 	gen_server:call(Publisher, {set_test_flag, break_connection}),
 	try
@@ -142,7 +142,7 @@ will_retain({QoS, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will
 	catch
 		_:_ -> ok
 	end,
-	?assert(wait_all(1)),
+	?assert(wait_events("", [onReceive])),
 
 	Subscriber_2 = mqtt_client:create(subscriber2),
 	ok = mqtt_client:connect(
@@ -153,9 +153,9 @@ will_retain({QoS, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will
 	),
 	?assert(is_pid(Subscriber_2)),
 	timer:sleep(500),
-%%	?assert(wait_all(1)),
+%%	?assert(wait_events(1)),
 	ok = mqtt_client:subscribe(Subscriber_2, [{"AK_will_retain_test", QoS}]), 
-	?assert(wait_all(2)),
+	?assert(wait_events("", [onSubscribe, onReceive])),
 
 	unregister(test_result),
 	mqtt_client:dispose(Subscriber_2),

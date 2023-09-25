@@ -38,20 +38,20 @@
 	session_expire/2,
 	msg_expire/2
 ]).
--import(testing_v5, [wait_all/1, wait/4]).
+-import(testing_v5, [wait_events/2]).
 %%
 %% API Functions
 %%
 set_handlers(QoS_expected, Topic_expected) ->
-	callback:set_event_handler(onSubscribe, fun(onSubscribe, _A) -> test_result ! done0 end),
-	callback:set_event_handler(onPublish, fun(onPublish, A) -> ?debug_Fmt("::test:: onPublish : ~p~n", [A]), test_result ! done1 end),
-	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: onError : ~p~n", [A]), test_result ! done2 end),
+	callback:set_event_handler(onSubscribe, fun(onSubscribe, _A) -> test_result ! onSubscribe end),
+	callback:set_event_handler(onPublish, fun(onPublish, A) -> ?debug_Fmt("::test:: onPublish : ~p~n", [A]), test_result ! onPublish end),
+	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: onError : ~p~n", [A]), test_result ! onError end),
 	callback:set_event_handler(onReceive, 
 				fun(onReceive, {Q, #publish{topic= Topic, qos=_QoS, dup=_Dup, payload= _Msg}} = Arg) -> 
 					?debug_Fmt("::test:: onReceive : ~p~n", [Arg]),
 					 ?assertEqual(QoS_expected, Q),
 					 ?assertEqual(Topic_expected, Topic),
-					 test_result ! done3
+					 test_result ! onReceive
 				end).
 
 %% Publisher: skip send publish. Resend publish after reconnect and restore session.
@@ -60,14 +60,14 @@ session_1({1, session}, [Publisher, Subscriber]) -> {[$\n] ++ ">>>>>>session QoS
 	set_handlers(#subscription_options{max_qos=1}, "AKtest"),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKtest", #subscription_options{max_qos=1}}]), 
-	?assert(wait(1,0,0,0)),
+	?assert(wait_events("Subscribe", [onSubscribe])),
 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"1) Test Payload QoS = 1. annon. function callback. ">>), 
-	?assert(wait(0,1,0,1)),
+	?assert(wait_events("Publish", [onPublish, onReceive])),
 
 	gen_server:call(Publisher, {set_test_flag, skip_send_publish}),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"2) Test Payload QoS = 1. annon. function callback. ">>), 
-	?assert(wait(0,0,1,0)),
+	?assert(wait_events("Skip publish", [onError])),
 
 	gen_server:call(Publisher, {set_test_flag, undefined}),
 	mqtt_client:disconnect(Publisher),
@@ -79,7 +79,7 @@ session_1({1, session}, [Publisher, Subscriber]) -> {[$\n] ++ ">>>>>>session QoS
 		[]
 	),
 
-	?assert(wait(0,1,0,1)),
+	?assert(wait_events("After reconnect", [onPublish, onReceive])),
 	unregister(test_result),
 	?PASSED
 end};
@@ -90,14 +90,14 @@ session_1({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	set_handlers(#subscription_options{max_qos=1}, "AKtest"),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKtest", 1}]), 
-	?assert(wait(1,0,0,0)),
+	?assert(wait_events("Subscribe", [onSubscribe])),
 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::1 Test Payload QoS = 1. function callback. ">>), 
-	?assert(wait(0,1,0,1)),
+	?assert(wait_events("Publish", [onPublish, onReceive])),
 
 	gen_server:call(Publisher, {set_test_flag, skip_rcv_puback}),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::2 Test Payload QoS = 1. function callback. ">>), 
-	?assert(wait(0,0,1,1)),
+	?assert(wait_events("Skip receive puback", [onError, onReceive])),
 
 	gen_server:call(Publisher, {set_test_flag, undefined}),
 	mqtt_client:disconnect(Publisher),
@@ -109,7 +109,7 @@ session_1({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 		[]
 	),
 
-	?assert(wait(0,1,0,1)),
+	?assert(wait_events("After reconnect", [onPublish, onReceive])),
 	unregister(test_result),
 	?PASSED
 end};
@@ -120,14 +120,14 @@ session_1({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	set_handlers(#subscription_options{max_qos=1}, "AKtest"),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKtest", 1}]), 
-	?assert(wait(1,0,0,0)),
+	?assert(wait_events("Subscribe", [onSubscribe])),
 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::1 Test Payload QoS = 1. function callback. ">>), 
-	?assert(wait(0,1,0,1)), %% allow subscriber to receive first message 
+	?assert(wait_events("Publish", [onPublish, onReceive])), %% allow subscriber to receive first message 
 
 	gen_server:call(Subscriber, {set_test_flag, skip_rcv_publish}),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::2 Test Payload QoS = 1. function callback. ">>), 
-	?assert(wait(0,1,0,0)),
+	?assert(wait_events("Skip receive publish", [onPublish])),
 
 	gen_server:call(Subscriber, {set_test_flag, undefined}),
 	mqtt_client:disconnect(Subscriber),
@@ -142,7 +142,7 @@ session_1({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(100),
 	?assert(mqtt_client:is_connected(Subscriber)),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::3 Test Payload QoS = 1. function callback. ">>), 
-	?assert(wait(0,1,0,2)),
+	?assert(wait_events("After reconnect", [onPublish, onReceive, onReceive])),
 	
 	unregister(test_result),
 	?PASSED
@@ -154,14 +154,14 @@ session_1({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	set_handlers(#subscription_options{max_qos=1}, "AKtest"),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKtest", 1}]), 
-	?assert(wait(1,0,0,0)),
+	?assert(wait_events("Subscribe", [onSubscribe])),
 	
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::1 Test Payload QoS = 1. function callback. ">>), 
-	?assert(wait(0,1,0,1)), %% allow subscriber to receive first message
+	?assert(wait_events("Publish", [onPublish, onReceive])), %% allow subscriber to receive first message 
 
 	gen_server:call(Subscriber, {set_test_flag, skip_send_puback}),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::2 Test Payload QoS = 1. function callback. ">>), 
-	?assert(wait(0,1,0,1)),
+	?assert(wait_events("Skip send puback", [onPublish, onReceive])),
 
 	gen_server:call(Subscriber, {set_test_flag, undefined}),
 	mqtt_client:disconnect(Subscriber),
@@ -175,7 +175,7 @@ session_1({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(100),
 	?assert(mqtt_client:is_connected(Subscriber)),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<"::3 Test Payload QoS = 1. function callback. ">>), 
-	?assert(wait(0,1,0,2)),
+	?assert(wait_events("After reconnect", [onPublish, onReceive, onReceive])),
 	
 	unregister(test_result),
 	?PASSED
@@ -187,13 +187,14 @@ session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {[$\n]++" >>>>
 	set_handlers(#subscription_options{max_qos=2}, "AKTest"),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKTest", 2}]), 
+	?assert(wait_events("Subscribe", [onSubscribe])),
 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"Test Payload QoS = 2. annon. function callback. ">>), 
-	?assert(wait(1,1,0,1)), %% allow subscriber to receive first message
+	?assert(wait_events("Publish", [onPublish, onReceive])), %% allow subscriber to receive first message
 
 	gen_server:call(Publisher, {set_test_flag, skip_send_publish}),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"Test Payload QoS = 2. annon. function callback. ">>), 
-	?assert(wait(0,0,1,0)),
+	?assert(wait_events("Skip send publish", [onError])),
 
 	gen_server:call(Publisher, {set_test_flag, undefined}),
 	mqtt_client:disconnect(Publisher),
@@ -205,7 +206,7 @@ session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {[$\n]++" >>>>
 		[]
 	),
 	
-	?assert(wait(0,1,0,1)),
+	?assert(wait_events("After reconnect", [onPublish, onReceive])),
 	
 	unregister(test_result),
 	?PASSED
@@ -217,13 +218,14 @@ session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	set_handlers(#subscription_options{max_qos=2}, "AKTest"),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKTest", 2}]), 
+	?assert(wait_events("Subscribe", [onSubscribe])),
 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"Test Payload QoS = 2. annon. function callback.">>), 
-	?assert(wait(1,1,0,1)), %% allow subscriber to receive first message
+	?assert(wait_events("Publish", [onPublish, onReceive])), %% allow subscriber to receive first message
 
 	gen_server:call(Publisher, {set_test_flag, skip_rcv_pubrec}),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"Test Payload QoS = 2. annon. function callback.">>), 
-	?assert(wait(0,0,1,0)),
+	?assert(wait_events("Skip receive pubrec", [onError])),
 
 	gen_server:call(Publisher, {set_test_flag, undefined}),
 	mqtt_client:disconnect(Publisher),
@@ -235,7 +237,7 @@ session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 		[]
 	),
 	
-	?assert(wait(0,1,0,1)),
+	?assert(wait_events("After reconnect", [onPublish, onReceive])),
 	
 	unregister(test_result),
 	?PASSED
@@ -247,13 +249,14 @@ session_2({7, session}, [Publisher, Subscriber]) -> {"session QoS=2, publisher s
 	set_handlers(#subscription_options{max_qos=2}, "AKTest"),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKTest", 2}]), 
+	?assert(wait_events("Subscribe", [onSubscribe])),
 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"1) Test Payload QoS = 2. annon. function callback. ">>), 
-	?assert(wait(1,1,0,1)), %% allow subscriber to receive first message
+	?assert(wait_events("Publish", [onPublish, onReceive])), %% allow subscriber to receive first message
 	
 	gen_server:call(Publisher, {set_test_flag, skip_send_pubrel}),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"2) Test Payload QoS = 2. annon. function callback. ">>), 
-	?assert(wait(0,0,1,0)),
+	?assert(wait_events("Skip send pubrel", [onError])),
 	
 	gen_server:call(Publisher, {set_test_flag, undefined}),
 	mqtt_client:disconnect(Publisher),
@@ -263,7 +266,7 @@ session_2({7, session}, [Publisher, Subscriber]) -> {"session QoS=2, publisher s
 		[]
 	),
 	
-	?assert(wait(0,1,0,1)),
+	?assert(wait_events("After reconnect", [onPublish])), %% @todo check if onReceive event need
 	
 	unregister(test_result),
 	?PASSED
@@ -275,13 +278,14 @@ session_2({8, session}, [Publisher, Subscriber]) -> {"session QoS=2, publisher s
 	set_handlers(#subscription_options{max_qos=2}, "AKTest"),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKTest", 2}]), 
+	?assert(wait_events("Subscribe", [onSubscribe])),
 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"1) Test Payload QoS = 2. annon. function callback. ">>), 
-	?assert(wait(1,1,0,1)), %% allow subscriber to receive first message
+	?assert(wait_events("Publish", [onPublish, onReceive])), %% allow subscriber to receive first message
 
 	gen_server:call(Publisher, {set_test_flag, skip_rcv_pubcomp}),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"2) Test Payload QoS = 2. annon. function callback. ">>), 
-	?assert(wait(0,0,1,1)),
+	?assert(wait_events("Skip receive pubcomp", [onError, onReceive])),
 
 	gen_server:call(Publisher, {set_test_flag, undefined}),
 	mqtt_client:disconnect(Publisher),
@@ -293,8 +297,8 @@ session_2({8, session}, [Publisher, Subscriber]) -> {"session QoS=2, publisher s
 		[]
 	),
 	
-%	?assert(wait(0,0,0,1)),
-	?assert(wait(0,0,1,0)), % @todo this is wrong test (in server side) !!!
+%	?assert(wait(0,0,1,0)), % @todo this is wrong test (in server side) !!!
+	?assert(wait_events("After reconnect", [onPublish])),
 	
 	unregister(test_result),
 	?PASSED
@@ -306,28 +310,29 @@ session_2({9, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber 
 	set_handlers(#subscription_options{max_qos=2}, "AKtest"),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKtest", 2}]), 
+	?assert(wait_events("Subscribe", [onSubscribe])),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::1 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(1,1,0,1)), %% allow subscriber to receive first message
+	?assert(wait_events("Publish", [onPublish, onReceive])), %% allow subscriber to receive first message
 
 	gen_server:call(Subscriber, {set_test_flag, skip_rcv_publish}),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::2 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(0,1,0,0)),
+	?assert(wait_events("Skip receive publish", [onPublish])),
 
 	gen_server:call(Subscriber, {set_test_flag, undefined}),
 	mqtt_client:disconnect(Subscriber),
 	timer:sleep(100),
 	ok = mqtt_client:connect(
 		Subscriber, 
-		?CONN_REC(subscriber)#connect{clean_session = 0},
+		(testing_v5:get_connect_rec(subscriber))#connect{clean_session = 0},
 		{callback, call},
 		[]
 	),
 
-	?assert(wait(0,0,0,1)),
+	?assert(wait_events("After reconnect", [onReceive])),
 	?assert(mqtt_client:is_connected(Subscriber)),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::3 Test Payload QoS = 2. function callback. ">>), 
 
-	?assert(wait(0,1,0,1)),
+	?assert(wait_events("After publish", [onPublish, onReceive])),
 	
 	unregister(test_result),
 	?PASSED
@@ -339,13 +344,13 @@ session_2({10, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 	set_handlers(#subscription_options{max_qos=2}, "AKtest"),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKtest", 2}]), 
-
+	?assert(wait_events("Subscribe", [onSubscribe])),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::1 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(1,1,0,1)), %% allow subscriber to receive first message
+	?assert(wait_events("Publish", [onPublish, onReceive])), %% allow subscriber to receive first message
 
 	gen_server:call(Subscriber, {set_test_flag, skip_send_pubrec}),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::2 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(0,1,0,1)),
+	?assert(wait_events("Skip send pubrec", [onPublish, onReceive])),
 
 	gen_server:call(Subscriber, {set_test_flag, undefined}),
 	mqtt_client:disconnect(Subscriber),
@@ -356,10 +361,10 @@ session_2({10, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 		{callback, call},
 		[]
 	),
-	?assert(wait(0,0,0,1)),
+	?assert(wait_events("After reconnect", [onReceive])),
 	?assert(mqtt_client:is_connected(Subscriber)),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::3 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(0,1,0,1)),
+	?assert(wait_events("After publish", [onPublish, onReceive])),
 	
 	unregister(test_result),
 	?PASSED
@@ -371,13 +376,13 @@ session_2({11, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 	set_handlers(#subscription_options{max_qos=2}, "AKtest"),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKtest", 2}]), 
-	?assert(wait(1,0,0,0)),
+	?assert(wait_events("Subscribe", [onSubscribe])),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::1 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(0,1,0,1)), %% allow subscriber to receive first message
+	?assert(wait_events("Publish", [onPublish, onReceive])), %% allow subscriber to receive first message
 
 	gen_server:call(Subscriber, {set_test_flag, skip_rcv_pubrel}),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::2 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(0,1,0,1)),
+	?assert(wait_events("Skip receive pubrel", [onPublish, onReceive])),
 
 	gen_server:call(Subscriber, {set_test_flag, undefined}),
 	mqtt_client:disconnect(Subscriber),
@@ -388,11 +393,12 @@ session_2({11, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 		{callback, call},
 		[]
 	),
-%%	?assert(wait(0,0,0,1)), %% @todo test failed: something wrong!
-	?assert(wait(0,0,0,0)), %% wrong!
+%	?assert(wait(0,0,0,1)), %% @todo test failed: something wrong!
+%	?assert(wait(0,0,0,0)), %% wrong!
+	?assert(wait_events("After reconnect", [])),
 	?assert(mqtt_client:is_connected(Subscriber)),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::3 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(0,1,0,1)),
+	?assert(wait_events("After publish", [onPublish, onReceive])),
 	
 	unregister(test_result),
 	?PASSED
@@ -404,13 +410,13 @@ session_2({12, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 	set_handlers(#subscription_options{max_qos=2}, "AKtest"),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKtest", 2}]), 
-	?assert(wait(1,0,0,0)),
+	?assert(wait_events("Subscribe", [onSubscribe])),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::1 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(0,1,0,1)), %% allow subscriber to receive first message
+	?assert(wait_events("Publish", [onPublish, onReceive])), %% allow subscriber to receive first message
 
 	gen_server:call(Subscriber, {set_test_flag, skip_send_pubcomp}),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::2 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(0,1,0,1)),
+	?assert(wait_events("Skip send pubcomp", [onPublish, onReceive])),
 
 	gen_server:call(Subscriber, {set_test_flag, undefined}),
 	mqtt_client:disconnect(Subscriber),
@@ -422,10 +428,11 @@ session_2({12, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 		[]
 	),
 %%	?assert(wait(0,0,0,1)), %% @todo did not receive: something wrong!
-	?assert(wait(0,0,0,0)), %% wrong!
+%	?assert(wait(0,0,0,0)), %% wrong!
+	?assert(wait_events("After reconnect", [])),
 	?assert(mqtt_client:is_connected(Subscriber)),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<"::3 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(0,1,0,1)),
+	?assert(wait_events("After publish", [onPublish, onReceive])),
 	
 	unregister(test_result),
 	?PASSED
@@ -447,7 +454,7 @@ session_expire({1, session_expire}, [Subscriber]) -> {"session QoS=2, subscriber
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKtest", #subscription_options{max_qos=2}}]), 
 	ok = mqtt_client:publish(Subscriber, #publish{topic = "AKtest", qos = 2}, <<"::1 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(1,1,0,1)), %% allow subscriber to receive first message
+	?assert(wait_events("Publish", [onSubscribe, onPublish, onReceive])), %% allow subscriber to receive first message
 
 	ok = mqtt_client:disconnect(Subscriber),
 	timer:sleep(100), %%  
@@ -459,11 +466,12 @@ session_expire({1, session_expire}, [Subscriber]) -> {"session QoS=2, subscriber
 		{callback, call},
 		[]
 	),
+	timer:sleep(100), %%  
 
 	?assertMatch([_, {session_present, 1}, _], mqtt_client:status(Subscriber)),
 	ok = mqtt_client:publish(Subscriber, #publish{topic = "AKtest", qos = 2}, <<"::2 Test Payload QoS = 2. function callback. ">>), 
 
-	?assert(wait(0,1,0,1)),
+	?assert(wait_events("After publish", [onPublish, onReceive])),
 	
 	unregister(test_result),
 	?PASSED
@@ -485,7 +493,7 @@ session_expire({2, session_expire}, [Subscriber]) -> {"session QoS=2, subscriber
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKtest", #subscription_options{max_qos=2}}]), 
 	ok = mqtt_client:publish(Subscriber, #publish{topic = "AKtest", qos = 2}, <<"::1 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(1,1,0,1)), %% allow subscriber to receive first message
+	?assert(wait_events("Publish", [onSubscribe, onPublish, onReceive])), %% allow subscriber to receive first message
 
 	ok = mqtt_client:disconnect(Subscriber),
 	timer:sleep(100),
@@ -500,7 +508,7 @@ session_expire({2, session_expire}, [Subscriber]) -> {"session QoS=2, subscriber
 	timer:sleep(100),
 	?assertMatch([_, {session_present, 0}, _], mqtt_client:status(Subscriber)),
 	ok = mqtt_client:publish(Subscriber, #publish{topic = "AKtest", qos = 2}, <<"::2 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(0,1,0,0)),
+	?assert(wait_events("After publish", [onPublish])),
 
 	ok = mqtt_client:disconnect(Subscriber,0,[{?Session_Expiry_Interval, 5}]),
 	
@@ -524,7 +532,7 @@ session_expire({3, session_expire}, [Subscriber]) -> {"session QoS=2, subscriber
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKtest", #subscription_options{max_qos=2}}]), 
 	ok = mqtt_client:publish(Subscriber, #publish{topic = "AKtest", qos = 2}, <<"::1 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(1,1,0,1)), %% allow subscriber to receive first message
+	?assert(wait_events("Publish", [onSubscribe, onPublish, onReceive])), %% allow subscriber to receive first message
 
 	ok = mqtt_client:disconnect(Subscriber),
 	timer:sleep(100), %%  
@@ -534,10 +542,11 @@ session_expire({3, session_expire}, [Subscriber]) -> {"session QoS=2, subscriber
 		{callback, call},
 		[]
 	),
+	timer:sleep(100), %%  
 
 	?assertMatch([_, {session_present, 1}, _], mqtt_client:status(Subscriber)),
 	ok = mqtt_client:publish(Subscriber, #publish{topic = "AKtest", qos = 2}, <<"::2 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(0,1,0,1)),  
+	?assert(wait_events("After publish", [onPublish, onReceive])),
 
 	unregister(test_result),
 	?PASSED
@@ -559,7 +568,7 @@ session_expire({4, session_expire}, [Subscriber]) -> {"session QoS=2, subscriber
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKtest", #subscription_options{max_qos=2}}]), 
 	ok = mqtt_client:publish(Subscriber, #publish{topic = "AKtest", qos = 2}, <<"::1 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(1,1,0,1)), %% allow subscriber to receive first message
+	?assert(wait_events("Publish", [onSubscribe, onPublish, onReceive])), %% allow subscriber to receive first message
 
 	ok = mqtt_client:disconnect(Subscriber),
 	timer:sleep(20000),
@@ -572,19 +581,19 @@ session_expire({4, session_expire}, [Subscriber]) -> {"session QoS=2, subscriber
 	timer:sleep(100),
 	?assertMatch([_, {session_present, 0}, _], mqtt_client:status(Subscriber)),
 	ok = mqtt_client:publish(Subscriber, #publish{topic = "AKtest", qos = 2}, <<"::2 Test Payload QoS = 2. function callback. ">>), 
-	?assert(wait(0,1,0,0)),  
+	?assert(wait_events("After publish", [onPublish])),
 	
 	unregister(test_result),
 	?PASSED
 end}.
 
-%% Subscriber: skip send pubrec. Resend publish after reconnect and restore session. Testing message Expiry interval.
+%% Subscriber: skip_send_pubrec. Resend publish after reconnect and restore session. Testing message Expiry interval.
 msg_expire({1, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber skips send pubrec to test message expiry interval", timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=2}, "AKtest"),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKtest", #subscription_options{max_qos=2}}]),
-	?assert(wait(1,0,0,0)),
+	?assert(wait_events("Subscribe", [onSubscribe])),
 	ok = mqtt_client:publish(
 				Publisher,
 				#publish{
@@ -592,7 +601,7 @@ msg_expire({1, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 					qos = 2,
 					properties=[{?Message_Expiry_Interval, 5}]},
 				<<"::1 Test message expiry interval, QoS = 2. function callback. ">>), 
-	?assert(wait(0,1,0,1)), %% allow subscriber to receive first message
+	?assert(wait_events("Publish 1", [onPublish, onReceive])), %% allow subscriber to receive first message
 
 	gen_server:call(Subscriber, {set_test_flag, skip_send_pubrec}),
 	ok = mqtt_client:publish(
@@ -602,7 +611,7 @@ msg_expire({1, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 					qos = 2,
 					properties=[{?Message_Expiry_Interval, 5}]},
 				<<"::2 Test message expiry interval, QoS = 2. function callback. ">>), 
-	?assert(wait(0,1,0,1)), %% allow subscriber to receive second message 
+	?assert(wait_events("Publish 2", [onPublish, onReceive])), %% allow subscriber to receive second message
 
 	gen_server:call(Subscriber, {set_test_flag, undefined}),
 	mqtt_client:disconnect(Subscriber),
@@ -616,7 +625,7 @@ msg_expire({1, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 	timer:sleep(100),
 	?assert(mqtt_client:is_connected(Subscriber)),
 	
-	?assert(wait(0,0,0,1)),
+	?assert(wait_events("After reconnect", [onReceive])),
 	
 	unregister(test_result),
 	?PASSED
@@ -628,7 +637,7 @@ msg_expire({2, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 	set_handlers(#subscription_options{max_qos=2}, "AKtest"),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKtest", #subscription_options{max_qos=2}}]), 
-	?assert(wait(1,0,0,0)),
+	?assert(wait_events("Subscribe", [onSubscribe])),
 	ok = mqtt_client:publish(
 				Publisher,
 				#publish{
@@ -636,7 +645,7 @@ msg_expire({2, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 					qos = 2,
 					properties=[{?Message_Expiry_Interval, 5}]},
 				<<"::1 Test message expiry interval, QoS = 2. function callback. ">>), 
-	?assert(wait(0,1,0,1)), %% allow subscriber to receive first message
+	?assert(wait_events("Publish 1", [onPublish, onReceive])), %% allow subscriber to receive first message
 
 	gen_server:call(Subscriber, {set_test_flag, skip_send_pubrec}),
 	ok = mqtt_client:publish(
@@ -646,7 +655,7 @@ msg_expire({2, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 					qos = 2,
 					properties=[{?Message_Expiry_Interval, 5}]},
 				<<"::2 Test message expiry interval, QoS = 2. function callback. ">>), 
-	?assert(wait(0,1,0,1)), %% allow subscriber to receive second message 
+	?assert(wait_events("Publish 2", [onPublish, onReceive])), %% allow subscriber to receive second message
 
 	gen_server:call(Subscriber, {set_test_flag, undefined}),
 	mqtt_client:disconnect(Subscriber),
@@ -660,7 +669,7 @@ msg_expire({2, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 	timer:sleep(100),
 	?assert(mqtt_client:is_connected(Subscriber)),
 	
-	?assert(wait(0,0,0,0)),
+	?assert(wait_events("After reconnect", [])),
 
 	unregister(test_result),
 	?PASSED

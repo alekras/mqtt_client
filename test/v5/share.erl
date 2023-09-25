@@ -37,7 +37,7 @@
 	publish_1/2
 ]).
 
--import(testing_v5, [wait_all/1]).
+-import(testing_v5, [wait_events/2]).
 %%
 %% API Functions
 %%
@@ -51,24 +51,24 @@ onReceiveCallback(QoS, Subscriber) ->
 		Expect_QoS = if QoS > Msq_QoS -> Msq_QoS; true -> QoS end,
 		?assertEqual(Expect_QoS, Q),
 		?assertEqual("AKTest", T),
-		test_result ! done 
+		test_result ! onReceive
 	end.
 
 publish_0({QoS, share} = _X, [Publisher, Subscriber1, Subscriber2, _, _] = _Conns) -> {"publish to shared Topic with QoS = " ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
-	callback:set_event_handler(onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe 1: ~p~n", [A]), test_result ! done end),
-	callback:set_event_handler(1, onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe 2: ~p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe 1: ~p~n", [A]), test_result ! onSubscribe1 end),
+	callback:set_event_handler(1, onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe 2: ~p~n", [A]), test_result ! onSubscribe2 end),
 	callback:set_event_handler(onReceive, onReceiveCallback(QoS, 1)),
 	callback:set_event_handler(1, onReceive, onReceiveCallback(QoS, 2)),
 
 	ok = mqtt_client:subscribe(Subscriber1, [{"$share/A/AKTest", #subscription_options{max_qos = QoS}}]), 
 	ok = mqtt_client:subscribe(Subscriber2, [{"$share/A/AKTest", #subscription_options{max_qos = QoS}}]), 
-	?assert(wait_all(2)),
+	?assert(wait_events("Subscribe", [onSubscribe1, onSubscribe2])),
 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 0}, <<"0) Test Payload QoS = 0. annon. function callback. ">>), 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 1}, <<"1) Test Payload QoS = 1. annon. function callback. ">>), 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"2) Test Payload QoS = 2. annon. function callback. ">>), 
-	?assert(wait_all(3)),
+	?assert(wait_events("Publish", [onReceive, onReceive, onReceive])),
 
 	unregister(test_result),
 	?PASSED
@@ -76,10 +76,10 @@ end}.
 
 publish_1({QoS, share} = _X, [Publisher, Subscriber1, Subscriber2, Subscriber3, Subscriber4] = _Conns) -> {"publish with QoS = " ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
-	callback:set_event_handler(onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe 1: ~p~n", [A]), test_result ! done end),
-	callback:set_event_handler(1, onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe 2: ~p~n", [A]), test_result ! done end),
-	callback:set_event_handler(2, onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe 3: ~p~n", [A]), test_result ! done end),
-	callback:set_event_handler(3, onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe 4: ~p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe 1: ~p~n", [A]), test_result ! onSubscribe1 end),
+	callback:set_event_handler(1, onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe 2: ~p~n", [A]), test_result ! onSubscribe2 end),
+	callback:set_event_handler(2, onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe 3: ~p~n", [A]), test_result ! onSubscribe3 end),
+	callback:set_event_handler(3, onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe 4: ~p~n", [A]), test_result ! onSubscribe4 end),
 	callback:set_event_handler(onReceive, onReceiveCallback(QoS, 1)),
 	callback:set_event_handler(1, onReceive, onReceiveCallback(QoS, 2)),
 	callback:set_event_handler(2, onReceive, onReceiveCallback(QoS, 3)),
@@ -89,12 +89,12 @@ publish_1({QoS, share} = _X, [Publisher, Subscriber1, Subscriber2, Subscriber3, 
 	ok = mqtt_client:subscribe(Subscriber2, [{"$share/A/AKTest", #subscription_options{max_qos = QoS}}]), 
 	ok = mqtt_client:subscribe(Subscriber3, [{"$share/B/AKTest", #subscription_options{max_qos = QoS}}]), 
 	ok = mqtt_client:subscribe(Subscriber4, [{"$share/B/AKTest", #subscription_options{max_qos = QoS}}]), 
-	?assert(wait_all(4)),
+	?assert(wait_events("Subscribe", [onSubscribe1, onSubscribe2, onSubscribe3, onSubscribe4])),
 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 0}, <<"0) Test Payload QoS = 0. annon. function callback. ">>), 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 1}, <<"1) Test Payload QoS = 1. annon. function callback. ">>), 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = 2}, <<"2) Test Payload QoS = 2. annon. function callback. ">>), 
-	?assert(wait_all(6)),
+	?assert(wait_events("Publish", [onReceive, onReceive, onReceive, onReceive, onReceive, onReceive])),
 
 	unregister(test_result),
 	?PASSED

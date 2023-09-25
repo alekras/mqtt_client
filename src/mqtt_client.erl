@@ -272,6 +272,8 @@ dispose(Client_name) ->
 %% ====================================================================
 start(_Type, StartArgs) ->
 	lager:start(),
+	application:ensure_started(sasl),
+	application:start(mqtt_common),
 	case application:get_env(lager, log_root) of
 		{ok, _} -> ok;
 		undefined ->
@@ -281,7 +283,6 @@ start(_Type, StartArgs) ->
 			application:stop(lager),
 			lager:start()
 	end,
-	application:load(sasl),
 	lager:info([{endtype, client}], "running apps: ~p",[application:which_applications()]),	
 	Storage =
 	case application:get_env(mqtt_client, storage, dets) of

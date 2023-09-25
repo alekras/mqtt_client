@@ -35,46 +35,46 @@
   publish_1/2
 ]).
 
--import(testing, [wait_all/1]).
+-import(testing_v5, [wait_events/2]).
 
 run_test(QoS_subsc, Publisher, Subscriber) ->
 	register(test_result, self()),
-	callback:set_event_handler(onSubscribe, fun(onSubscribe, {[Q],[]} = A) -> ?assertEqual(Q, QoS_subsc), ?debug_Fmt("::test:: onSubscribe : ~p~n", [A]), test_result ! done end),
-	callback:set_event_handler(onPublish, fun(onPublish, A) -> ?debug_Fmt("::test:: onPublish : ~p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onSubscribe, fun(onSubscribe, {[Q],[]} = A) -> ?assertEqual(Q, QoS_subsc), ?debug_Fmt("::test:: onSubscribe : ~p~n", [A]), test_result ! onSubscribe end),
+	callback:set_event_handler(onPublish, fun(onPublish, A) -> ?debug_Fmt("::test:: onPublish : ~p~n", [A]), test_result ! onPublish end),
 	callback:set_event_handler(onReceive, 
-				fun(onReceive, {undefined, #publish{topic= Topic, qos=QoS_pub, dup=_Dup, payload= Msg}} = Arg) -> 
+				fun(onReceive, {_Subs_options, #publish{topic= Topic, qos=QoS_pub, dup=_Dup, payload= Msg}} = Arg) -> 
 					?debug_Fmt("::test:: onReceive : ~p~n", [Arg]),
 					<<QoS_msg:8/integer, _/binary>> = Msg,
 %					?assertEqual(QoS_subsc, QoS_recv),
 					Expect_QoS = if QoS_subsc > QoS_msg -> QoS_msg; true -> QoS_subsc end,
 					?assertEqual(Expect_QoS, QoS_pub),
 					?assertEqual("AKTest", Topic),
-					test_result ! done
+					test_result ! onReceive
 				end),
-	callback:set_event_handler(onUnsubscribe, fun(onUnsubscribe, {[],[]} = A) -> ?debug_Fmt("::test:: onUnsubscribe : ~p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onUnsubscribe, fun(onUnsubscribe, {[],[]} = A) -> ?debug_Fmt("::test:: onUnsubscribe : ~p~n", [A]), test_result ! onUnsubscribe end),
 
 	mqtt_client:subscribe(Subscriber, [{"AKTest", QoS_subsc}]),
-	?assert(wait_all(1)),
+	?assert(wait_events("", [onSubscribe])),
 	
 	Payload = <<") Test Payload QoS = 0. annon. function callback. ">>,
 	[ begin 
 			Msg = <<Q:8, Payload/binary>>,
 			ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest", qos = Q}, Msg) 
 		end || Q <- [0,1,2]],
-	?assert(wait_all(5)),
+	?assert(wait_events("3 publish", [onReceive, onPublish, onReceive, onPublish, onReceive])),
 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos=1}, <<"Test Payload QoS = 0.">>), 
-	?assert(wait_all(1)),
+	?assert(wait_events("1 publish to wrong topic", [onPublish])),
 %% errors:
 	ok = mqtt_client:publish(Publisher, #publish{topic = <<"AK",16#d801:16,"Test">>, qos = 2}, <<"Test Payload QoS = 0.">>), %% @todo catch this error: Erlang server @todo - have to fail!!!
+	?assert(wait_events("publish with error", [])),
 %	?assertMatch(#mqtt_error{}, R4), %% Mosquitto server
 	ok = mqtt_client:unsubscribe(Subscriber, ["AKTest"]),
+	?assert(wait_events("Unsubscribe", [onUnsubscribe])),
 
-	?assert(wait_all(1)),
 	unregister(test_result),
 
-	?PASSED
-.
+	?PASSED.
 
 publish_0({_, publish}, [Publisher, Subscriber]) -> 
 	{"\npublish with QoS = 0,1,2.", 
@@ -86,42 +86,42 @@ publish_0({_, publish}, [Publisher, Subscriber]) ->
 
 publish_1({_QoS, publish}, [Publisher, Subscriber]) -> {"\npublish with QoS = 1", timeout, 100, fun() ->
 	register(test_result, self()),
-	callback:set_event_handler(onSubscribe, fun(onSubscribe, {[1],[]} = A) -> ?debug_Fmt("::test:: onSubscribe : ~p~n", [A]), test_result ! done end),
-	callback:set_event_handler(onPublish, fun(onPublish, A) -> ?debug_Fmt("::test:: onPublish : ~p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onSubscribe, fun(onSubscribe, {[1],[]} = A) -> ?debug_Fmt("::test:: onSubscribe : ~p~n", [A]), test_result ! onSubscribe end),
+	callback:set_event_handler(onPublish, fun(onPublish, A) -> ?debug_Fmt("::test:: onPublish : ~p~n", [A]), test_result ! onPublish end),
 	Payload = <<"Test Payload QoS = 1. annon. function callback. ">>,
 	callback:set_event_handler(onReceive, 
 				fun(onReceive, Arg) -> 
 					?debug_Fmt("::test:: onReceive : ~p~n", [Arg]),
 					?assertMatch(
-						{undefined, #publish{topic= "AKtest", payload= <<QoS_exp:8, Payload/binary>>, qos= QoS_exp}},
+						{_, #publish{topic= "AKtest", payload= <<QoS_exp:8, Payload/binary>>, qos= QoS_exp}},
 						Arg), 
-					test_result ! done
+					test_result ! onReceive
 				end),
-	callback:set_event_handler(onUnsubscribe, fun(onUnsubscribe, {[],[]} = A) -> ?debug_Fmt("::test:: onUnsubscribe : ~p~n", [A]), test_result ! done end),
+	callback:set_event_handler(onUnsubscribe, fun(onUnsubscribe, {[],[]} = A) -> ?debug_Fmt("::test:: onUnsubscribe : ~p~n", [A]), test_result ! onUnsubscribe end),
 
 	ok = mqtt_client:subscribe(Subscriber, [{"AKtest", 1}]), 
-	?assert(wait_all(1)),
+	?assert(wait_events("", [onSubscribe])),
 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 0}, <<0:8, Payload/binary>>), 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 1}, <<1:8, Payload/binary>>), 
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKtest", qos = 2}, <<1:8, Payload/binary>>), 
-	?assert(wait_all(5)),
+	?assert(wait_events("",[onReceive, onPublish, onReceive, onPublish, onReceive])),
 
 	callback:set_event_handler(onReceive, 
 				fun(onReceive, Arg) -> 
 					?debug_Fmt("::test:: onReceive : ~p~n", [Arg]),
 					Pay_load = <<"Test Payload QoS = 0.">>,
 					?assertMatch(
-						{undefined, #publish{topic= "AKTest", payload= Pay_load, qos= 0}},
+						{_, #publish{topic= "AKTest", payload= Pay_load, qos= 0}},
 						Arg), 
-					test_result ! done
+					test_result ! onReceive
 				end),
 	ok = mqtt_client:subscribe(Subscriber, [{"AKTest", 1}]), 
-	?assert(wait_all(1)),
+	?assert(wait_events("", [onSubscribe])),
 	ok = mqtt_client:publish(Publisher, #publish{topic = "AKTest"}, <<"Test Payload QoS = 0.">>), 
-	?assert(wait_all(1)),
+	?assert(wait_events("wrong topic", [onReceive])),
 	ok = mqtt_client:unsubscribe(Subscriber, ["AKTest"]),
-	?assert(wait_all(1)),
+	?assert(wait_events("", [onUnsubscribe])),
 	
 	unregister(test_result),
 

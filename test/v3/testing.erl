@@ -34,15 +34,14 @@
 	do_cleanup/2, 
 	do_start/0, 
 	do_stop/1,
-	get_connect_rec/1, 
-	wait_all/1
+	get_connect_rec/1
 ]).
 
 do_start() ->
+	?assertEqual(ok, application:start(mqtt_client)),
 	?debug_Fmt("~n=============~n Start test on server: ~p:~p, connection type:~p~n=============~n",
 						 [?TEST_SERVER_HOST_NAME, ?TEST_SERVER_PORT, ?TEST_CONN_TYPE]),
-	callback:start(),
-	?assertEqual(ok, application:start(mqtt_client)).
+	callback:start().
 
 do_stop(_R) ->
 	callback:stop(),
@@ -110,7 +109,9 @@ do_setup({QoS, will_retain} = _X) ->
 		[]
 	),
 	?assert(is_pid(P)),
-	ok = mqtt_client:publish(P, #publish{topic = "AK_will_retain_test", retain = 1, qos = QoS}, <<>>), %% in case if previous clean up failed
+	ok = mqtt_client:publish(P, #publish{topic = "AK_will_retain_test", retain = 1, qos = 0}, <<>>), %% in case if previous clean up failed
+	ok = mqtt_client:publish(P, #publish{topic = "AK_will_retain_test", retain = 1, qos = 1}, <<>>), %% in case if previous clean up failed
+	ok = mqtt_client:publish(P, #publish{topic = "AK_will_retain_test", retain = 1, qos = 2}, <<>>), %% in case if previous clean up failed
 	[P, connect(subscriber)];
 do_setup({_QoS, retain} = _X) ->
 	[connect(publisher), connect(subscriber01), connect(subscriber02)];
@@ -198,35 +199,4 @@ get_storage() ->
 	case application:get_env(mqtt_client, storage, dets) of
 		mysql -> mqtt_mysql_storage;
 		dets -> mqtt_dets_storage
-	end.
-	
-wait_all(N) ->
-	case wait_all(N, 0) of
-		{ok, _M} -> 
-%			?debug_Fmt("::test:: all ~p done received.", [_M]),
-			true;
-		{fail, _T} -> 
-			?debug_Fmt("::test:: ~p done have not received.", [N - _T]), 
-			false
-%			?assert(true)
-	end
-	and
-	case wait_all(100, 0) of
-		{fail, 0} -> 
-%			?debug_Fmt("::test:: ~p unexpected done received.", [0]),
-			true;
-		{fail, _Z} -> 
-			?debug_Fmt("::test:: ~p unexpected done received.", [_Z]),
-			false;
-		{ok, _R} -> 
-			?debug_Fmt("::test:: ~p unexpected done received.", [_R]), 
-			false
-%			?assert(true)
-	end.
-
-wait_all(0, M) -> {ok, M};
-wait_all(N, M) ->
-	receive
-		done -> wait_all(N - 1, M + 1)
-	after 1500 -> {fail, M}
 	end.

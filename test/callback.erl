@@ -5,16 +5,6 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
--record(callback_handlers, {
-	onConnect_handler :: function(),
-	onSubscribe_handler :: function(),
-	onUnsubscribe_handler :: function(),
-	onReceive_handler :: function(),
-	onPong_handler :: function(),
-	onPublish_handler :: function(),
-	onClose_handler :: function(),
-	onError_handler :: function()
-}).
 -record(callback_state, {handlers = #{} :: map()}).
 %% ====================================================================
 %% API functions
@@ -79,15 +69,15 @@ loop(State) ->
 			Default_callback = fun(Event, Arg) ->
 				io:format(user, " *** Default callback handler: event=~p; arg=~100p~n", [Event, Arg])
 			end,
-			Default_handlers = #callback_handlers{
-				onConnect_handler = Default_callback,
-				onSubscribe_handler = Default_callback,
-				onUnsubscribe_handler = Default_callback,
-				onReceive_handler = Default_callback,
-				onPong_handler = Default_callback,
-				onPublish_handler = Default_callback,
-				onClose_handler = Default_callback,
-				onError_handler = Default_callback
+			Default_handlers = #{
+				onConnect     => Default_callback,
+				onSubscribe   => Default_callback,
+				onUnsubscribe => Default_callback,
+				onReceive     => Default_callback,
+				onPong        => Default_callback,
+				onPublish     => Default_callback,
+				onClose       => Default_callback,
+				onError       => Default_callback
 			},
 
 			loop(#callback_state{
@@ -100,38 +90,15 @@ loop(State) ->
 			});
 		{set_handler, Idx, Event, Handler} ->
 			#{Idx := Handlers} = (State#callback_state.handlers),
-			New_handlers = 
-			case Event of
-				onConnect ->     Handlers#callback_handlers{onConnect_handler = Handler};
-				onSubscribe ->   Handlers#callback_handlers{onSubscribe_handler = Handler};
-				onUnsubscribe -> Handlers#callback_handlers{onUnsubscribe_handler = Handler};
-				onPublish ->     Handlers#callback_handlers{onPublish_handler = Handler};
-				onReceive ->     Handlers#callback_handlers{onReceive_handler = Handler};
-				onPong ->        Handlers#callback_handlers{onPong_handler = Handler};
-				onClose ->       Handlers#callback_handlers{onClose_handler = Handler};
-				onError ->       Handlers#callback_handlers{onError_handler = Handler};
-				_ ->
-					io:format(user, "~n ERROR: wrong Event to set handler of callback process: ~p~n", [Event]),
-					State
-			end,
+			New_handlers = Handlers#{Event := Handler},
 			New_map = (State#callback_state.handlers)#{Idx := New_handlers},
 			New_state = State#callback_state{handlers = New_map},
 			loop(New_state);
 
 		{call, Idx, Event, Argument} ->
 			#{Idx := Handlers} = (State#callback_state.handlers),
-			case Event of
-				onConnect ->     (Handlers#callback_handlers.onConnect_handler)(Event, Argument);
-				onSubscribe ->   (Handlers#callback_handlers.onSubscribe_handler)(Event, Argument);
-				onUnsubscribe -> (Handlers#callback_handlers.onUnsubscribe_handler)(Event, Argument);
-				onPublish ->     (Handlers#callback_handlers.onPublish_handler)(Event, Argument);
-				onReceive ->     (Handlers#callback_handlers.onReceive_handler)(Event, Argument);
-				onPong ->        (Handlers#callback_handlers.onPong_handler)(Event, Argument);
-				onClose ->       (Handlers#callback_handlers.onClose_handler)(Event, Argument);
-				onError ->       (Handlers#callback_handlers.onError_handler)(Event, Argument);
-				_ ->
-					io:format(user, "~n ERROR: wrong Event as argument of call fun of callback process: ~p~n", [Event])
-			end,
+			#{Event := Handler} = Handlers,
+			(Handler)(Event, Argument),
 			loop(State);
 
 		Msg ->
