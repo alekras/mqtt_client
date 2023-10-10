@@ -261,8 +261,10 @@ session_2({7, session}, [Publisher, Subscriber]) -> {"session QoS=2, publisher s
 	gen_server:call(Publisher, {set_test_flag, undefined}),
 	mqtt_client:disconnect(Publisher),
 	timer:sleep(100),
-	ok = mqtt_client:reconnect(
+	ok = mqtt_client:connect(
 		Publisher,
+		(testing_v5:get_connect_rec(publisher))#connect{clean_session = 0, keep_alive = 1000}, 
+		{callback, call},
 		[]
 	),
 	

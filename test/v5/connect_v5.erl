@@ -40,7 +40,6 @@
 	connect_4/2,
 	connect_5/2,
 	connect_6/2,
-	reconnect/2,
 	keep_alive/2
 ]).
 -import(testing_v5, [get_connect_rec/1]).
@@ -199,36 +198,6 @@ connect_6({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_6 = " ++ atom_t
 	),	
 
 	?assert(wait_events("Connect", [onError])),
-	unregister(test_result),
-	?PASSED
-end}.
-
-reconnect({Id, connect}, [Publisher]) -> {"reconnect = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
-	register(test_result, self()),
-	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 8. onConnect : ~p~n", [A]), test_result ! onConnect end),
-	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 8. onError : ~p~n", [A]), test_result ! onError end),
-	callback:set_event_handler(onClose, fun(onClose, A) -> ?debug_Fmt("::test:: 8. onClose : ~p~n", [A]), test_result ! onClose end),
-
-	ConnRec = get_connect_rec(Id),	
-	ok = mqtt_client:connect(
-		Publisher, 
-		ConnRec, 
-		{callback, call},
-		[]
-	),	
-	
-	?assert(wait_events("Connect 1", [onConnect])),
-	true = mqtt_client:is_connected(Publisher),
-	
-	ok = mqtt_client:disconnect(Publisher),
-	?assert(wait_events("Connect 2", [onClose])), %% @todo failed server responce
-	false = mqtt_client:is_connected(Publisher),
-	
-	ok = mqtt_client:reconnect(Publisher),
-	?assert(wait_events("Connect 3", [onConnect])),
-	true = mqtt_client:is_connected(Publisher),
-	?debug_Fmt("::test:: 8. successfully reconnected.", []),
-
 	unregister(test_result),
 	?PASSED
 end}.

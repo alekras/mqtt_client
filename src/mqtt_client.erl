@@ -38,7 +38,6 @@
 -export([
 	create/1,
 	connect/3, connect/4,
-	reconnect/1, reconnect/2, reconnect/3,
 	status/1,
 	is_connected/1,
 	publish/2, publish/3,
@@ -107,44 +106,6 @@ connect(Client_name, Conn_config, Callback, Socket_options) ->
 		Client_name,
 		{connect, Conn_config, Callback, Socket_options}
 	).
-
--spec reconnect(Client_name, Socket_options) -> ok when
- Client_name :: atom() | pid(),
- Socket_options :: list().
-%% 
-%% @doc The function creates socket connection to MQTT server and sends connect package to the server.<br/>
-%% Parameters:
-%% <ul style="list-style-type: none;">
-%% <li>Client_name - Registered name or Pid of client process.</li>
-%% <li>Socket_options - Additional socket options.</li>
-%% </ul>
-%% Returns ok or error record. 
-%%
-reconnect(Client_name, Socket_options) ->
-	gen_server:cast(Client_name, {reconnect, Socket_options}).
-
--spec reconnect(Client_name, Callback, Socket_options) -> ok when
-	Client_name :: atom() | pid(),
-	Callback :: function() | pid() | {module(), function()},
-	Socket_options :: list().
-%% 
-%% @doc The function creates socket connection to MQTT server and sends connect package to the server.<br/>
-%% Parameters:
-%% <ul style="list-style-type: none;">
-%% <li>Client_name - Registered name or Pid of client process.</li>
-%% <li>Callback - new callback function after reconnect.</li>
-%% <li>Socket_options - Additional socket options.</li>
-%% </ul>
-%% Returns ok or error record. 
-%%
-reconnect(Client_name, Callback, Socket_options) ->
-	gen_server:cast(Client_name, {reconnect, Callback, Socket_options}).
-
--spec reconnect(Client_name) -> ok when
- Client_name :: atom() | pid().
-
-reconnect(Client_name) ->
-	reconnect(Client_name, []).
 
 -spec status(Pid) -> Result when
  Pid :: pid(),
