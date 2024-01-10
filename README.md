@@ -5,7 +5,7 @@ The client was tested with RabbitMQ and Mosquitto server on Windows/Linux/MacOSX
 
 ## Architecture
 MQTT client is an OTP application. Top level component is supervisor
-that is monitoring a child connection processes. Session state data are storing in database (DETS and MySQL in current version)
+that is monitoring a child connection processes so the client keeps connections to different servers concurrently. Session state data are storing in database (DETS and MySQL in current version)
 
 ## Getting started
 ### Installation
@@ -17,20 +17,20 @@ To start with the client you have to complete three steps below:
 
 
 ### Building
-#### Download or clone from SourceForge GIT repository
-Download zip file erl.mqtt.client-vsn-1.0.{x}.zip from project files folder [sourceforge project](https://sourceforge.net/projects/mqtt-client/files/versions-1.0.x/),
-unzip it and rename unziped folder to erl.mqtt.client. This is an Eclipse project folder. You do not need to use Eclipse to build the client but 
-if you want you can use convenience of Eclipse and Erlide plugin.
-Other way to get the client code is GIT. Type command 
+#### Download or clone from Github
+To get the client code from GIT repository type command 
 
 ```bash
 git clone https://git.code.sf.net/p/mqtt-client/code erl.mqtt.client
 ```
-to download from SourceForge GIT repository. For GitHub repository type
+to clone from SourceForge GIT repository. For GitHub repository type
 
 ```bash
 git clone https://github.com/alekras/mqtt_client.git erl.mqtt.client
 ```
+Under folder erl.mqtt.client exists an Eclipse project. You do not need to use Eclipse to build the client but 
+if you want you can use convenience of Eclipse and Erlide plugin.
+
 #### Compiling
 After you have got source code of the client then change directory to the erl.mqtt.client:
 
@@ -45,10 +45,25 @@ Run rebar3 for this project. You have to add path to rebar3 to OS PATH variable 
 Rebar will fetch code of all dependencies and compile source files of main project and all dependencies.
 
 ### Testing
-Next step is running the examples. Suppose you install Mosquitto MQTT server as 'localhost' that opened 1883 port 
+Next step is running the examples. For testing we need to run MQTT server locally or use external servers running outside in Internet.
+ 1. Suppose you install Mosquitto MQTT server as 'localhost' that opened 1883 port 
 for listening a TCP/IP connections from clients.
 You have to setup 'quest' account with 'guest' password.
-Start Erlang shell: 
+ 2. You can connect to public available MQTT server broker.hivemq.com with ports:
+  - clear tcp: 1883
+  - ssl/tls: 8883
+  - websocet (ws): 8000
+  - secure websocket: 8884
+ 3. Other public MQTT Broker broker.emqx.io has ports:
+  - clear tcp: 1883
+  - ssl/tls: 8883
+  - websocket (ws): 8083
+  - secure websocket: 8084
+ 4. Erlang MQTT server is running on lucky3p.com with ports:
+  - websocket (ws): 8880 (we will use this configuration for below examples)
+  - secure websocket: 4443
+
+We will test the client from Erlang shell:
 
 ```bash
 erl -pa _build/default/lib/*/ebin
@@ -58,78 +73,95 @@ erl -pa _build/default/lib/*/ebin
 After we start Erlang shell for testing we need to start application 'mqtt_client' that represents describing client.
 
 ```erlang
-2> application:start(mqtt_client).
+1> application:start(mqtt_client).
+20:17:18.656 [info] running apps: [{mqtt_common,"MQTT common library","2.1.0"},{sasl,"SASL  CXC 138 11","4.1.2"},{lager,"Erlang logging framework","3.9.2"},
+{goldrush,"Erlang event stream processor","0.1.9"},{compiler,"ERTS  CXC 138 10","8.1.1.3"},{syntax_tools,"Syntax tools","2.6"},{stdlib,"ERTS  CXC 138 10","3.17.2.2"},{kernel,"ERTS  CXC 138 10","8.3.2.3"}]
 ok
 ```
-Load records definitions to console environment to make our next steps more clear:
+Load records definitions to console environment. This is not required operation but it makes our next steps more easy and clear 
+by using defined records in mqtt.hrl:
 
 ```erlang
-3> rr("include/mqtt_client.hrl").
-[connect,connection_state,mqtt_client_error,primary_key,
- publish,storage_publish]
+2> rr("_build/default/lib/mqtt_common/include/mqtt.hrl").
+[connect,connection_state,primary_key,publish,session_state,
+ sslsocket,storage_connectpid,storage_publish,storage_retain,
+ storage_subscription,subs_primary_key,subscription_options,
+ user]
 ```
+It is time to create client process. We will register the process under name 'publisher':
+
+```erlang
+3> Client_pid = mqtt_client:create(publisher).
+<0.148.0>
+```
+We can use in following steps either 'publisher' registered name or Client_pid.
 
 ## Connection
+Record #connect encapsulates connection information needed to connect to MQTT server.
 Assign record #connect{} to Conn_def value:
 
 ```erlang
 4> Conn_def = #connect{
-4> client_id = "publisher", 
+4> client_id = "publisher",
+4) host = "lucky3p.com",
+4) port = 8880,
+4) version = '5.0',
+4) conn_type = web_socket,
 4> user_name = "guest",
 4> password = <<"guest">>,
-4> will = 0,
-4> will_message = <<>>,
-4> will_topic = "",
-4> clean_session = 1,
-4> keep_alive = 1000
+4> clean_session = 1
 4> }.
 #connect{client_id = "publisher",user_name = "guest",
          password = <<"guest">>,will = 0,will_qos = 0,
          will_retain = 0,will_topic = [],will_message = <<>>,
          clean_session = 1,keep_alive = 1000}
 ```
-And finally create new connection to MQTT server as localhost:1883 (use {127,0,0,1} if "localhost" does not work in your host):
+And finally create new connection to MQTT server at lucky3p.com:8880 
 
 ```erlang
-5> PubCon = mqtt_client:connect(publisher, Conn_def, "localhost", 1883, []).
-<0.77.0>
+5> ok = mqtt_client:connect(publisher, Conn_def, fun(Event, Argument) ->  io:fwrite(user,"Publisher:: Event:~p Arg:~p~n", [Event, Argument]) end).
+ok
 ```
-We have connection PubCon to MQTT server now. Let's create one more client's connection with different client Id:
+We have client with name = 'publisher' (or PID = <0.148.0>) connected to MQTT server now.
+We define callback function (CBF) for this connection. This function will act as 'application' 
+from MQTT protocol terminology. When client receives message or some event
+from server then callback function will be invoked and the message will be passed to it.
+See detailed explanation of CBF below.
+
+Let's create one more client with different client Id and connect to the same MQTT server:
 
 ```erlang
-6> Conn_def_2 = Conn_def#connect{client_id = "subscriber"}.
+6> Client_pid_subs = mqtt_client:create(subscriber).
+<0.149.0>
+6> Conn_def_subs = Conn_def#connect{client_id = "subscriber"}.
 #connect{client_id = "subscriber",user_name = "guest",
          password = <<"guest">>,will = 0,will_qos = 0,
          will_retain = 0,will_topic = [],will_message = <<>>,
          clean_session = 1,keep_alive = 1000}
-7> SubCon = mqtt_client:connect(subscriber, Conn_def_2, "localhost", 2883, []).
-<0.116.0>
+7> ok = mqtt_client:connect(subscriber, Conn_def_subs, fun(Event, Argument) ->  io:fwrite(user,"Subscriber:: Event:~p Arg:~p~n", [Event, Argument]) end).
+ok
 ```
-## TLS/SSL Connection
-To establish connection secured by TLS we need to add to socket option list atom 'ssl' like this:
+## TLS/SSL and Web socket Connection
 
-```erlang
-7> SubCon = mqtt_client:connect(subscriber, Conn_def_2, "localhost", 2884, [ssl]).
-```
-Note that we are using there port 2884. This MQTT server port has to be set to listen as SSL socket. How configure Mosquitto server
-[see](https://dzone.com/articles/secure-communication-with-tls-and-the-mosquitto-broker/).
+To establish TCP connection secured by TLS/SSL or web-socket connection 
+we need to assign to record field #connect.conn_type a corresponded value:
+
+conn_type description
+'clear'
+'ssl' or 'tls' 
+'web_socket' 
+'web_sec_socket'
+
+Note that we need to set up corresponded port. How configure Mosquitto server
+[see here](https://dzone.com/articles/secure-communication-with-tls-and-the-mosquitto-broker/).
 If we want to pass additional properties to SSL application on client side we can do it using options list:
 
 ```erlang
-7> SubCon = mqtt_client:connect(subscriber, Conn_def_2, "localhost", 2884, [ssl, {certfile,"client.crt"}, {verify, verify_none}]).
+7> ok = mqtt_client:connect(subscriber, Conn_def_subs, [{certfile,"client.crt"}, {verify, verify_none}]).
 ```
-## Web socket Connection
-The MQTT client can establish web socket connection:
-
-```erlang
-1> SubCon = mqtt_client:connect(subscriber, Conn_def_2, "localhost", 8880, [{conn_type, web_socket}]).
-```
-In this configuration a server has to except web socket connection on 8880 port. Please, read server documentation how configure server in this way. 
 
 ## Subscribe and publish
-To finish set up of the connection we need to subscribe it to some topic for example "Test" topic. Before make subscription we
-need to define callback function (CBF). This function will act as 'application' from MQTT protocol terminology. When client receives message
-from server's topic then callback function will be invoked and the message will be passed to it.
+To finish set up of the connection we need to subscribe it to some topic for example "Test" topic. .
 
 ```erlang
 8> CBF = fun(Arg) -> io:format(user,"callback function: ~p",[Arg]) end.

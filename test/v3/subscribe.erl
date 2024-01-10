@@ -138,7 +138,7 @@ subs_filter(_, Conn) -> {"subscription filter", fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onSubscribe, fun(onSubscribe, {[2,1,0],[]} = A) -> ?debug_Fmt("::test:: onSubscribe : ~p~n", [A]), test_result ! onSubscribe end),
 	callback:set_event_handler(onReceive, 
-														 fun(onReceive, {_Subs_options, #publish{qos=Q, topic=T, payload=P}} = A) -> 
+														 fun(onReceive, {_Subs_options, #publish{qos=_Q, topic=_T, payload=_P}} = A) -> 
 																?debug_Fmt("::test:: onReceive : ~p~n", [A]),
 																test_result ! onReceive
 														 end),

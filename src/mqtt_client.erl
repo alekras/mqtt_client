@@ -64,10 +64,10 @@ create(Client_name) ->
 			#mqtt_error{oper = create, source = "mqtt_client:create/2", error_msg = Exit}
 	end.
 
--spec connect(Client_name, Callback, Conn_config) -> ok when
+-spec connect(Client_name, Conn_config, Callback) -> ok when
 	Client_name :: atom() | pid(),
-	Callback :: function() | pid() | {module(), function()},
-	Conn_config :: #connect{}.
+	Conn_config :: #connect{},
+	Callback :: function() | pid() | {module(), function()}.
 %% 
 %% @doc The function open socket to MQTT server and sends connect package to the server.
 %% <dl>
@@ -109,7 +109,8 @@ connect(Client_name, Conn_config, Callback, Socket_options) ->
 
 -spec status(Pid) -> Result when
  Pid :: pid(),
- Result :: disconnected | [{connected, boolean()} | {session_present, SP:: 0 | 1} | {subscriptions, #{Topic::string() => {QoS::integer(), Callback::{fun()} | {module(), fun()}}}}].
+ Result :: disconnected | [{connected, boolean()} | {session_present, SP:: 0 | 1} |
+		{subscriptions, #{Topic::string() => {QoS::integer(), Callback::{fun()} | {module(), fun()}}}}].
 %% @doc The function returns status of connection with pid = Pid.
 %% 
 status(Pid) when is_pid(Pid) ->
@@ -244,7 +245,8 @@ start(_Type, StartArgs) ->
 			application:stop(lager),
 			lager:start()
 	end,
-	lager:info([{endtype, client}], "running apps: ~p",[application:which_applications()]),	
+	S = lists:concat([io_lib:format("    ~p~n",[App]) || App <- application:which_applications()]),
+	lager:info([{endtype, client}], "running apps: ~n~s",[S]),	
 	Storage =
 	case application:get_env(mqtt_client, storage, dets) of
 		mysql -> mqtt_mysql_storage;
