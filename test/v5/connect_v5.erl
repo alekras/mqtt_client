@@ -49,7 +49,7 @@
 %% API Functions
 %%
 
-connect_0({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_0 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
+connect_0({Id, connect} = _X, [Publisher] = _Conns) -> {"\e[1;34mconnect_0 = " ++ atom_to_list(Id) ++ ".\e[0m", timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 1. successfully connected : ~p~n", [A]), test_result ! onConnect end),
 
@@ -83,7 +83,7 @@ connect_0({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_0 = " ++ atom_t
 	?PASSED
 end}.
 
-connect_1({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_1 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
+connect_1({Id, connect} = _X, [Publisher] = _Conns) -> {"\e[1;34mconnect_1 = " ++ atom_to_list(Id) ++ ".\e[0m", timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 2. successfully connected : ~p~n", [A]) end),
 	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 2. wrong port number : ~120p~n", [A]), test_result ! onError end),
@@ -101,7 +101,7 @@ connect_1({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_1 = " ++ atom_t
 	?PASSED
 end}.
 
-connect_2({Id, connect}, [Publisher]) -> {"connect_2 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
+connect_2({Id, connect}, [Publisher]) -> {"\e[1;34mconnect_2 = " ++ atom_to_list(Id) ++ ".\e[0m", timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 3. successfully connected : ~p~n", [A]) end),
 	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 3. wrong user name. Connection Resp:~120p~n", [A]), test_result ! onError end),
@@ -121,7 +121,7 @@ connect_2({Id, connect}, [Publisher]) -> {"connect_2 = " ++ atom_to_list(Id) ++ 
 	?PASSED
 end}.
 
-connect_3({Id, connect}, [Publisher]) -> {"connect_3 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
+connect_3({Id, connect}, [Publisher]) -> {"\e[1;34mconnect_3 = " ++ atom_to_list(Id) ++ ".\e[0m", timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 4. successfully connected : ~p~n", [A]) end),
 	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 4. wrong user password : ~120p~n", [A]), test_result ! onError end),
@@ -141,7 +141,7 @@ connect_3({Id, connect}, [Publisher]) -> {"connect_3 = " ++ atom_to_list(Id) ++ 
 	?PASSED
 end}.
 
-connect_4({Id, connect}, [Publisher]) -> {"connect_4 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
+connect_4({Id, connect}, [Publisher]) -> {"\e[1;34mconnect_4 = " ++ atom_to_list(Id) ++ ".\e[0m", timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 5. duplicate client id successfully connected : ~p~n", [A]), test_result ! onConnect end),
 	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 5. duplicate client id onError: ~p~n", [A]) end),
@@ -166,7 +166,7 @@ connect_4({Id, connect}, [Publisher]) -> {"connect_4 = " ++ atom_to_list(Id) ++ 
 	?PASSED
 end}.
 
-connect_5({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_5 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
+connect_5({Id, connect} = _X, [Publisher] = _Conns) -> {"\e[1;34mconnect_5 = " ++ atom_to_list(Id) ++ ".\e[0m", timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 6. successfully connected : ~p~n", [A]) end),
 	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 6. wrong utf-8 : ~p~n", [A]), test_result ! onError end),
@@ -184,7 +184,7 @@ connect_5({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_5 = " ++ atom_t
 	?PASSED
 end}.
 
-connect_6({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_6 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
+connect_6({Id, connect} = _X, [Publisher] = _Conns) -> {"\e[1;34mconnect_6 = " ++ atom_to_list(Id) ++ ".\e[0m", timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 7. successfully connected : ~p~n", [A]) end),
 	callback:set_event_handler(onError, fun(onError, A) -> ?debug_Fmt("::test:: 7. wrong utf-8 : ~p~n", [A]), test_result ! onError end),
@@ -202,7 +202,7 @@ connect_6({Id, connect} = _X, [Publisher] = _Conns) -> {"connect_6 = " ++ atom_t
 	?PASSED
 end}.
 
-keep_alive(_, Conn) -> {"\n\e[1;34mkeep alive test\e[0m", timeout, 15, fun() ->	
+keep_alive(_, Conn) -> {"\e[1;34mkeep alive test.\e[0m", timeout, 15, fun() ->	
 	timer:sleep(1500),
 	ok = mqtt_client:pingreq(Conn), 
 

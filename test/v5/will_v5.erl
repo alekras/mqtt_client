@@ -112,7 +112,7 @@ will_retain({QoS, will_retain}, [Publisher, Subscriber1, Subscriber2]) -> {"will
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=QoS}, "AK_will_retain_test", list_to_binary("Test will retain message QoS: " ++ integer_to_list(QoS))),
 
-	ok = mqtt_client:subscribe(Subscriber1, [{"AK_will_retain_test", QoS}]), 
+	ok = mqtt_client:subscribe(Subscriber1, [{"AK_will_retain_test", QoS}]),
 	?assert(wait_events("Subscribe", [onSubscribe])),
 %% generate connection lost:
 	gen_server:call(Publisher, {set_test_flag, break_connection}),

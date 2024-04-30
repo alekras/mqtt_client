@@ -15,8 +15,8 @@
 %%
 
 %-define(TEST_SERVER_HOST_NAME, "localhost").
-%-define(TEST_SERVER_HOST_NAME, "MACBOOK-PRO").
--define(TEST_SERVER_HOST_NAME, "lucky3p.com").
+-define(TEST_SERVER_HOST_NAME, "MACBOOK-PRO").
+%-define(TEST_SERVER_HOST_NAME, "lucky3p.com").
 %-define(TEST_SERVER_HOST_NAME, "192.168.1.71").
 %-define(TEST_SERVER_HOST_NAME, "127.0.0.1").
 %-define(TEST_SERVER_HOST_NAME, "broker.emqx.io").
@@ -25,7 +25,7 @@
 -define(TEST_PASSWORD, <<"guest">>).
 -define(TEST_PROTOCOL, '3.1.1').
 
--define(CONN_TYPE, ws). %% clear | ssl | ws | wss
+-define(CONN_TYPE, clear). %% clear | ssl | ws | wss
 
 -if(?CONN_TYPE == clear).
 %%%%%%%%%%%%% Clear socket test %%%%%%%%%%%%%%%%% 
@@ -78,4 +78,4 @@
 	 end)).
 -define(debug_Fmt(S, As), (?debug_Msg(io_lib:format((S), (As))))).
 -define(PASSED, (?debug_Msg("\e[1;32;40m    +++ Passed  \e[0m"))).
--define(passed, (?debug_Msg("    +++ Passed with "))).
+-define(passed, (?debug_Msg("\e[1;32;40m    +++ Passed with \e[0m"))).
