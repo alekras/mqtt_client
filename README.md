@@ -54,21 +54,25 @@ You have to setup 'quest' account with 'guest' password.
  2. You can connect to public available MQTT server broker.hivemq.com with ports:
   - clear tcp: 1883
   - ssl/tls: 8883
-  - websocet (ws): 8000
+  - clear websocket (ws): 8000
   - secure websocket: 8884
  3. Other public MQTT Broker broker.emqx.io has ports:
   - clear tcp: 1883
   - ssl/tls: 8883
-  - websocket (ws): 8083
+  - clear websocket (ws): 8083
   - secure websocket: 8084
  4. Erlang MQTT server is running on lucky3p.com with ports:
-  - websocket (ws): 8880 (we will use this configuration for below examples)
+  - clear websocket (ws): 8880 (we will use this configuration for below examples)
   - secure websocket: 4443
 
 We will test the client from Erlang shell:
 
 ```bash
 erl -pa _build/default/lib/*/ebin
+Erlang/OTP 24 [erts-12.3.2.15] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [jit] [dtrace]
+
+Eshell V12.3.2.15  (abort with ^G)
+1>
 ```
 
 ## Run application
@@ -76,8 +80,16 @@ After we start Erlang shell for testing we need to start application 'mqtt_clien
 
 ```erlang
 1> application:start(mqtt_client).
-20:17:18.656 [info] running apps: [{mqtt_common,"MQTT common library","2.1.0"},{sasl,"SASL  CXC 138 11","4.1.2"},{lager,"Erlang logging framework","3.9.2"},
-{goldrush,"Erlang event stream processor","0.1.9"},{compiler,"ERTS  CXC 138 10","8.1.1.3"},{syntax_tools,"Syntax tools","2.6"},{stdlib,"ERTS  CXC 138 10","3.17.2.2"},{kernel,"ERTS  CXC 138 10","8.3.2.3"}]
+15:05:54.062 [info] running apps: 
+    {mqtt_common,"MQTT common library","2.1.0"}
+    {sasl,"SASL  CXC 138 11","4.1.2"}
+    {lager,"Erlang logging framework","3.9.2"}
+    {goldrush,"Erlang event stream processor","0.1.9"}
+    {compiler,"ERTS  CXC 138 10","8.1.1.5"}
+    {syntax_tools,"Syntax tools","2.6"}
+    {stdlib,"ERTS  CXC 138 10","3.17.2.4"}
+    {kernel,"ERTS  CXC 138 10","8.3.2.4"}
+ok
 ok
 ```
 Load records definitions to console environment. This is optional operation but it makes our next steps more easy and clear 
@@ -102,6 +114,21 @@ We can use in following steps either 'publisher' registered name or Publisher_pi
 Record #connect encapsulates connection information we need to connect to MQTT server.
 Lets assign record #connect{} to Conn_def value:
 
+(To easy copy/paste:
+
+Conn_def = #connect{
+client_id = "publisher",
+host = "lucky3p.com",
+port = 8880,
+version = '5.0',
+conn_type = web_socket,
+user_name = "guest",
+password = <<"guest">>,
+clean_session = 1
+}.
+
+)
+
 ```erlang
 4> Conn_def = #connect{
 4> client_id = "publisher",
@@ -114,15 +141,18 @@ Lets assign record #connect{} to Conn_def value:
 4> clean_session = 1
 4> }.
 #connect{client_id = "publisher",user_name = "guest",
-         password = <<"guest">>,will = 0,will_qos = 0,
-         will_retain = 0,will_topic = [],will_message = <<>>,
-         clean_session = 1,keep_alive = 1000}
+         password = <<"guest">>,host = "lucky3p.com",port = 8880,
+         will_publish = undefined,clean_session = 1,
+         keep_alive = 6000,properties = [],version = '5.0',
+         conn_type = web_socket}
 ```
 And finally connect our client to MQTT server at lucky3p.com:8880 
 
 ```erlang
 5> ok = mqtt_client:connect(publisher, Conn_def, fun(Event, Argument) ->  io:fwrite(user,"Publisher:: Event:~p Arg:~p~n", [Event, Argument]) end).
 ok
+6> Publisher:: Event:onConnect Arg:{0,"Success",[]}
+15:21:18.076 [info] [ClId:<<"publisher">> PkId:none Op:connack Vrs:'5.0'] client is successfuly connected to {70,133,222,59}:8880
 ```
 We have client with name = 'publisher' (or PID = Publisher_pid = <0.148.0>) connected to MQTT server now.
 We have defined callback function (CBF) for this connection. This function will act as 'application' 

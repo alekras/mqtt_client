@@ -235,6 +235,11 @@ dispose(Client_name) ->
 start(_Type, StartArgs) ->
 	lager:start(),
 	application:ensure_started(sasl),
+	application:ensure_started(inets),
+	application:ensure_started(crypto),
+	application:ensure_started(asn1),
+	application:ensure_started(public_key),
+	application:ensure_started(ssl),
 	application:start(mqtt_common),
 	case application:get_env(lager, log_root) of
 		{ok, _} -> ok;
