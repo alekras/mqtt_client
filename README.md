@@ -82,6 +82,11 @@ After we start Erlang shell for testing we need to start application 'mqtt_clien
 1> application:start(mqtt_client).
 15:05:54.062 [info] running apps: 
     {mqtt_common,"MQTT common library","2.1.0"}
+    {ssl,"Erlang/OTP SSL application","10.7.3.9"}
+    {public_key,"Public key infrastructure","1.12.0.2"}
+    {asn1,"The Erlang ASN1 compiler version 5.0.18.2","5.0.18.2"}
+    {crypto,"CRYPTO","5.0.6.4"}
+    {inets,"INETS  CXC 138 49","7.5.3.4"}
     {sasl,"SASL  CXC 138 11","4.1.2"}
     {lager,"Erlang logging framework","3.9.2"}
     {goldrush,"Erlang event stream processor","0.1.9"}
@@ -89,6 +94,7 @@ After we start Erlang shell for testing we need to start application 'mqtt_clien
     {syntax_tools,"Syntax tools","2.6"}
     {stdlib,"ERTS  CXC 138 10","3.17.2.4"}
     {kernel,"ERTS  CXC 138 10","8.3.2.4"}
+
 ok
 ok
 ```
@@ -151,50 +157,77 @@ And finally connect our client to MQTT server at lucky3p.com:8880
 ```erlang
 5> ok = mqtt_client:connect(publisher, Conn_def, fun(Event, Argument) ->  io:fwrite(user,"Publisher:: Event:~p Arg:~p~n", [Event, Argument]) end).
 ok
-6> Publisher:: Event:onConnect Arg:{0,"Success",[]}
-15:21:18.076 [info] [ClId:<<"publisher">> PkId:none Op:connack Vrs:'5.0'] client is successfuly connected to {70,133,222,59}:8880
+20:20:03.952 [info] [ClId:<<"publisher">> PkId:none Op:connack Vrs:'5.0'] client is successfuly connected to {70,133,222,59}:8880
+Publisher:: Event:onConnect Arg:{0,"Success",[]}
+6>
 ```
 We have client with name = 'publisher' (or PID = Publisher_pid = <0.148.0>) connected to MQTT server now.
 We have defined callback function (CBF) for this connection. This function will act as 'application' 
 from MQTT protocol terminology. When client receives message or some events
 from server then callback function will be invoked and the message will be passed to it.
 See detailed explanation of CBF below.
+You can see on console lines starting with output like this:
 
-Let's create one more client with different client Id and connect to the same MQTT server. This new
-instance of client we will use as subscriber to receive messages from publisher created above:
+```erlang
+20:20:03.952 [info] ...
+```
+This is Lager's output log statement from mqtt_client application. By default Lager is configured 
+to output to console.
+
+Let's create one more client with different client Id and connect it to the same MQTT server. This new
+instance of client we will use as a subscriber to receive messages from the publisher created above:
 
 ```erlang
 6> Subscriber_pid = mqtt_client:create(subscriber).
-<0.149.0>
-6> Conn_def_subs = Conn_def#connect{client_id = "subscriber"}.
+<0.188.0>
+7> Conn_def_subs = Conn_def#connect{client_id = "subscriber"}.
 #connect{client_id = "subscriber",user_name = "guest",
-         password = <<"guest">>,will = 0,will_qos = 0,
-         will_retain = 0,will_topic = [],will_message = <<>>,
-         clean_session = 1,keep_alive = 1000}
-7> ok = mqtt_client:connect(subscriber, Conn_def_subs, fun(Event, Argument) ->  io:fwrite(user,"Subscriber:: Event:~p Arg:~p~n", [Event, Argument]) end).
+         password = <<"guest">>,host = "lucky3p.com",port = 8880,
+         will_publish = undefined,clean_session = 1,
+         keep_alive = 6000,properties = [],version = '5.0',
+         conn_type = web_socket}
+8> ok = mqtt_client:connect(subscriber, Conn_def_subs, fun(Event, Argument) ->  io:fwrite(user,"Subscriber:: Event:~p Arg:~p~n", [Event, Argument]) end).
 ok
+Subscriber:: Event:onConnect Arg:{0,"Success",[]}
+20:23:56.090 [info] [ClId:<<"subscriber">> PkId:none Op:connack Vrs:'5.0'] client is successfuly connected to {70,133,222,59}:8880
+9>
 ```
 
 ## Subscribe and publish
-To finish set up of the connection we need to subscribe it to some topic for example "Test" topic and QoS = 1:
+
+To finish set up of the subscriber connection we need to subscribe it to some topic for example "Test" topic and QoS = 1:
 
 ```erlang
 9> mqtt_client:subscribe(Subscriber_pid, [{"Test", 1}]).
-{suback,[1]}
+ok
+Subscriber:: Event:onSubscribe Arg:{[1],[]}
+20:25:39.102 [info] [ClId:<<"subscriber">> PkId:100 Op:suback Vrs:'5.0'] process subscribed to topics [{"Test",{subscription_options,1,0,0,0,0}}] with return codes: [1]
+10>
 ```
-Now we can publish message to "Test" topic. After short moment subscriber receives this message and fire callback function:
+Now we can publish message to "Test" topic.
 
 ```erlang
 10> mqtt_client:publish(Publisher_pid, #publish{topic = "Test"}, <<"Test Message Payload.">>).
 ok
+20:28:15.125 [info] [ClId:<<"publisher">> PkId:none Op:publish Vrs:'5.0']Process published message to topic="Test":0
+```
+After short moment subscriber receives this message and fire callback function:
+
+```erlang
+Subscriber:: Event:onReceive Arg:{{subscription_options,1,0,0,0,0},
+                                  {publish,"Test",0,0,0,
+                                      <<"Test Message Payload.">>,[],none,in,
+                                      infinity}}
+20:28:15.133 [info] [ClId:<<"subscriber">> PkId:none Op:publish Vrs:'5.0'] process send publish message to client application [topic "Test":0, dup=0, retain=0]
 11> 
 ```
 Callback function has two arguments. First argument is an atom that represents type of event triggered for the client.
-Second argument is an error description or received message.
+Second argument is an error description or received message:
 
 ```erlang
 Arg = {Topic_QoS, Message#publish{}}
 ```
+@todo: configuration, callback function details
 
 ## TLS/SSL and Web socket Connection
 
@@ -212,7 +245,9 @@ Note that we need to set up corresponded port. How configure Mosquitto server
 If we want to pass additional properties to SSL application on client side we can do it using options list:
 
 ```erlang
-7> ok = mqtt_client:connect(subscriber, Conn_def_subs, [{certfile,"client.crt"}, {verify, verify_none}]).
+11> ok = mqtt_client:connect(subscriber, Conn_def_subs, 
+11> fun(Event, Argument) ->  io:fwrite(user,"Subscriber:: Event:~p Arg:~p~n", [Event, Argument]) end, 
+11> [{certfile,"client.crt"}, {verify, verify_none}]).
 ```
 
 ## References
