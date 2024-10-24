@@ -67,7 +67,7 @@ You have to setup 'quest' account with 'guest' password.
 
 We will test the client from Erlang shell:
 
-```bash
+```erlang
 erl -pa _build/default/lib/*/ebin
 Erlang/OTP 24 [erts-12.3.2.15] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [jit] [dtrace]
 
@@ -94,8 +94,6 @@ After we start Erlang shell for testing we need to start application 'mqtt_clien
     {syntax_tools,"Syntax tools","2.6"}
     {stdlib,"ERTS  CXC 138 10","3.17.2.4"}
     {kernel,"ERTS  CXC 138 10","8.3.2.4"}
-
-ok
 ok
 ```
 Load records definitions to console environment. This is optional operation but it makes our next steps more easy and clear 
