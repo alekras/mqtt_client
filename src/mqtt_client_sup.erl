@@ -107,7 +107,8 @@ create_client_process(Client_id) ->
 	Storage =
 	case application:get_env(mqtt_client, storage, dets) of
 		mysql -> mqtt_mysql_storage;
-		dets -> mqtt_dets_storage
+		dets -> mqtt_dets_storage;
+		mnesia -> mqtt_mnesia_storage
 	end,
 
 	State = #connection_state{storage = Storage, end_type = client},

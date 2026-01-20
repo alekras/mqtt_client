@@ -255,7 +255,8 @@ start(_Type, StartArgs) ->
 	Storage =
 	case application:get_env(mqtt_client, storage, dets) of
 		mysql -> mqtt_mysql_storage;
-		dets -> mqtt_dets_storage
+		dets -> mqtt_dets_storage;
+		mnesia -> mqtt_mnesia_storage
 	end,
 	case supervisor:start_link({local, mqtt_client_sup}, mqtt_client_sup, StartArgs) of
 		{ok, Pid} ->
