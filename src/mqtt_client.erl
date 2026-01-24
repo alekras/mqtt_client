@@ -40,6 +40,7 @@
 	connect/3, connect/4,
 	status/1,
 	is_connected/1,
+	set_callback/2,
 	publish/2, publish/3,
 	subscribe/2, subscribe/3,
 	unsubscribe/2, unsubscribe/3,
@@ -110,7 +111,7 @@ connect(Client_name, Conn_config, Callback, Socket_options) ->
 -spec status(Pid) -> Result when
  Pid :: pid(),
  Result :: disconnected | [{connected, boolean()} | {session_present, SP:: 0 | 1} |
-		{subscriptions, #{Topic::string() => {QoS::integer(), Callback::{fun()} | {module(), fun()}}}}].
+		{subscriptions, #{Topic::string() => {QoS::integer(), Callback::{fun()} | pid() | {module(), fun()}}}}].
 %% @doc The function returns status of connection with pid = Pid.
 %% 
 status(Pid) when is_pid(Pid) ->
@@ -135,6 +136,12 @@ is_connected(Client_name) ->
 		disconnected -> false;
 		[{connected, CS}, _, _] -> (CS == 1)
 	end.
+
+-spec set_callback(Pid, NewCallback) -> ok when
+	Pid :: pid(),
+	NewCallback :: function() | pid() | {module(), function()}.
+set_callback(Pid, NewCallback) -> 
+	gen_server:cast(Pid, {update_callback, NewCallback}).
 
 -spec publish(Pid, Params, Payload) -> ok when
  Pid :: pid(),

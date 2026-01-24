@@ -50,16 +50,27 @@
 connect_0({Id, connect}, [Publisher]) -> {"connect_0 = " ++ atom_to_list(Id) ++ ".", timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onConnect, fun(onConnect, A) -> ?debug_Fmt("::test:: 1. successfully connected : ~p~n", [A]), test_result ! onConnect end),
+	callback:set_event_handler(onUpdate, fun(onUpdate, A) -> ?debug_Fmt("::test:: 1. successfully update Callback : ~p~n", [A]), test_result ! onUpdate end),
 
-	ConnRec = testing:get_connect_rec(Id),	
+	ConnRec = testing:get_connect_rec(Id),
+	?debug_Fmt("::test:: Conn record : ~p~n", [ConnRec]),
 	ok = mqtt_client:connect(
 		Publisher, 
 		ConnRec,
 		{callback, call},
 		[]
 	),	
-	
 	?assert(wait_events("", [onConnect])),
+
+	mqtt_client:set_callback(Publisher, self()),
+	receive
+		_M -> ?assert(true)
+	after 200 -> ?assert(false)
+	end,
+
+	mqtt_client:set_callback(Publisher, {callback, call}),
+	wait_events("", [onUpdate]),
+
 	unregister(test_result),
 	?PASSED
 end}.

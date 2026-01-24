@@ -198,5 +198,6 @@ get_connect_rec(Cl_Id) ->
 get_storage() ->
 	case application:get_env(mqtt_client, storage, dets) of
 		mysql -> mqtt_mysql_storage;
-		dets -> mqtt_dets_storage
+		dets -> mqtt_dets_storage;
+		mnesia -> mqtt_mnesia_storage
 	end.

@@ -15,8 +15,9 @@
 %%
 
 %-define(TEST_SERVER_HOST_NAME, "localhost").
--define(TEST_SERVER_HOST_NAME, "MACBOOK-PRO").
-%-define(TEST_SERVER_HOST_NAME, "lucky3p.com").
+%-define(TEST_SERVER_HOST_NAME, "MACBOOK-PRO").
+-define(TEST_SERVER_HOST_NAME, "lucky3p.com").
+%-define(TEST_SERVER_HOST_NAME, {70,133,222,59}).
 %-define(TEST_SERVER_HOST_NAME, "192.168.1.71").
 %-define(TEST_SERVER_HOST_NAME, "127.0.0.1").
 %-define(TEST_SERVER_HOST_NAME, "broker.emqx.io").
@@ -25,13 +26,13 @@
 -define(TEST_PASSWORD, <<"guest">>).
 -define(TEST_PROTOCOL, '3.1.1').
 
--define(CONN_TYPE, clear). %% clear | ssl | ws | wss
+-define(CONN_TYPE, ws). %% clear | ssl | ws | wss
 
 -if(?CONN_TYPE == clear).
 %%%%%%%%%%%%% Clear socket test %%%%%%%%%%%%%%%%% 
 	-define(TEST_CONN_TYPE, clear). %% Clear tcp for client
 	-define(TEST_SERVER_PORT, 18883). %% Erlang
-	%-define(TEST_SERVER_PORT, 2883). %% Mosquitto
+%-define(TEST_SERVER_PORT, 2883). %% Mosquitto
 %	-define(TEST_SERVER_PORT, 1883). %% RabbitMQ, EMQX
 -elif(?CONN_TYPE == ssl).
 %%%%%%%%%%%%% SSL/TSL socket test %%%%%%%%%%%%%%%%% 

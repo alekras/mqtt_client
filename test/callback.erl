@@ -77,6 +77,7 @@ loop(State) ->
 				onPong        => Default_callback,
 				onPublish     => Default_callback,
 				onClose       => Default_callback,
+				onUpdate      => Default_callback,
 				onError       => Default_callback
 			},
 
