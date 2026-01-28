@@ -37,6 +37,7 @@
 	will_retain/2
 ]).
 -import(testing_v5, [wait_events/2]).
+-import(testing, [get_connect_rec/1]).
 %%
 %% API Functions
 %%
@@ -147,7 +148,7 @@ will_retain({QoS, will_retain} = _X, [Publisher, Subscriber] = _Conns) -> {"will
 	Subscriber_2 = mqtt_client:create(subscriber2),
 	ok = mqtt_client:connect(
 		Subscriber_2, 
-		?CONN_REC(subscriber2)#connect{clean_session = 1}, 
+		(get_connect_rec(subscriber2))#connect{clean_session = 1}, 
 		{callback, call},
 		[]
 	),

@@ -74,7 +74,7 @@ do_setup({_, session}) ->
 	P1 = create(publisher),
 	ok = mqtt_client:connect(
 		P1, 
-		?CONN_REC(publisher)#connect{clean_session = 0}, 
+		(get_connect_rec(publisher))#connect{clean_session = 0}, 
 		{callback, call},
 		[]
 	),
@@ -82,7 +82,7 @@ do_setup({_, session}) ->
 	S1 = create(subscriber),
 	ok = mqtt_client:connect(
 		S1, 
-		?CONN_REC(subscriber)#connect{clean_session = 1}, 
+		(get_connect_rec(subscriber))#connect{clean_session = 1}, 
 		{callback, call},
 		[]
 	),
@@ -92,7 +92,7 @@ do_setup({QoS, will}) ->
 	P = create(publisher),
 	ok = mqtt_client:connect(
 		P, 
-		?CONN_REC(publisher)#connect{
+		(get_connect_rec(publisher))#connect{
 			will_publish= #publish{qos= QoS, topic= "AK_will_test", payload= <<"Test will message">>}
 		}, 
 		[]
@@ -103,7 +103,7 @@ do_setup({QoS, will_retain} = _X) ->
 	P = create(publisher),
 	ok = mqtt_client:connect(
 		P, 
-		?CONN_REC(publisher)#connect{
+		(get_connect_rec(publisher))#connect{
 			will_publish= #publish{qos= QoS, retain= 1, topic= "AK_will_retain_test", payload= <<"Test will retain message">>}
 		}, 
 		[]
@@ -119,7 +119,7 @@ do_setup({_, keep_alive}) ->
 	P = create(publisher),
 	ok = mqtt_client:connect(
 		P, 
-		?CONN_REC(publisher)#connect{keep_alive = 5},
+		(get_connect_rec(publisher))#connect{keep_alive = 5},
 		{callback, call}, 
 		[]
 	),
@@ -152,7 +152,7 @@ do_cleanup({QoS, will_retain}, [P, S]) ->
 	P1 = create(publisher),
 	ok = mqtt_client:connect(
 		P1, 
-		?CONN_REC(publisher)#connect{
+		(get_connect_rec(publisher))#connect{
 			clean_session = 1
 		}, 
 		[]
@@ -169,7 +169,7 @@ do_cleanup({QoS, retain}, [P1, S1, S2]) ->
 			P2 = create(publisher),
 			ok = mqtt_client:connect(
 				P2, 
-				?CONN_REC(publisher)#connect{clean_session = 0},
+				(get_connect_rec(publisher))#connect{clean_session = 0},
 				[]
 			),
 			ok = mqtt_client:publish(P2, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), 
@@ -180,7 +180,7 @@ do_cleanup({QoS, retain}, [P1, S1, S2]) ->
 		_ ->
 			ok = mqtt_client:connect(
 				P1, 
-				?CONN_REC(publisher)#connect{clean_session = 0},
+				(get_connect_rec(publisher))#connect{clean_session = 0},
 				[]
 			),
 			mqtt_client:publish(P1, #publish{topic = "AK_retain_test", retain = 1, qos = QoS}, <<>>), 

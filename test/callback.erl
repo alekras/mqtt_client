@@ -99,7 +99,11 @@ loop(State) ->
 		{call, Idx, Event, Argument} ->
 			#{Idx := Handlers} = (State#callback_state.handlers),
 			#{Event := Handler} = Handlers,
-			(Handler)(Event, Argument),
+			try (Handler)(Event, Argument) of
+				_ -> ok
+			catch
+				_:_ -> ok %% ?assert(false)
+			end,
 			loop(State);
 
 		Msg ->

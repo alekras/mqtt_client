@@ -36,6 +36,7 @@
 	session_2/2
 ]).
 -import(testing_v5, [wait_events/2]).
+-import(testing, [get_connect_rec/1]).
 %%
 %% API Functions
 %%
@@ -71,7 +72,7 @@ session_1({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500),
 	ok = mqtt_client:connect(
 		Publisher, 
-		?CONN_REC(publisher)#connect{clean_session = 0}, 
+		(get_connect_rec(publisher))#connect{clean_session = 0}, 
 		{callback, call},
 		[]
 	),
@@ -101,7 +102,7 @@ session_1({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500),
 	ok = mqtt_client:connect(
 		Publisher, 
-		?CONN_REC(publisher)#connect{clean_session = 0}, 
+		(get_connect_rec(publisher))#connect{clean_session = 0}, 
 		{callback, call},
 		[]
 	),
@@ -132,7 +133,7 @@ session_1({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500),
 	ok = mqtt_client:connect(
 		Subscriber, 
-		?CONN_REC(subscriber)#connect{clean_session = 0}, 
+		(get_connect_rec(subscriber))#connect{clean_session = 0}, 
 		{callback, call},
 		[]
 	),
@@ -166,7 +167,7 @@ session_1({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500), %% allow subscriber to disconnect 
 	ok = mqtt_client:connect(
 		Subscriber, 
-		?CONN_REC(subscriber)#connect{clean_session = 0}, 
+		(get_connect_rec(subscriber))#connect{clean_session = 0}, 
 		{callback, call},
 		[]
 	),
@@ -199,7 +200,7 @@ session_2({1, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500),
 	ok = mqtt_client:connect(
 		Publisher,
-		?CONN_REC(publisher)#connect{clean_session = 0}, 
+		(get_connect_rec(publisher))#connect{clean_session = 0}, 
 		{callback, call},
 		[]
 	),
@@ -230,7 +231,7 @@ session_2({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500),
 	ok = mqtt_client:connect(
 		Publisher,
-		?CONN_REC(publisher)#connect{clean_session = 0}, 
+		(get_connect_rec(publisher))#connect{clean_session = 0}, 
 		{callback, call},
 		[]
 	),
@@ -262,7 +263,7 @@ session_2({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500),
 	ok = mqtt_client:connect(
 		Publisher,
-		?CONN_REC(publisher)#connect{clean_session = 0}, 
+		(get_connect_rec(publisher))#connect{clean_session = 0}, 
 		{callback, call},
 		[]
 	),
@@ -292,7 +293,7 @@ session_2({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500),
 	ok = mqtt_client:connect(
 		Publisher,
-		?CONN_REC(publisher)#connect{clean_session = 0},
+		(get_connect_rec(publisher))#connect{clean_session = 0},
 		{callback, call},
 		[]
 	),
@@ -323,7 +324,7 @@ session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500),
 	ok = mqtt_client:connect(
 		Subscriber, 
-		?CONN_REC(subscriber)#connect{clean_session = 0},
+		(get_connect_rec(subscriber))#connect{clean_session = 0},
 		{callback, call},
 		[]
 	),
@@ -357,7 +358,7 @@ session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 	timer:sleep(500),
 	ok = mqtt_client:connect(
 		subscriber, 
-		?CONN_REC(subscriber)#connect{clean_session = 0},
+		(get_connect_rec(subscriber))#connect{clean_session = 0},
 		{callback, call},
 		[]
 	),
@@ -391,7 +392,7 @@ session_2({7, session}, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, su
 	timer:sleep(500),
 	ok = mqtt_client:connect(
 		Subscriber, 
-		?CONN_REC(subscriber)#connect{clean_session = 0},
+		(get_connect_rec(subscriber))#connect{clean_session = 0},
 		{callback, call},
 		[]
 	),
@@ -426,7 +427,7 @@ session_2({8, session}, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, su
 	timer:sleep(500),
 	ok = mqtt_client:connect(
 		Subscriber, 
-		?CONN_REC(subscriber)#connect{clean_session = 0},
+		(get_connect_rec(subscriber))#connect{clean_session = 0},
 		{callback, call},
 		[]
 	),

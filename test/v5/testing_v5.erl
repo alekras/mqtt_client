@@ -66,7 +66,7 @@ connect(Name, CID, Callback_fun) ->
 	?assert(is_pid(Pid)),
 	ok = mqtt_client:connect(
 		Pid, 
-		?CONN_REC_5(CID)#connect{properties=[{?Topic_Alias_Maximum,10}]}, 
+		(get_connect_rec(CID))#connect{properties=[{?Topic_Alias_Maximum,10}]}, 
 		{callback, Callback_fun},
 		[]
 	),
@@ -84,7 +84,7 @@ do_setup({_, publish_rec_max} = _X) ->
 	P1 = create(publisher),
 	ok = mqtt_client:connect(
 		P1, 
-		?CONN_REC_5(publisher)#connect{properties=[{?Receive_Maximum, 5}]}, 
+		(get_connect_rec(publisher))#connect{properties=[{?Receive_Maximum, 5}]}, 
 		{callback, call},
 		[]
 	),
@@ -103,7 +103,7 @@ do_setup({_, session}) ->
 	P1 = create(publisher),
 	ok = mqtt_client:connect(
 		P1, 
-		?CONN_REC_5(publisher)#connect{clean_session = 0, properties=[{?Session_Expiry_Interval, 16#FFFFFFFF}]}, 
+		(get_connect_rec(publisher))#connect{clean_session = 0, properties=[{?Session_Expiry_Interval, 16#FFFFFFFF}]}, 
 		{callback, call},
 		[]
 	),
@@ -111,7 +111,7 @@ do_setup({_, session}) ->
 	S1 = create(subscriber),
 	ok = mqtt_client:connect(
 		S1, 
-		?CONN_REC_5(subscriber)#connect{clean_session = 0, properties=[{?Session_Expiry_Interval, 16#FFFFFFFF}]}, 
+		(get_connect_rec(subscriber))#connect{clean_session = 0, properties=[{?Session_Expiry_Interval, 16#FFFFFFFF}]}, 
 		{callback, call},
 		[]
 	),
@@ -124,7 +124,7 @@ do_setup({QoS, will}) ->
 	Payload = "Test will retain message QoS: " ++ integer_to_list(QoS),
 	ok = mqtt_client:connect(
 		P, 
-		?CONN_REC_5(publisher)#connect{
+		(get_connect_rec(publisher))#connect{
 			will_publish= #publish{
 				qos= QoS,
 				topic= "AK_will_test",
@@ -141,7 +141,7 @@ do_setup({QoS, will_delay}) ->
 	Payload = "Test will retain message QoS: " ++ integer_to_list(QoS),
 	ok = mqtt_client:connect(
 		P, 
-		?CONN_REC_5(publisher)#connect{
+		(get_connect_rec(publisher))#connect{
 			will_publish= #publish{
 				qos= QoS,
 				topic= "AK_will_test",
@@ -158,7 +158,7 @@ do_setup({QoS, will_retain}) ->
 	Payload = "Test will retain message QoS: " ++ integer_to_list(QoS),
 	ok = mqtt_client:connect(
 		P, 
-		?CONN_REC_5(publisher)#connect{
+		(get_connect_rec(publisher))#connect{
 			will_publish= #publish{
 				qos= QoS,
 				retain= 1,
@@ -182,7 +182,7 @@ do_setup({_, keep_alive}) ->
 	P = create(publisher),
 	ok = mqtt_client:connect(
 		P, 
-		?CONN_REC_5(publisher)#connect{keep_alive = 5}, 
+		(get_connect_rec(publisher))#connect{keep_alive = 5}, 
 		{callback, call},
 		[]
 	),
@@ -226,7 +226,7 @@ do_cleanup({QoS, will_retain}, [P, S1, S2]) ->
 	P1 = create(publisher),
 	ok = mqtt_client:connect(
 		P1, 
-		?CONN_REC_5(publisher)#connect{
+		(get_connect_rec(publisher))#connect{
 			clean_session = 1
 		}, 
 		{callback, call},
@@ -244,7 +244,7 @@ do_cleanup({QoS, retain}, [P1, S1, S2]) ->
 			P2 = create(publisher),
 			ok = mqtt_client:connect(
 				P2, 
-				?CONN_REC_5(publisher)#connect{clean_session = 0}, 
+				(get_connect_rec(publisher))#connect{clean_session = 0}, 
 				{callback, call},
 				[]
 			),
@@ -256,7 +256,7 @@ do_cleanup({QoS, retain}, [P1, S1, S2]) ->
 		_ ->
 			ok = mqtt_client:connect(
 				P1, 
-				?CONN_REC_5(publisher)#connect{clean_session = 0},
+				(get_connect_rec(publisher))#connect{clean_session = 0},
 				{callback, call},
 				[]
 			),
