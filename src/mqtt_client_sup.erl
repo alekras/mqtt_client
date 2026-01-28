@@ -105,7 +105,7 @@ new_client(Client_id) when is_atom(Client_id)->
 
 create_client_process(Client_id) ->
 	Storage =
-	case application:get_env(mqtt_client, storage, dets) of
+	case application:get_env(mqtt_common, storage, dets) of
 		mysql -> mqtt_mysql_storage;
 		dets -> mqtt_dets_storage;
 		mnesia -> mqtt_mnesia_storage

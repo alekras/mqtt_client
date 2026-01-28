@@ -196,7 +196,7 @@ get_connect_rec(Cl_Id) ->
 	?CONN_REC(Cl_Id).
 
 get_storage() ->
-	case application:get_env(mqtt_client, storage, dets) of
+	case application:get_env(mqtt_common, storage, dets) of
 		mysql -> mqtt_mysql_storage;
 		dets -> mqtt_dets_storage;
 		mnesia -> mqtt_mnesia_storage

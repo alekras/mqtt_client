@@ -260,7 +260,7 @@ start(_Type, StartArgs) ->
 	S = lists:concat([io_lib:format("    ~p~n",[App]) || App <- application:which_applications()]),
 	lager:info([{endtype, client}], "running apps: ~n~s",[S]),	
 	Storage =
-	case application:get_env(mqtt_client, storage, dets) of
+	case application:get_env(mqtt_common, storage, dets) of
 		mysql -> mqtt_mysql_storage;
 		dets -> mqtt_dets_storage;
 		mnesia -> mqtt_mnesia_storage
