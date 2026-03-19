@@ -37,7 +37,7 @@
 	will_delay/2,
 	will_retain/2
 ]).
--import(testing_v5, [wait_events/2]).
+-import(callback, [wait_events/2]).
 %%
 %% API Functions
 %%
@@ -54,7 +54,7 @@ set_handlers(QoS_expected, Topic_expected, Msg_expected) ->
 					 test_result ! onReceive
 				end).
 
-will_a({0, will}, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", timeout, 100, fun() ->
+will_a({0, will}, [Publisher, Subscriber] = _Conns) -> {?ST"will QoS=0."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=0}, "AK_will_test", list_to_binary("Test will retain message QoS: " ++ integer_to_list(0))),
 
@@ -68,7 +68,7 @@ will_a({0, will}, [Publisher, Subscriber] = _Conns) -> {"will QoS=0.", timeout, 
 	?PASSED
 end}.
 
-will_0({QoS, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
+will_0({QoS, will} = _X, [Publisher, Subscriber] = _Conns) -> {?ST"will QoS=" ++ integer_to_list(QoS) ++ "."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=QoS}, "AK_will_test", list_to_binary("Test will retain message QoS: " ++ integer_to_list(QoS))),
 
@@ -88,7 +88,7 @@ will_0({QoS, will} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=" ++ in
 	?PASSED
 end}.
 
-will_delay({QoS, will_delay} = _X, [Publisher, Subscriber] = _Conns) -> {"will QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
+will_delay({QoS, will_delay} = _X, [Publisher, Subscriber] = _Conns) -> {?ST"will QoS=" ++ integer_to_list(QoS) ++ "."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=QoS}, "AK_will_test", list_to_binary("Test will retain message QoS: " ++ integer_to_list(QoS))),
 
@@ -108,7 +108,7 @@ will_delay({QoS, will_delay} = _X, [Publisher, Subscriber] = _Conns) -> {"will Q
 	?PASSED
 end}.
 
-will_retain({QoS, will_retain}, [Publisher, Subscriber1, Subscriber2]) -> {"will with retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
+will_retain({QoS, will_retain}, [Publisher, Subscriber1, Subscriber2]) -> {?ST"will with retain QoS=" ++ integer_to_list(QoS) ++ "."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=QoS}, "AK_will_retain_test", list_to_binary("Test will retain message QoS: " ++ integer_to_list(QoS))),
 

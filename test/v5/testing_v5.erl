@@ -35,11 +35,7 @@
 	do_cleanup/2, 
 	do_start/0, 
 	do_stop/1,
-	get_connect_rec/1, 
-%	wait_all/1,
-%	wait/4,
-%	wait/5,
-	wait_events/2
+	get_connect_rec/1
 ]).
 
 do_start() ->
@@ -278,43 +274,3 @@ get_storage() ->
 		mnesia -> mqtt_mnesia_storage
 	end.
 
-wait_events(Title, Events_list) ->
-	wait_events(Title, Events_list, true).
-
-wait_events(Title, Events_list, Result) ->
-	case wait(Events_list) of
-		ok ->
-			case Result of
-				true ->
-					?debug_Fmt("::wait_events::=>'~s' all events come ~p.~n", [Title, Events_list]);
-				false ->
-					?debug_Fmt("::wait_events::=>'~s' all expected events come ~p but enexpected events exist.~n", [Title, Events_list])
-			end,
-			Result and true;
-		{fail, none, New_events_list} ->
-			?debug_Fmt("::wait_events::=>'~s' ~p some events have not received.~n", [Title, New_events_list]),
-			Result and false;
-		{fail, Event, New_events_list} ->
-			?debug_Fmt("::wait_events::=>'~s' ~p unexpected event '~p' received.~n", [Title, New_events_list, Event]),
-			wait_events(Title, New_events_list, false)
-	end.
-
-wait([]) -> 
-	receive 
-		Event ->
-			{fail, Event, []}
-	after ?MQTT_GEN_SERVER_TIMEOUT + 100 ->
-			ok
-	end;
-wait(Events_list) ->
-	receive
-		Event ->
-			case lists:member(Event, Events_list) of
-				true ->
-					wait(lists:delete(Event, Events_list));
-				false ->
-					{fail, Event, Events_list}
-			end
-	after ?MQTT_GEN_SERVER_TIMEOUT + 100 ->
-			{fail, none, Events_list}
-	end.

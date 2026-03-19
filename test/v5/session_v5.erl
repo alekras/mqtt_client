@@ -38,7 +38,7 @@
 	session_expire/2,
 	msg_expire/2
 ]).
--import(testing_v5, [wait_events/2]).
+-import(callback, [wait_events/2]).
 %%
 %% API Functions
 %%
@@ -55,7 +55,7 @@ set_handlers(QoS_expected, Topic_expected) ->
 				end).
 
 %% Publisher: skip send publish. Resend publish after reconnect and restore session.
-session_1({1, session}, [Publisher, Subscriber]) -> {[$\n] ++ ">>>>>>session QoS=1, publisher skips send publish." ++ [$\n], timeout, 100, fun() ->
+session_1({1, session}, [Publisher, Subscriber]) -> {[$\n] ++ ?ST">>>>>>session QoS=1, publisher skips send publish."?ET ++ [$\n], timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=1}, "AKtest"),
 
@@ -85,7 +85,7 @@ session_1({1, session}, [Publisher, Subscriber]) -> {[$\n] ++ ">>>>>>session QoS
 end};
 
 %% Publisher: skip recieve publish ack. Resend publish after reconnect and restore session. Duplicate message.
-session_1({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=1, publisher skips recieve puback.", timeout, 100, fun() ->
+session_1({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {?ST"session QoS=1, publisher skips receive puback."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=1}, "AKtest"),
 
@@ -115,7 +115,7 @@ session_1({2, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 end};
 
 %% Subscriber: skip recieve publish. Resend publish after reconnect and restore session. Duplicate message.
-session_1({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=1, subscriber skips receive publish", timeout, 100, fun() ->
+session_1({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {?ST"session QoS=1, subscriber skips receive publish"?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=1}, "AKtest"),
 
@@ -149,7 +149,7 @@ session_1({3, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 end};
 
 %% Subscriber: skip send publish ack. Resend publish after reconnect and restore session. Duplicate message.
-session_1({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=1, subscriber skips send puback.", timeout, 100, fun() ->
+session_1({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {?ST"session QoS=1, subscriber skips send puback."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=1}, "AKtest"),
 
@@ -182,7 +182,7 @@ session_1({4, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 end}.
 
 %% Publisher: skip send publish. Resend publish after reconnect and restore session.
-session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {[$\n]++" >>>>> session QoS=2, publisher skips send publish."++[$\n], timeout, 100, fun() ->
+session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {[$\n]++?ST" >>>>> session QoS=2, publisher skips send publish."?ET++[$\n], timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=2}, "AKTest"),
 
@@ -213,7 +213,7 @@ session_2({5, session} = _X, [Publisher, Subscriber] = _Conns) -> {[$\n]++" >>>>
 end};
 
 %% Publisher: skip receive pubrec. Resend publish after reconnect and restore session.
-session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=2, publisher skips receive pubrec.", timeout, 100, fun() ->
+session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {?ST"session QoS=2, publisher skips receive pubrec."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=2}, "AKTest"),
 
@@ -244,7 +244,7 @@ session_2({6, session} = _X, [Publisher, Subscriber] = _Conns) -> {"session QoS=
 end};
 
 %% Publisher: skip send pubrel. Resend pubrel after reconnect and restore session.
-session_2({7, session}, [Publisher, Subscriber]) -> {"session QoS=2, publisher skips send pubrel.", timeout, 100, fun() ->
+session_2({7, session}, [Publisher, Subscriber]) -> {?ST"session QoS=2, publisher skips send pubrel."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=2}, "AKTest"),
 
@@ -275,7 +275,7 @@ session_2({7, session}, [Publisher, Subscriber]) -> {"session QoS=2, publisher s
 end};
 
 %% Publisher: skip receive pubcomp. Resend publish after reconnect and restore session.
-session_2({8, session}, [Publisher, Subscriber]) -> {"session QoS=2, publisher skips receive pubcomp.", timeout, 100, fun() ->
+session_2({8, session}, [Publisher, Subscriber]) -> {?ST"session QoS=2, publisher skips receive pubcomp."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=2}, "AKTest"),
 
@@ -307,7 +307,7 @@ session_2({8, session}, [Publisher, Subscriber]) -> {"session QoS=2, publisher s
 end};
 
 %% Subscriber: skip receive publish. Resend publish after reconnect and restore session.
-session_2({9, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber skips receive publish.", timeout, 100, fun() ->
+session_2({9, session}, [Publisher, Subscriber]) -> {?ST"session QoS=2, subscriber skips receive publish."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=2}, "AKtest"),
 
@@ -341,7 +341,7 @@ session_2({9, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber 
 end};
 
 %% Subscriber: skip send pubrec. Resend publish after reconnect and restore session.
-session_2({10, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber skips send pubrec.", timeout, 100, fun() ->
+session_2({10, session}, [Publisher, Subscriber]) -> {?ST"session QoS=2, subscriber skips send pubrec."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=2}, "AKtest"),
 
@@ -373,7 +373,7 @@ session_2({10, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 end};
 
 %% Subscriber: skip receive pubrel. Resend publish after reconnect and restore session.
-session_2({11, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber skips receive pubrel.", timeout, 100, fun() ->
+session_2({11, session}, [Publisher, Subscriber]) -> {?ST"session QoS=2, subscriber skips receive pubrel."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=2}, "AKtest"),
 
@@ -407,7 +407,7 @@ session_2({11, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 end};
 
 %% Subscriber: skip send pubcomp. Resend publish after reconnect and restore session.
-session_2({12, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber skips send pubcomp.", timeout, 100, fun() ->
+session_2({12, session}, [Publisher, Subscriber]) -> {?ST"session QoS=2, subscriber skips send pubcomp."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=2}, "AKtest"),
 
@@ -440,7 +440,7 @@ session_2({12, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 	?PASSED
 end}.
 
-session_expire({1, session_expire}, [Subscriber]) -> {"session QoS=2, subscriber session is not expired.", timeout, 100, fun() ->
+session_expire({1, session_expire}, [Subscriber]) -> {?ST"session QoS=2, subscriber session is not expired."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=2}, "AKtest"),
 	ok = mqtt_client:connect(
@@ -479,7 +479,7 @@ session_expire({1, session_expire}, [Subscriber]) -> {"session QoS=2, subscriber
 	?PASSED
 end};
 
-session_expire({2, session_expire}, [Subscriber]) -> {"session QoS=2, subscriber session is ended.", timeout, 100, fun() ->
+session_expire({2, session_expire}, [Subscriber]) -> {?ST"session QoS=2, subscriber session is ended."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=2}, "AKtest"),
 	ok = mqtt_client:connect(
@@ -518,7 +518,7 @@ session_expire({2, session_expire}, [Subscriber]) -> {"session QoS=2, subscriber
 	?PASSED
 end};
 
-session_expire({3, session_expire}, [Subscriber]) -> {"session QoS=2, subscriber session is expire in 1 minutes.", timeout, 100, fun() ->
+session_expire({3, session_expire}, [Subscriber]) -> {?ST"session QoS=2, subscriber session is expire in 1 minutes."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=2}, "AKtest"),
 	ok = mqtt_client:connect(
@@ -554,7 +554,7 @@ session_expire({3, session_expire}, [Subscriber]) -> {"session QoS=2, subscriber
 	?PASSED
 end};
 
-session_expire({4, session_expire}, [Subscriber]) -> {"session QoS=2, subscriber session is expire in 1 minutes.", timeout, 100, fun() ->
+session_expire({4, session_expire}, [Subscriber]) -> {?ST"session QoS=2, subscriber session is expire in 1 minutes."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=2}, "AKtest"),
 	ok = mqtt_client:connect(
@@ -590,7 +590,7 @@ session_expire({4, session_expire}, [Subscriber]) -> {"session QoS=2, subscriber
 end}.
 
 %% Subscriber: skip_send_pubrec. Resend publish after reconnect and restore session. Testing message Expiry interval.
-msg_expire({1, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber skips send pubrec to test message expiry interval", timeout, 100, fun() ->
+msg_expire({1, session}, [Publisher, Subscriber]) -> {?ST"session QoS=2, subscriber skips send pubrec to test message expiry interval"?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=2}, "AKtest"),
 
@@ -634,7 +634,7 @@ msg_expire({1, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber
 end};
 
 %% Subscriber: skip send pubrec. Resend publish after reconnect and restore session. Testing message Expiry interval.
-msg_expire({2, session}, [Publisher, Subscriber]) -> {"session QoS=2, subscriber skips send pubrec to test message expiry interval", timeout, 100, fun() ->
+msg_expire({2, session}, [Publisher, Subscriber]) -> {?ST"session QoS=2, subscriber skips send pubrec to test message expiry interval"?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=2}, "AKtest"),
 

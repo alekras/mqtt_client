@@ -4,6 +4,8 @@
 -module(callback).
 
 -include_lib("eunit/include/eunit.hrl").
+-include_lib("mqtt_common/include/mqtt.hrl").
+-include("test.hrl").
 
 -record(callback_state, {handlers = #{} :: map()}).
 %% ====================================================================
@@ -20,7 +22,9 @@
 	call_1/2,
 	call_2/2,
 	call_3/2,
-	loop/1]).
+	loop/1,
+	wait_events/2
+]).
 
 start() ->
 	Pid = spawn_link(?MODULE, loop, [#callback_state{}]),
@@ -37,13 +41,17 @@ reset() ->
 	callback_srv ! reset.
 
 set_event_handler(Event, Handler) when is_atom(Event) ->
-	callback_srv ! {set_handler, 0, Event, Handler}.
+	set_event_handler(0, Event, Handler).
 
 set_event_handler(Idx, Event, Handler) when is_atom(Event) ->
 	callback_srv ! {set_handler, Idx, Event, Handler}.
 
+%% ====================================================================
+%% Callback public interface:
+%% ====================================================================
+
 call(Event, Argument) ->
-	callback_srv ! {call, 0, Event, Argument}.
+	call_0(Event, Argument).
 
 call_0(Event, Argument) ->
 	callback_srv ! {call, 0, Event, Argument}.
@@ -102,11 +110,54 @@ loop(State) ->
 			try (Handler)(Event, Argument) of
 				_ -> ok
 			catch
-				_:_ -> ok %% ?assert(false)
+				_:_ -> 
+				?debug_Fmt(":: callback:call :: Handler {~p} catches exception during execution parameters:~n     Event= ~p,~n     Arg=~p.~n", [Handler, Event, Argument]),
+				ok
 			end,
 			loop(State);
 
 		Msg ->
 			io:format(user, "~n ERROR: wrong message arrives to callback process: ~p~n", [Msg]),
 			loop(State)
+	end.
+
+wait_events(Title, Events_list) ->
+	wait_events(Title, Events_list, true).
+
+wait_events(Title, Events_list, Result) ->
+	case wait(Events_list) of
+		ok ->
+			case Result of
+				true ->
+					?debug_Fmt("::wait_events::=>'~s' all events come ~p.~n", [Title, Events_list]);
+				false ->
+					?debug_Fmt("::wait_events::=>'~s' all expected events come ~p but enexpected events exist.~n", [Title, Events_list])
+			end,
+			Result and true;
+		{fail, none, New_events_list} ->
+			?debug_Fmt("::wait_events::=>'~s' some events ~p have not received.~n", [Title, New_events_list]),
+			Result and false;
+		{fail, Event, New_events_list} ->
+			?debug_Fmt("::wait_events::=>'~s' ~p unexpected event '~p' received.~n", [Title, New_events_list, Event]),
+			wait_events(Title, New_events_list, false)
+	end.
+
+wait([]) -> 
+	receive 
+		Event ->
+			{fail, Event, []}
+	after ?MQTT_GEN_SERVER_TIMEOUT + 100 ->
+			ok
+	end;
+wait(Events_list) ->
+	receive
+		Event ->
+			case lists:member(Event, Events_list) of
+				true ->
+					wait(lists:delete(Event, Events_list));
+				false ->
+					{fail, Event, Events_list}
+			end
+	after ?MQTT_GEN_SERVER_TIMEOUT + 100 ->
+			{fail, none, Events_list}
 	end.

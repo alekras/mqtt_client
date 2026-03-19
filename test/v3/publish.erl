@@ -35,7 +35,7 @@
   publish_1/2
 ]).
 
--import(testing_v5, [wait_events/2]).
+-import(callback, [wait_events/2]).
 
 run_test(QoS_subsc, Publisher, Subscriber) ->
 	register(test_result, self()),

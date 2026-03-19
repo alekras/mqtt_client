@@ -40,7 +40,7 @@
 	subscription_option/2,
 	subscription_id/2
 ]).
--import(testing_v5, [wait_events/2]).
+-import(callback, [wait_events/2]).
 %%
 %% API Functions
 %%
@@ -65,7 +65,7 @@ set_handlers(QoS_expected, Topic_expected, Msg_expected) ->
 	callback:set_event_handler(onReceive, F(1)),
 	callback:set_event_handler(1, onReceive, F(2)).
 
-retain_0({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {"retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
+retain_0({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {?ST"retain QoS=" ++ integer_to_list(QoS) ++ "."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=QoS}, "AK_retain_test", <<"Test 0 retain message QoS=">>),
 
@@ -84,7 +84,7 @@ retain_0({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> 
 	?PASSED
 end}.
 
-retain_1({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {"retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
+retain_1({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {?ST"retain QoS=" ++ integer_to_list(QoS) ++ "."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=QoS}, "AK_retain_test", <<"Test 1 retain message QoS=">>),
 
@@ -105,7 +105,7 @@ retain_1({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> 
 	?PASSED
 end}.
 
-retain_2({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {"retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
+retain_2({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {?ST"retain QoS=" ++ integer_to_list(QoS) ++ "."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=QoS}, "AK_retain_test", <<"Test 2 retain message QoS=">>),
 
@@ -146,7 +146,7 @@ retain_2({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> 
 	?PASSED
 end}.
 
-retain_3({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {"retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
+retain_3({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {?ST"retain QoS=" ++ integer_to_list(QoS) ++ "."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onSubscribe, fun(onSubscribe, _A) -> test_result ! onSubscribe1 end),
 	callback:set_event_handler(1, onSubscribe, fun(onSubscribe, _A) -> test_result ! onSubscribe2 end),
@@ -194,7 +194,7 @@ retain_3({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> 
 	?PASSED
 end}.
 
-subscription_option({QoS, retain} = _X, [_Publisher, Subscriber1, Subscriber2] = _Conns) -> {"retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
+subscription_option({QoS, retain} = _X, [_Publisher, Subscriber1, Subscriber2] = _Conns) -> {?ST"retain QoS=" ++ integer_to_list(QoS) ++ "."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	set_handlers(#subscription_options{max_qos=QoS}, "AK_retain_test", <<"Test 4 retain message QoS=">>),
 
@@ -218,7 +218,7 @@ subscription_option({QoS, retain} = _X, [_Publisher, Subscriber1, Subscriber2] =
 	?PASSED
 end}.
 
-subscription_id({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {"retain QoS=" ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
+subscription_id({QoS, retain} = _X, [Publisher, Subscriber1, Subscriber2] = _Conns) -> {?ST"retain QoS=" ++ integer_to_list(QoS) ++ "."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onSubscribe, fun(onSubscribe, _A) -> test_result ! onSubscribe1 end),
 	callback:set_event_handler(1, onSubscribe, fun(onSubscribe, _A) -> test_result ! onSubscribe2 end),

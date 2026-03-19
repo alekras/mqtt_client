@@ -35,7 +35,7 @@
 	session_1/2,
 	session_2/2
 ]).
--import(testing_v5, [wait_events/2]).
+-import(callback, [wait_events/2]).
 -import(testing, [get_connect_rec/1]).
 %%
 %% API Functions

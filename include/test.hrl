@@ -31,7 +31,8 @@
 -if(?CONN_TYPE == clear).
 %%%%%%%%%%%%% Clear socket test %%%%%%%%%%%%%%%%% 
 	-define(TEST_CONN_TYPE, clear). %% Clear tcp for client
-	-define(TEST_SERVER_PORT, 18883). %% Erlang
+-define(TEST_SERVER_PORT, 18883). %% Erlang or cluster node 0
+-define(TEST_SERVER_PORT_1, 28883). %% Erlang cluster node 1
 %-define(TEST_SERVER_PORT, 2883). %% Mosquitto
 %	-define(TEST_SERVER_PORT, 1883). %% RabbitMQ, EMQX
 -elif(?CONN_TYPE == ssl).
@@ -71,6 +72,9 @@
 		version = '5.0'})
 ).
 
+-define(ST, "\e[1;5;97;104m"++).
+-define(ET, ++"\e[0m").
+
 -define(debug_Msg(S),
 	(begin
 		timer:sleep(1),
@@ -78,5 +82,5 @@
 %		io:fwrite(<<"~s\n">>, [S])
 	 end)).
 -define(debug_Fmt(S, As), (?debug_Msg(io_lib:format((S), (As))))).
--define(PASSED, (?debug_Msg("\e[1;32;40m    +++ Passed  \e[0m"))).
--define(passed, (?debug_Msg("\e[1;32;40m    +++ Passed with \e[0m"))).
+-define(PASSED, (?debug_Msg("\e[1;34;102m    +++ Passed  \e[0m"))).
+-define(passed, (?debug_Msg("\e[1;30;102m    +++ Passed with \e[0m"))).

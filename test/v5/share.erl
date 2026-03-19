@@ -37,7 +37,7 @@
 	publish_1/2
 ]).
 
--import(testing_v5, [wait_events/2]).
+-import(callback, [wait_events/2]).
 %%
 %% API Functions
 %%
@@ -54,7 +54,7 @@ onReceiveCallback(QoS, Subscriber) ->
 		test_result ! onReceive
 	end.
 
-publish_0({QoS, share} = _X, [Publisher, Subscriber1, Subscriber2, _, _] = _Conns) -> {"publish to shared Topic with QoS = " ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
+publish_0({QoS, share} = _X, [Publisher, Subscriber1, Subscriber2, _, _] = _Conns) -> {?ST"publish to shared Topic with QoS = " ++ integer_to_list(QoS) ++ "."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe 1: ~p~n", [A]), test_result ! onSubscribe1 end),
 	callback:set_event_handler(1, onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe 2: ~p~n", [A]), test_result ! onSubscribe2 end),
@@ -74,7 +74,7 @@ publish_0({QoS, share} = _X, [Publisher, Subscriber1, Subscriber2, _, _] = _Conn
 	?PASSED
 end}.
 
-publish_1({QoS, share} = _X, [Publisher, Subscriber1, Subscriber2, Subscriber3, Subscriber4] = _Conns) -> {"publish with QoS = " ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
+publish_1({QoS, share} = _X, [Publisher, Subscriber1, Subscriber2, Subscriber3, Subscriber4] = _Conns) -> {?ST"publish with QoS = " ++ integer_to_list(QoS) ++ "."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe 1: ~p~n", [A]), test_result ! onSubscribe1 end),
 	callback:set_event_handler(1, onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe 2: ~p~n", [A]), test_result ! onSubscribe2 end),

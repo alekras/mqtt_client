@@ -36,13 +36,13 @@
 	subs_filter/2,
 	subs_list/2
 ]).
--import(testing_v5, [wait_events/2]).
+-import(callback, [wait_events/2]).
 
 %%
 %% API Functions
 %%
 
-combined(_, Conn) -> {"combined", timeout, 100, fun() ->
+combined(_, Conn) -> {?ST"combined"?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe : ~p~n", [A]), test_result ! onSubscribe end),
 	callback:set_event_handler(onPong, fun(onPong, A) -> ?debug_Fmt("::test:: onPong : ~p~n", [A]), test_result ! onPong end),
@@ -116,7 +116,7 @@ combined(_, Conn) -> {"combined", timeout, 100, fun() ->
 	?passed
 end}.
 
-subs_list(_, Conn) -> {"subscribtion list", timeout, 100, fun() ->	
+subs_list(_, Conn) -> {?ST"subscribtion list"?ET, timeout, 100, fun() ->	
 	register(test_result, self()),
 	callback:set_event_handler(onSubscribe, fun(onSubscribe, {[1,2],[]} = A) -> ?debug_Fmt("::test:: onSubscribe : ~p~n", [A]), test_result ! onSubscribe end),
 	callback:set_event_handler(onReceive, 
@@ -156,7 +156,7 @@ subs_list(_, Conn) -> {"subscribtion list", timeout, 100, fun() ->
 	?PASSED
 end}.
 
-subs_filter(_, Conn) -> {"subscription filter", fun() ->	
+subs_filter(_, Conn) -> {?ST"subscription filter"?ET, fun() ->	
 	register(test_result, self()),
 	callback:set_event_handler(onSubscribe, fun(onSubscribe, {[2,1,0],[]} = A) -> ?debug_Fmt("::test:: onSubscribe : ~p~n", [A]), test_result ! onSubscribe end),
 	callback:set_event_handler(onReceive, 

@@ -39,7 +39,7 @@
   publish_3/2
 ]).
 
--import(testing_v5, [wait_events/2]).
+-import(callback, [wait_events/2]).
 %%
 %% API Functions
 %%
@@ -56,7 +56,7 @@ onReceiveCallback(QoS, Subscriber) ->
 		test_result ! onReceive 
 	end.
 
-publish_0({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish to Topic Alias with QoS = " ++ integer_to_list(QoS) ++ ".", timeout, 100, fun() ->
+publish_0({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {?ST"publish to Topic Alias with QoS = " ++ integer_to_list(QoS) ++ "."?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe : ~p~n", [A]), test_result ! onSubscribe end),
 	callback:set_event_handler(onReceive, onReceiveCallback(QoS, 0)),
@@ -73,7 +73,7 @@ publish_0({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish to
 	?PASSED
 end}.
 
-publish_1({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish to Topic Alias with QoS = " ++ integer_to_list(QoS) ++ ".\n", timeout, 100, fun() ->
+publish_1({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {?ST"publish to Topic Alias with QoS = " ++ integer_to_list(QoS) ++ ".\n"?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe : ~p~n", [A]), test_result ! onSubscribe end),
 	callback:set_event_handler(onReceive, onReceiveCallback(QoS, 0)),
@@ -92,7 +92,7 @@ publish_1({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish to
 	?PASSED
 end}.
 
-publish_2({QoS, publish} = _X, [_Publisher, Subscriber] = _Conns) -> {"publish to Topic Alias with QoS = " ++ integer_to_list(QoS) ++ ".\n", timeout, 100, fun() ->
+publish_2({QoS, publish} = _X, [_Publisher, Subscriber] = _Conns) -> {?ST"publish to Topic Alias with QoS = " ++ integer_to_list(QoS) ++ ".\n"?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe : ~p~n", [A]), test_result ! onSubscribe end),
 	callback:set_event_handler(onReceive, onReceiveCallback(QoS, 0)),
@@ -119,7 +119,7 @@ publish_2({QoS, publish} = _X, [_Publisher, Subscriber] = _Conns) -> {"publish t
 	?PASSED
 end}.
 
-publish_3({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {"publish to empty topic without Topic Alias with QoS = " ++ integer_to_list(QoS) ++ ".\n", timeout, 100, fun() ->
+publish_3({QoS, publish} = _X, [Publisher, Subscriber] = _Conns) -> {?ST"publish to empty topic without Topic Alias with QoS = " ++ integer_to_list(QoS) ++ ".\n"?ET, timeout, 100, fun() ->
 	register(test_result, self()),
 	callback:set_event_handler(onSubscribe, fun(onSubscribe, {_,[]} = A) -> ?debug_Fmt("::test:: onSubscribe : ~p~n", [A]), test_result ! onSubscribe end),
 	callback:set_event_handler(onReceive, onReceiveCallback(QoS, 0)),

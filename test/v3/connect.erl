@@ -42,7 +42,7 @@
 	keep_alive/2
 ]).
 
--import(testing_v5, [wait_events/2]).
+-import(callback, [wait_events/2]).
 %%
 %% API Functions
 %%
