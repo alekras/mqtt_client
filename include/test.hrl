@@ -30,9 +30,9 @@
 
 -if(?CONN_TYPE == clear).
 %%%%%%%%%%%%% Clear socket test %%%%%%%%%%%%%%%%% 
-	-define(TEST_CONN_TYPE, clear). %% Clear tcp for client
+-define(TEST_CONN_TYPE, clear). %% Clear tcp for client
 -define(TEST_SERVER_PORT, 18883). %% Erlang or cluster node 0
--define(TEST_SERVER_PORT_1, 28883). %% Erlang cluster node 1
+-define(TEST_SERVER_PORT_1, 18883). %% Erlang cluster node 1
 %-define(TEST_SERVER_PORT, 2883). %% Mosquitto
 %	-define(TEST_SERVER_PORT, 1883). %% RabbitMQ, EMQX
 -elif(?CONN_TYPE == ssl).

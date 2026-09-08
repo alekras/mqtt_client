@@ -108,17 +108,17 @@ connect(Client_name, Conn_config, Callback, Socket_options) ->
 		{connect, Conn_config, Callback, Socket_options}
 	).
 
--spec status(Pid) -> Result when
- Pid :: pid(),
+-spec status(Client_Id) -> Result when
+ Client_Id :: pid() | atom(),
  Result :: disconnected | [{connected, boolean()} | {session_present, SP:: 0 | 1} |
 		{subscriptions, #{Topic::string() => {QoS::integer(), Callback::{fun()} | pid() | {module(), fun()}}}}].
-%% @doc The function returns status of connection with pid = Pid.
+%% @doc The function returns status of connection with Client_Id.
 %% 
-status(Pid) when is_pid(Pid) ->
-	case is_process_alive(Pid) of
+status(Client_Id) when is_pid(Client_Id) ->
+	case is_process_alive(Client_Id) of
 		true ->
 			try
-				gen_server:call(Pid, status, ?MQTT_GEN_SERVER_TIMEOUT)
+				gen_server:call(Client_Id, status, ?MQTT_GEN_SERVER_TIMEOUT)
 			catch
 				_:_ -> disconnected
 			end;
@@ -131,10 +131,18 @@ status(Name) when is_atom(Name) ->
 	end;
 status(_) -> disconnected.
 
-is_connected(Client_name) ->
-	case status(Client_name) of
+-spec is_connected(Client_Id) -> Result when
+ Client_Id :: pid() | atom(),
+ Result :: boolean().
+%% @doc The function returns connection status.
+%% 
+is_connected(Client_Id) ->
+	case status(Client_Id) of
 		disconnected -> false;
-		[{connected, CS}, _, _] -> (CS == 1)
+		Status when is_list(Status) ->
+			CS = proplists:get_value(connected, Status, 0),
+			(CS == 1);
+		_ -> false
 	end.
 
 -spec set_callback(Pid, NewCallback) -> ok when

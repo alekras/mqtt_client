@@ -99,7 +99,7 @@ session({1, session}, [P, S]) -> {[$\n] ++ ">>>>>>session QoS=1, publisher skips
 	Publisher = create(P),
 	ok = mqtt_client:connect(
 		Publisher, 
-		(get_connect_rec(0, P))#connect{clean_session = 0, properties=[{?Session_Expiry_Interval, 16#FFFFFFFF}]}, 
+		(get_connect_rec(1, P))#connect{clean_session = 0, properties=[{?Session_Expiry_Interval, 16#FFFFFFFF}]}, 
 		{callback, call},
 		[]
 	),
@@ -107,7 +107,7 @@ session({1, session}, [P, S]) -> {[$\n] ++ ">>>>>>session QoS=1, publisher skips
 	Subscriber = create(S),
 	ok = mqtt_client:connect(
 		Subscriber, 
-		(get_connect_rec(1, S))#connect{clean_session = 0, properties=[{?Session_Expiry_Interval, 16#FFFFFFFF}]}, 
+		(get_connect_rec(0, S))#connect{clean_session = 0, properties=[{?Session_Expiry_Interval, 16#FFFFFFFF}]}, 
 		{callback, call},
 		[]
 	),
